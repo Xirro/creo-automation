@@ -1,0 +1,18 @@
+<form id="layoutRestrictionForm">
+    <% let x = 0; %>
+    <% for (let restriction of restrictionData) { %>
+    <input type="text" name="restriction_<%x%>" class="restriction" value="<%=restriction.type%>_<%=restriction.value%>" hidden="hidden">
+    <% let y = 0; %>
+    <% for (let restrictionType of Object.keys(restriction.restrictions)) { %>
+    <input type="text" name="restrictionType_<%x%>_<%y%>" class="restrictionType_<%=restriction.type%>_<%=restriction.value%>" value="<%=restrictionType%>"  hidden="hidden">
+    <% let z = 0; %>
+    <% if (restriction.restrictions[restrictionType].length != 0) { %>
+        <% for (let restrictionVal of restriction.restrictions[restrictionType]) { %>
+        <input type="text" name="restrictionVal_<%x%>_<%y%>_<%z%>" class="restrictionVal_<%=restriction.type%>_<%=restriction.value%>_<%=restrictionType%>"  value="<%=restrictionVal%>"  hidden="hidden">
+        <% } %>
+    <% } else { %>
+    <input type="text" name="restrictionVal_<%x%>_<%y%>_<%z%>" class="restrictionVal_<%=restriction.type%>_<%=restriction.value%>_<%=restrictionType%>"  value="N/A"  hidden="hidden">
+    <% } %>
+    <% } %>
+    <% } %>
+</form>

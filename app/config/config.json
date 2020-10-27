@@ -1,0 +1,29 @@
+{
+  "development": {
+    "username": "root",
+    "password": "E5i5wks15",
+    "database": "sai_test",
+    "host": "localhost",
+    "dialect": "mysql",
+    "logging": false
+  },
+  "test": {
+    "username": "root",
+    "password": "E5i5wks15",
+    "database": "sai_test",
+    "host": "localhost",
+    "dialect": "mysql",
+    "logging": false
+  },
+  "production": {
+    "username": "doadmin",
+    "password": "xaikjabounn01k3i",
+    "host": "saidb-do-user-6679940-0.db.ondigitalocean.com",
+    "port": 25060,
+    "database": "saidb",
+    "dialect": "mysql",
+    "logging": false,
+    "force": false,
+    "timezone": "+00:00"
+  }
+}

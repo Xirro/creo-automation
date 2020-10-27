@@ -1,0 +1,1019 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=0, minimal-ui">
+    <title><%= title %></title>
+    <meta content="Quote Detail" name="SAI-APS-Portal" />
+    <link rel="shortcut icon" href="/public/assets/images/SAI-Logo.JPG">
+    <link rel="stylesheet" href="/public/plugins/morris/morris.css">
+
+    <link href="/public/plugins/RWD-Table-Patterns/dist/css/rwd-table.min.css" rel="stylesheet" type="text/css" media="screen" />
+    <link href="/public/plugins/bootstrap-colorpicker/css/bootstrap-colorpicker.min.css" rel="stylesheet" />
+    <link href="/public/plugins/bootstrap-datepicker/dist/css/bootstrap-datepicker.min.css" rel="stylesheet" />
+    <link href="/public/plugins/select2/css/select2.min.css" rel="stylesheet" type="text/css" />
+    <link href="/public/plugins/bootstrap-touchspin/css/jquery.bootstrap-touchspin.min.css" rel="stylesheet" />
+
+    <link href="/public/assets/css/breakerDragDrop.css" rel="stylesheet" type="text/css" />
+
+    <!-- ION Slider -->
+    <link href="/public/plugins/ion-rangeslider/ion.rangeSlider.css" rel="stylesheet" type="text/css"/>
+    <link href="/public/plugins/ion-rangeslider/ion.rangeSlider.skinModern.css" rel="stylesheet" type="text/css"/>
+
+    <link href="/public/assets/css/bootstrap.min.css" rel="stylesheet" type="text/css">
+    <link href="/public/assets/css/metismenu.min.css" rel="stylesheet" type="text/css">
+    <link href="/public/assets/css/icons.css" rel="stylesheet" type="text/css">
+    <link href="/public/assets/css/style.css" rel="stylesheet" type="text/css">
+    <link href="/public/assets/css/mbomBrkTable.css" rel="stylesheet" type="text/css">
+    <style>
+        .icon-success {
+            color: #00C851;
+        }
+        .icon-danger {
+            color: #ff4444;
+        }
+    </style>
+</head>
+
+<body>
+<div id="wrapper">
+    <!-- Top Bar Start -->
+    <div class="topbar">
+
+        <!-- LOGO -->
+        <div class="topbar-left" style="background-color: white;">
+            <a href="../" class="logo">
+                        <span>
+                            <img src="/public/assets/images/SAI-Logo.JPG" alt="" height="67">
+                        </span>
+                <i>
+                    <img src="/public/assets/images/SAI-Logo.JPG" alt="" height="22">
+                </i>
+            </a>
+        </div>
+
+        <nav class="navbar-custom">
+            <ul class="navbar-right d-flex list-inline float-right mb-0">
+                <li class="dropdown notification-list d-none d-sm-block">
+                    <form role="search" class="app-search">
+                        <div class="form-group mb-0">
+                            <input type="text" class="form-control" placeholder="Search..">
+                            <button type="submit"><i class="fa fa-search"></i></button>
+                        </div>
+                    </form>
+                </li>
+            </ul>
+
+            <ul class="list-inline menu-left mb-0">
+                <li class="float-left">
+                    <button class="button-menu-mobile open-left waves-effect">
+                        <i class="mdi mdi-menu"></i>
+                    </button>
+                </li>
+            </ul>
+
+        </nav>
+
+    </div>
+    <!-- Top Bar End -->
+
+    <!-- ========== Left Sidebar Start ========== -->
+    <div class="left side-menu">
+        <div class="slimscroll-menu" id="remove-scroll">
+
+            <!--- Sidemenu -->
+            <div id="sidebar-menu">
+                <!-- Left Menu Start -->
+                <ul class="metismenu" id="side-menu">
+                    <li class="menu-title">CREO Automation</li>
+                    <li>
+                        <a href="../MBOM" class="waves-effect">
+                            <i class="mdi mdi-file-pdf"></i> <span> MBOM </span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="../PDF-DXF-BIN_BOM" class="waves-effect">
+                            <i class="mdi mdi-content-duplicate"></i> <span> PDF / DXF / BIN BOM </span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="../submittal" class="waves-effect">
+                            <i class="mdi mdi-file-pdf"></i> <span> Submittal </span>
+                        </a>
+                    </li>
+                </ul>
+
+            </div>
+            <!-- Sidebar -->
+            <div class="clearfix"></div>
+
+        </div>
+        <!-- Sidebar -left -->
+
+    </div>
+    <!-- Left Sidebar End -->
+
+    <div class="content-page">
+        <!-- Content Start -->
+
+        <div class="content">
+            <div class="container-fluid">
+                <div class="row">
+                    <div class="col-sm-12">
+                        <div class="page-title-box">
+                            <h4 class="page-title">Mechanical Engineering</h4>
+
+
+                            <div class="row justify-content-center">
+                                <div class="col-sm-12">
+                                    <div class="card m-b-20">
+                                        <div class="card-body">
+                                            <h4 class="mt-0 header-title">Current Design</h4>
+                                            <form id="setWDform" class="setWDform" action="/setWD" method="POST">
+                                                <div class="form-group">
+                                                    <div class="row">
+                                                        <% if (outputDir == undefined) { %>
+                                                            <div class="col-sm-9">
+                                                                <% if (workingDir != undefined) { %>
+                                                                    <label for="example-text-input" class="col-form-label">Working Directory</label>
+                                                                    <input type="text" name="CREO_workingDir" class="form-control" value="<%= workingDir %>" readonly="readonly" placeholder="Choose the location of the PROE Working Directory" required/>
+                                                                <% } else { %>
+                                                                    <label for="example-text-input" class="col-form-label">Working Directory</label>
+                                                                    <input type="text" name="CREO_workingDir" class="form-control" value="" placeholder="Choose the location of the PROE Working Directory" required/>
+                                                                <% } %>
+                                                            </div>
+                                                            <div class="col-sm-3">
+                                                                <input id="uploadBtn" type="submit" value="Set Working Directory" class="btn-block btn-lg btn-outline-secondary waves-effect waves-light" style="margin-top:9%;" />
+                                                            </div>
+                                                        <% } else { %>
+                                                            <div class="col-sm-12">
+                                                                <label for="example-text-input" class="col-form-label">Working Directory</label>
+                                                                <input type="text" name="CREO_workingDir" class="form-control" value="<%= workingDir %>" readonly="readonly" placeholder="Choose the location of the PROE Working Directory" required/>
+                                                            </div>
+                                                        <% } %>
+                                                    </div>
+                                                </div>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+
+
+                            <% if (asmList.length != 0) { %>
+                                <div class="row" style="margin-top:2.5%;">
+                                    <div class="col-sm-12">
+                                        <div class="card m-b-20">
+                                            <div class="card-body">
+                                                <% if (sortedCheckedDwgs.length != 0) { %>
+                                                    <h4 class="mt-0 header-title">Selected Assemblies</h4>
+                                                    <div class="row justify-content-center">
+                                                        <div class="col-sm-12">
+                                                            <table id="creoAsmTable" class="table table-bordered dt-responsive nowrap" style="border-collapse: collapse; border-spacing: 0; width: 100%;">
+                                                                <thead>
+                                                                <tr class="header">
+                                                                    <th style="width:100%;">Assembly</th>
+                                                                </tr>
+                                                                </thead>
+                                                                <tbody>
+                                                                <% for (var i = 0; i < asmList.length; i++) { %>
+                                                                <tr>
+                                                                    <td><input type="text" name="asmName" value="<%=asmList[i]%>" hidden="hidden" /><%=asmList[i]%></td>
+                                                                </tr>
+                                                                <% } %>
+                                                                </tbody>
+                                                            </table>
+                                                        </div>
+                                                    </div>
+                                                    <div class="row justify-content-center">
+                                                        <div class="col-sm-3">
+                                                            <input id="genButton" type="button" value="Generate All" class="btn btn-lg btn-outline-success waves-effect waves-light" onclick="document.getElementById('drawingAndBinBomForm').action = '../generateAll';document.getElementById('drawingAndBinBomForm').submit();" style="margin-bottom:1%;" />
+                                                        </div>
+                                                        <div class="col-sm-3">
+                                                            <input id="genButton" type="button" value="Generate BIN BOMs" class="btn btn-lg btn-outline-success waves-effect waves-light" onclick="document.getElementById('drawingAndBinBomForm').action = '../generateBinBoms';document.getElementById('drawingAndBinBomForm').submit();" style="margin-bottom:1%;" />
+                                                        </div>
+                                                        <div class="col-sm-3">
+                                                            <input id="genButton" type="button" value="Generate Drawings" class="btn btn-lg btn-outline-success waves-effect waves-light" onclick="document.getElementById('drawingAndBinBomForm').action = '../generateDrawings';document.getElementById('drawingAndBinBomForm').submit();" style="margin-bottom:1%;" />
+                                                        </div>
+                                                    </div>
+                                                <% } %>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            <% } %>
+
+
+                            <% if (sortedCheckedDwgs.length != 0 && binBoms.length != 0) { %>
+                                <form id="drawingAndBinBomForm" class="drawingAndBinBomForm" action="" method="POST">
+                                <div class="row" style="margin-top:2.5%;">
+                                    <div class="col-sm-6">
+                                        <div class="card m-b-20">
+                                            <div class="card-body">
+                                                <h4 class="mt-0 header-title">BIN BOMs</h4>
+                                                    <input type="text" name="CREO_workingDir" class="form-control" value="<%= workingDir %>" hidden="hidden" required/>
+                                                    <input type="text" name="CREO_outputDir" class="form-control" value="<%= outputDir %>" hidden="hidden" required/>
+                                                    <!--<input id="genButton" type="submit" value="Generate" class="btn btn-lg btn-outline-success waves-effect waves-light" onclick="this.form.action='./generateBinBoms'" style="margin-bottom:1%;" />-->
+
+                                                    <% let currentLayoutBom = 0; %>
+                                                    <% for (let layoutBom of layoutBoms) { %>
+                                                        <% currentLayoutBom += 1; %>
+                                                        <hr>
+                                                        <h5><%= layoutBom.lineup %></h5>
+                                                        <input type="hidden" value="<%=layoutBom.lineup%>" name="layoutBom">
+                                                        <input type="hidden" value="<%= layoutBom.sections%>" name="layoutSections">
+                                                        <table id="datatable" class="table table-condensed table-bordered dt-responsive nowrap">
+                                                            <thead>
+                                                            </thead>
+                                                            <tbody>
+                                                            <% if (Array.isArray(layoutBom.SS) == true) { %>
+                                                                <% if (layoutBom.SS.length != 0) { %>
+                                                                <tr data-toggle="collapse" data-target="#SS_<%=currentLayoutBom%>" class="accordion-toggle">
+                                                                    <td>
+                                                                        <span class="dripicons-checkmark icon-success"></span>
+                                                                         <%= layoutBom.lineup.slice(0,7) + layoutBom.lineup.slice(12,15) + '-SS' %>
+                                                                        <input type="text" hidden="hidden" name="title_<%= layoutBom.lineup.slice(0,7) + layoutBom.lineup.slice(12,15) + '-SS' %>" value="<%= layoutBom.lineup.slice(0,7) + layoutBom.lineup.slice(12,15) + '-SS' %>">
+                                                                        <i class="fas fa-angle-down rotate-icon"></i>
+                                                                    </td>
+                                                                </tr>
+                                                                <tr>
+                                                                    <td id="bomTD" colspan="6" class="hiddenRow">
+                                                                        <div class="accordion-body collapse in no-transition" id="SS_<%=currentLayoutBom%>">
+                                                                            <h6><%= layoutBom.lineup.slice(0,7) + layoutBom.lineup.slice(12,15) + '-SS' %></h6>
+                                                                            <table id="bomTable" align="center">
+                                                                                <thead>
+                                                                                <tr>
+                                                                                    <th style="width: 10%">Qty</th>
+                                                                                    <th style="width: 60%">Description</th>
+                                                                                    <th style="width: 30%">P/N</th>
+                                                                                </tr>
+                                                                                </thead>
+                                                                                <tbody>
+                                                                                <% for(let row of layoutBom.SS){ %>
+                                                                                <tr>
+                                                                                    <td><input type="text" hidden="hidden" name="qty_<%= layoutBom.lineup.slice(0,7) + layoutBom.lineup.slice(12,15) + '-SS' %>" value="<%=row.qty%>"><%=row.qty%></td>
+                                                                                    <td><input type="text" hidden="hidden" name="partDesc_<%= layoutBom.lineup.slice(0,7) + layoutBom.lineup.slice(12,15) + '-SS' %>" value="<%=row.partDesc%>"><%=row.partDesc%></td>
+                                                                                    <td><input type="text" hidden="hidden" name="part_<%= layoutBom.lineup.slice(0,7) + layoutBom.lineup.slice(12,15) + '-SS' %>" value="<%=row.part%>"><%=row.part%></td>
+                                                                                </tr>
+                                                                                <% } %>
+                                                                                </tbody>
+                                                                            </table>
+                                                                        </div>
+                                                                    </td>
+                                                                </tr>
+                                                                <% } %>
+                                                            <% } %>
+
+                                                            <% if (Array.isArray(layoutBom.AL) == true) { %>
+                                                                <% if (layoutBom.AL.length != 0) { %>
+                                                                <tr data-toggle="collapse" data-target="#AL_<%=currentLayoutBom%>" class="accordion-toggle">
+                                                                    <td>
+                                                                        <span class="dripicons-checkmark icon-success"></span>
+                                                                        <%= layoutBom.lineup.slice(0,7) + layoutBom.lineup.slice(12,15) + '-AL' %>
+                                                                        <input type="text" hidden="hidden" name="title_<%= layoutBom.lineup.slice(0,7) + layoutBom.lineup.slice(12,15) + '-AL' %>" value="<%= layoutBom.lineup.slice(0,7) + layoutBom.lineup.slice(12,15) + '-AL' %>">
+                                                                        <i class="fas fa-angle-down rotate-icon"></i>
+                                                                    </td>
+                                                                </tr>
+                                                                <tr>
+                                                                    <td id="bomTD" colspan="6" class="hiddenRow">
+                                                                        <div class="accordion-body collapse in no-transition" id="AL_<%=currentLayoutBom%>">
+                                                                            <h6><%= layoutBom.lineup.slice(0,7) + layoutBom.lineup.slice(12,15) + '-AL' %></h6>
+                                                                            <table id="bomTable" align="center">
+                                                                                <thead>
+                                                                                <tr>
+                                                                                    <th style="width: 10%">Qty</th>
+                                                                                    <th style="width: 60%">Description</th>
+                                                                                    <th style="width: 30%">P/N</th>
+                                                                                </tr>
+                                                                                </thead>
+                                                                                <tbody>
+                                                                                <% for(let row of layoutBom.AL){ %>
+                                                                                    <tr>
+                                                                                        <td><input type="text" hidden="hidden" name="qty_<%= layoutBom.lineup.slice(0,7) + layoutBom.lineup.slice(12,15) + '-AL' %>" value="<%=row.qty%>"><%=row.qty%></td>
+                                                                                        <td><input type="text" hidden="hidden" name="partDesc_<%= layoutBom.lineup.slice(0,7) + layoutBom.lineup.slice(12,15) + '-AL' %>" value="<%=row.partDesc%>"><%=row.partDesc%></td>
+                                                                                        <td><input type="text" hidden="hidden" name="part_<%= layoutBom.lineup.slice(0,7) + layoutBom.lineup.slice(12,15) + '-AL' %>" value="<%=row.part%>"><%=row.part%></td>
+                                                                                    </tr>
+                                                                                <% } %>
+                                                                                </tbody>
+                                                                            </table>
+                                                                        </div>
+                                                                    </td>
+                                                                </tr>
+                                                                <% } %>
+                                                            <% } %>
+
+                                                            <% if (Array.isArray(layoutBom.GA_7) == true) { %>
+                                                                <% if (layoutBom.GA_7.length != 0) { %>
+                                                                <tr data-toggle="collapse" data-target="#GA_7_<%=currentLayoutBom%>" class="accordion-toggle">
+                                                                    <td>
+                                                                        <span class="dripicons-checkmark icon-success"></span>
+                                                                        <%= layoutBom.lineup.slice(0,7) + layoutBom.lineup.slice(12,15) + '-7GA' %>
+                                                                        <input type="text" hidden="hidden" name="title_<%= layoutBom.lineup.slice(0,7) + layoutBom.lineup.slice(12,15) + '-7GA' %>" value="<%= layoutBom.lineup.slice(0,7) + layoutBom.lineup.slice(12,15) + '-7GA' %>">
+                                                                        <i class="fas fa-angle-down rotate-icon"></i>
+                                                                    </td>
+                                                                </tr>
+                                                                <tr>
+                                                                    <td id="bomTD" colspan="6" class="hiddenRow">
+                                                                        <div class="accordion-body collapse in no-transition" id="GA_7_<%=currentLayoutBom%>">
+                                                                            <h6><%= layoutBom.lineup.slice(0,7) + layoutBom.lineup.slice(12,15) + '-7GA' %></h6>
+                                                                            <table id="bomTable" align="center">
+                                                                                <thead>
+                                                                                <tr>
+                                                                                    <th style="width: 10%">Qty</th>
+                                                                                    <th style="width: 60%">Description</th>
+                                                                                    <th style="width: 30%">P/N</th>
+                                                                                </tr>
+                                                                                </thead>
+                                                                                <tbody>
+                                                                                <% for(let row of layoutBom.GA_7){ %>
+                                                                                <tr>
+                                                                                    <td><input type="text" hidden="hidden" name="qty_<%= layoutBom.lineup.slice(0,7) + layoutBom.lineup.slice(12,15) + '-7GA' %>" value="<%=row.qty%>"><%=row.qty%></td>
+                                                                                    <td><input type="text" hidden="hidden" name="partDesc_<%= layoutBom.lineup.slice(0,7) + layoutBom.lineup.slice(12,15) + '-7GA' %>" value="<%=row.partDesc%>"><%=row.partDesc%></td>
+                                                                                    <td><input type="text" hidden="hidden" name="part_<%= layoutBom.lineup.slice(0,7) + layoutBom.lineup.slice(12,15) + '-7GA' %>" value="<%=row.part%>"><%=row.part%></td>
+                                                                                </tr>
+                                                                                <% } %>
+                                                                                </tbody>
+                                                                            </table>
+                                                                        </div>
+                                                                    </td>
+                                                                </tr>
+                                                                <% } %>
+                                                            <% } %>
+
+                                                            <% if (Array.isArray(layoutBom.LEXAN) == true) { %>
+                                                                <% if (layoutBom.LEXAN.length != 0) { %>
+                                                                <tr data-toggle="collapse" data-target="#LEXAN_<%=currentLayoutBom%>" class="accordion-toggle">
+                                                                    <td>
+                                                                        <span class="dripicons-checkmark icon-success"></span>
+                                                                        <%= layoutBom.lineup.slice(0,7) + layoutBom.lineup.slice(12,15) + '-LEXAN' %>
+                                                                        <input type="text" hidden="hidden" name="title_<%= layoutBom.lineup.slice(0,7) + layoutBom.lineup.slice(12,15) + '-LEXAN' %>" value="<%= layoutBom.lineup.slice(0,7) + layoutBom.lineup.slice(12,15) + '-LEXAN' %>">
+                                                                        <i class="fas fa-angle-down rotate-icon"></i>
+                                                                    </td>
+                                                                </tr>
+                                                                <tr>
+                                                                    <td id="bomTD" colspan="6" class="hiddenRow">
+                                                                        <div class="accordion-body collapse in no-transition" id="LEXAN_<%=currentLayoutBom%>">
+                                                                            <h6><%= layoutBom.lineup.slice(0,7) + layoutBom.lineup.slice(12,15) + '-LEXAN' %></h6>
+                                                                            <table id="bomTable" align="center">
+                                                                                <thead>
+                                                                                <tr>
+                                                                                    <th style="width: 10%">Qty</th>
+                                                                                    <th style="width: 60%">Description</th>
+                                                                                    <th style="width: 30%">P/N</th>
+                                                                                </tr>
+                                                                                </thead>
+                                                                                <tbody>
+                                                                                <% for(let row of layoutBom.LEXAN){ %>
+                                                                                <tr>
+                                                                                    <td><input type="text" hidden="hidden" name="qty_<%= layoutBom.lineup.slice(0,7) + layoutBom.lineup.slice(12,15) + '-LEXAN' %>" value="<%=row.qty%>"><%=row.qty%></td>
+                                                                                    <td><input type="text" hidden="hidden" name="partDesc_<%= layoutBom.lineup.slice(0,7) + layoutBom.lineup.slice(12,15) + '-LEXAN' %>" value="<%=row.partDesc%>"><%=row.partDesc%></td>
+                                                                                    <td><input type="text" hidden="hidden" name="part_<%= layoutBom.lineup.slice(0,7) + layoutBom.lineup.slice(12,15) + '-LEXAN' %>" value="<%=row.part%>"><%=row.part%></td>
+                                                                                </tr>
+                                                                                <% } %>
+                                                                                </tbody>
+                                                                            </table>
+                                                                        </div>
+                                                                    </td>
+                                                                </tr>
+                                                                <% } %>
+                                                            <% } %>
+
+                                                            <% if (Array.isArray(layoutBom.NP) == true) { %>
+                                                                <% if (layoutBom.NP.length != 0) { %>
+                                                                <tr data-toggle="collapse" data-target="#NP_<%=currentLayoutBom%>" class="accordion-toggle">
+                                                                    <td>
+                                                                        <span class="dripicons-checkmark icon-success"></span>
+                                                                        <%= layoutBom.lineup.slice(0,7) + layoutBom.lineup.slice(12,15) + '-NP' %>
+                                                                        <i class="fas fa-angle-down rotate-icon"></i>
+                                                                    </td>
+                                                                </tr>
+                                                                <tr>
+                                                                    <td id="bomTD" colspan="6" class="hiddenRow">
+                                                                        <div class="accordion-body collapse in no-transition" id="NP_<%=currentLayoutBom%>">
+                                                                            <% let A = []; %>
+                                                                            <% let B = []; %>
+                                                                            <% let C = []; %>
+                                                                            <% let D = []; %>
+                                                                            <% for (let row of layoutBom.NP) { %>
+                                                                                <% if (row.template == 'A') { %>
+                                                                                    <% A.push(row) %>
+                                                                                <% } %>
+                                                                                <% if (row.template == 'B') { %>
+                                                                                    <% B.push(row) %>
+                                                                                <% } %>
+                                                                                <% if (row.template == 'C') { %>
+                                                                                    <% C.push(row) %>
+                                                                                <% } %>
+                                                                                <% if (row.template == 'D') { %>
+                                                                                    <% D.push(row) %>
+                                                                                <% } %>
+                                                                            <% } %>
+
+                                                                            <% if (A.length != 0) { %>
+
+                                                                                <h6><%= layoutBom.lineup.slice(0,7) + layoutBom.lineup.slice(12,15) + '-A' %></h6>
+                                                                                <input type="text" hidden="hidden" name="title_<%= layoutBom.lineup.slice(0,7) + layoutBom.lineup.slice(12,15) + '-A' %>" value="<%= layoutBom.lineup.slice(0,7) + layoutBom.lineup.slice(12,15) + '-A' %>">
+                                                                                <table id="bomTable" align="center">
+                                                                                    <thead>
+                                                                                    <tr>
+                                                                                        <th style="width: 25%">P/N</th>
+                                                                                        <th style="width: 25%">Row 1 Text</th>
+                                                                                        <th style="width: 25%">Row 2 Text</th>
+                                                                                        <th style="width: 25%">Row 3 Text</th>
+                                                                                    </tr>
+                                                                                    </thead>
+                                                                                    <tbody>
+                                                                                    <% for(let row of A){ %>
+                                                                                        <tr>
+                                                                                            <td><input type="text" hidden="hidden" name="part_<%= layoutBom.lineup.slice(0,7) + layoutBom.lineup.slice(12,15) + '-A' %>" value="<%=row.part.slice(0,15) %>"><%=row.part.slice(0,15) %></td>
+                                                                                            <td><input type="text" hidden="hidden" name="text_row1_<%= layoutBom.lineup.slice(0,7) + layoutBom.lineup.slice(12,15) + '-A' %>" value="<%=row.text_row1%>"><%=row.text_row1%></td>
+                                                                                            <td><input type="text" hidden="hidden" name="text_row2_<%= layoutBom.lineup.slice(0,7) + layoutBom.lineup.slice(12,15) + '-A' %>" value="<%=row.text_row2%>"><%=row.text_row2%></td>
+                                                                                            <td><input type="text" hidden="hidden" name="text_row3_<%= layoutBom.lineup.slice(0,7) + layoutBom.lineup.slice(12,15) + '-A' %>" value="<%=row.text_row3%>"><%=row.text_row3%></td>
+                                                                                        </tr>
+                                                                                    <% } %>
+                                                                                    </tbody>
+                                                                                </table>
+                                                                            <% } %>
+
+                                                                            <% if (B.length != 0) { %>
+                                                                                <h6><%= layoutBom.lineup.slice(0,7) + layoutBom.lineup.slice(12,15) + '-B' %></h6>
+                                                                                <input type="text" hidden="hidden" name="title_<%= layoutBom.lineup.slice(0,7) + layoutBom.lineup.slice(12,15) + '-B' %>" value="<%= layoutBom.lineup.slice(0,7) + layoutBom.lineup.slice(12,15) + '-B' %>">
+                                                                                <table id="bomTable" align="center">
+                                                                                    <thead>
+                                                                                    <tr>
+                                                                                        <th style="width: 25%">P/N</th>
+                                                                                        <th style="width: 25%">Row 1 Text</th>
+                                                                                        <th style="width: 25%">Row 2 Text</th>
+                                                                                        <th style="width: 25%">Row 3 Text</th>
+                                                                                    </tr>
+                                                                                    </thead>
+                                                                                    <tbody>
+                                                                                    <% for(let row of B){ %>
+                                                                                    <tr>
+                                                                                        <td><input type="text" hidden="hidden" name="part_<%= layoutBom.lineup.slice(0,7) + layoutBom.lineup.slice(12,15) + '-B' %>" value="<%=row.part.slice(0,15) %>"><%=row.part.slice(0,15) %></td>
+                                                                                        <td><input type="text" hidden="hidden" name="text_row1_<%= layoutBom.lineup.slice(0,7) + layoutBom.lineup.slice(12,15) + '-B' %>" value="<%=row.text_row1%>"><%=row.text_row1%></td>
+                                                                                        <td><input type="text" hidden="hidden" name="text_row2_<%= layoutBom.lineup.slice(0,7) + layoutBom.lineup.slice(12,15) + '-B' %>" value="<%=row.text_row2%>"><%=row.text_row2%></td>
+                                                                                        <td><input type="text" hidden="hidden" name="text_row3_<%= layoutBom.lineup.slice(0,7) + layoutBom.lineup.slice(12,15) + '-B' %>" value="<%=row.text_row3%>"><%=row.text_row3%></td>
+                                                                                    </tr>
+                                                                                    <% } %>
+                                                                                    </tbody>
+                                                                                </table>
+                                                                            <% } %>
+
+                                                                            <% if (C.length != 0) { %>
+                                                                                <h6><%= layoutBom.lineup.slice(0,7) + layoutBom.lineup.slice(12,15) + '-C' %></h6>
+                                                                                <input type="text" hidden="hidden" name="title_<%= layoutBom.lineup.slice(0,7) + layoutBom.lineup.slice(12,15) + '-C' %>" value="<%= layoutBom.lineup.slice(0,7) + layoutBom.lineup.slice(12,15) + '-C' %>">
+                                                                                <table id="bomTable" align="center">
+                                                                                    <thead>
+                                                                                    <tr>
+                                                                                        <th style="width: 25%">P/N</th>
+                                                                                        <th style="width: 25%">Row 1 Text</th>
+                                                                                        <th style="width: 25%">Row 2 Text</th>
+                                                                                        <th style="width: 25%">Row 3 Text</th>
+                                                                                    </tr>
+                                                                                    </thead>
+                                                                                    <tbody>
+                                                                                    <% for(let row of C){ %>
+                                                                                    <tr>
+                                                                                        <td><input type="text" hidden="hidden" name="part_<%= layoutBom.lineup.slice(0,7) + layoutBom.lineup.slice(12,15) + '-C' %>" value="<%=row.part.slice(0,15) %>"><%=row.part.slice(0,15) %></td>
+                                                                                        <td><input type="text" hidden="hidden" name="text_row1_<%= layoutBom.lineup.slice(0,7) + layoutBom.lineup.slice(12,15) + '-C' %>" value="<%=row.text_row1%>"><%=row.text_row1%></td>
+                                                                                        <td><input type="text" hidden="hidden" name="text_row2_<%= layoutBom.lineup.slice(0,7) + layoutBom.lineup.slice(12,15) + '-C' %>" value="<%=row.text_row2%>"><%=row.text_row2%></td>
+                                                                                        <td><input type="text" hidden="hidden" name="text_row3_<%= layoutBom.lineup.slice(0,7) + layoutBom.lineup.slice(12,15) + '-C' %>" value="<%=row.text_row3%>"><%=row.text_row3%></td>
+                                                                                    </tr>
+                                                                                    <% } %>
+                                                                                    </tbody>
+                                                                                </table>
+                                                                            <% } %>
+
+                                                                            <% if (D.length != 0) { %>
+                                                                                <h6><%= layoutBom.lineup.slice(0,7) + layoutBom.lineup.slice(12,15) + '-D' %></h6>
+                                                                                <input type="text" hidden="hidden" name="title_<%= layoutBom.lineup.slice(0,7) + layoutBom.lineup.slice(12,15) + '-D' %>" value="<%= layoutBom.lineup.slice(0,7) + layoutBom.lineup.slice(12,15) + '-D' %>">
+                                                                                <table id="bomTable" align="center">
+                                                                                    <thead>
+                                                                                    <tr>
+                                                                                        <th style="width: 25%">P/N</th>
+                                                                                        <th style="width: 25%">Row 1 Text</th>
+                                                                                        <th style="width: 25%">Row 2 Text</th>
+                                                                                        <th style="width: 25%">Row 3 Text</th>
+                                                                                    </tr>
+                                                                                    </thead>
+                                                                                    <tbody>
+                                                                                    <% for(let row of D){ %>
+                                                                                    <tr>
+                                                                                        <td><input type="text" hidden="hidden" name="part_<%= layoutBom.lineup.slice(0,7) + layoutBom.lineup.slice(12,15) + '-D' %>" value="<%=row.part.slice(0,15) %>"><%=row.part.slice(0,15) %></td>
+                                                                                        <td><input type="text" hidden="hidden" name="text_row1_<%= layoutBom.lineup.slice(0,7) + layoutBom.lineup.slice(12,15) + '-D' %>" value="<%=row.text_row1%>"><%=row.text_row1%></td>
+                                                                                        <td><input type="text" hidden="hidden" name="text_row2_<%= layoutBom.lineup.slice(0,7) + layoutBom.lineup.slice(12,15) + '-D' %>" value="<%=row.text_row2%>"><%=row.text_row2%></td>
+                                                                                        <td><input type="text" hidden="hidden" name="text_row3_<%= layoutBom.lineup.slice(0,7) + layoutBom.lineup.slice(12,15) + '-D' %>" value="<%=row.text_row3%>"><%=row.text_row3%></td>
+                                                                                    </tr>
+                                                                                    <% } %>
+                                                                                    </tbody>
+                                                                                </table>
+                                                                            <% } %>
+                                                                        </div>
+                                                                    </td>
+                                                                </tr>
+                                                                <% } %>
+                                                            <% } %>
+                                                            </tbody>
+                                                        </table>
+                                                        <% let currentBom = 0; %>
+                                                        <% for (let binBom of binBoms) { %>
+                                                            <% if (layoutBom.sections.includes(binBom.section)) { %>
+                                                                <% currentBom += 1; %>
+                                                                <h5><%= 'SECTION ' + binBom.section %></h5>
+                                                                <input type="hidden" value="<%=layoutBom.lineup.slice(0,7) + binBom.section %>" name="binBomSection">
+                                                                <table id="datatable" class="table table-condensed table-bordered dt-responsive nowrap">
+                                                                    <thead>
+                                                                    </thead>
+                                                                    <tbody>
+                                                                    <% if (Array.isArray(binBom.PUR) == true) { %>
+                                                                        <input type="text" hidden="hidden" name="binTracker_PUR_<%=layoutBom.lineup.slice(0,7) + binBom.section %>" value="<%=layoutBom.lineup.slice(0,7) + binBom.section + '-PUR' %>">
+                                                                        <% let message = 'OK'; %>
+                                                                        <% for(let row of binBom.PUR){ %>
+                                                                            <% if (row.partNum.slice(0,6) == '999999') { %>
+                                                                                <% message = 'Missing HDW part number' %>
+                                                                            <% } %>
+                                                                            <% if (row.partNum == '') { %>
+                                                                                <% message = 'Part number does not exist' %>
+                                                                            <% } %>
+                                                                        <% } %>
+
+                                                                        <tr data-toggle="collapse" data-target="#PUR_<%=currentLayoutBom%>_<%=currentBom%>" class="accordion-toggle">
+                                                                            <% if (message != 'OK') { %>
+                                                                            <td>
+                                                                                <span class="dripicons-warning icon-danger"></span>
+                                                                                 <%= binBom.section + '-PUR' %>
+                                                                                <i class="fas fa-angle-down rotate-icon"></i>
+                                                                            </td>
+                                                                            <% } else { %>
+                                                                            <td>
+                                                                                <span class="dripicons-checkmark icon-success"></span>
+                                                                                <%= binBom.section + '-PUR' %>
+                                                                                <i class="fas fa-angle-down rotate-icon"></i>
+                                                                            </td>
+                                                                            <% } %>
+                                                                        </tr>
+                                                                        <tr>
+                                                                            <td id="bomTD" colspan="6" class="hiddenRow">
+                                                                                <div class="accordion-body collapse in no-transition" id="PUR_<%=currentLayoutBom%>_<%=currentBom%>">
+                                                                                    <input type="text" hidden="hidden" name="title_<%=layoutBom.lineup.slice(0,7) + binBom.section + '-PUR' %>" value="<%=layoutBom.lineup.slice(0,7) + binBom.section + '-PUR' %>">
+                                                                                    <h6><%= binBom.section + '-PUR' %></h6>
+                                                                                    <table id="bomTable" align="center">
+                                                                                        <thead>
+                                                                                        <tr>
+                                                                                            <th style="width: 10%">Qty</th>
+                                                                                            <th style="width: 60%">Description</th>
+                                                                                            <th style="width: 30%">P/N</th>
+                                                                                            <th style="display: none;"></th>
+                                                                                        </tr>
+                                                                                        </thead>
+                                                                                        <tbody>
+                                                                                        <% for(let row of binBom.PUR){ %>
+                                                                                            <% if (row.partNum.slice(0,6) == '999999') { %>
+                                                                                            <tr>
+                                                                                                <td><input type="text" hidden="hidden" name="qty_<%=layoutBom.lineup.slice(0,7) + binBom.section + '-PUR' %>" value="<%=row.qty%>"><%=row.qty%></td>
+                                                                                                <td><input type="text" hidden="hidden" name="partDesc_<%=layoutBom.lineup.slice(0,7) + binBom.section + '-PUR' %>" value="<%=row.partDesc%>"><%=row.partDesc%></td>
+                                                                                                <td><input type="text" hidden="hidden" name="partNum_<%=layoutBom.lineup.slice(0,7) + binBom.section + '-PUR' %>" value="<%=row.partNum%>"><span class="dripicons-warning icon-danger" data-toggle="tooltip" data-placement="bottom" title="Missing HDW part number"></span> <%=row.partNum%></td>
+                                                                                                <td style="display:none;"><input type="text" hidden="hidden" name="weight_<%=layoutBom.lineup.slice(0,7) + binBom.section + '-PUR' %>" value="<%=row.weight%>"><%=row.weight%></td>
+                                                                                            </tr>
+                                                                                            <% } else if (row.partNum == '') { %>
+                                                                                            <tr>
+                                                                                                <td><input type="text" hidden="hidden" name="qty_<%=layoutBom.lineup.slice(0,7) + binBom.section + '-PUR' %>" value="<%=row.qty%>"><%=row.qty%></td>
+                                                                                                <td><input type="text" hidden="hidden" name="partDesc_<%=layoutBom.lineup.slice(0,7) + binBom.section + '-PUR' %>" value="<%=row.partDesc%>"><%=row.partDesc%></td>
+                                                                                                <td><input type="text" hidden="hidden" name="partNum_<%=layoutBom.lineup.slice(0,7) + binBom.section + '-PUR' %>" value="<%=row.partNum%>"><span class="dripicons-warning icon-danger" data-toggle="tooltip" data-placement="bottom" title="Part number does not exist"></span> <%=row.partNum%></td>
+                                                                                                <td style="display:none;"><input type="text" hidden="hidden" name="weight<%=layoutBom.lineup.slice(0,7) + binBom.section + '-PUR' %>" value="<%=row.partNum%>"><%=row.weight%></td>
+                                                                                            </tr>
+                                                                                            <% } else { %>
+                                                                                            <tr>
+                                                                                                <td><input type="text" hidden="hidden" name="qty_<%=layoutBom.lineup.slice(0,7) + binBom.section + '-PUR' %>" value="<%=row.qty%>"><%=row.qty%></td>
+                                                                                                <td><input type="text" hidden="hidden" name="partDesc_<%=layoutBom.lineup.slice(0,7) + binBom.section + '-PUR' %>" value="<%=row.partDesc%>"><%=row.partDesc%></td>
+                                                                                                <td><input type="text" hidden="hidden" name="partNum_<%=layoutBom.lineup.slice(0,7) + binBom.section + '-PUR' %>" value="<%=row.partNum%>"><%=row.partNum%></td>
+                                                                                                <td style="display:none;"><input type="text" hidden="hidden" name="weight_<%=layoutBom.lineup.slice(0,7) + binBom.section + '-PUR' %>" value="<%=row.weight%>"><%=row.weight%></td>
+                                                                                            </tr>
+                                                                                            <% } %>
+                                                                                        <% } %>
+                                                                                        </tbody>
+                                                                                    </table>
+                                                                                </div>
+                                                                            </td>
+                                                                        </tr>
+                                                                    <% } else { %>
+                                                                        <tr style="background-color: #e8e8e8;">
+                                                                            <input type="text" hidden="hidden" name="binTracker_PUR_<%=layoutBom.lineup.slice(0,7) + binBom.section %>" value="<%= layoutBom.lineup.slice(0,7) + binBom.PUR + '-PUR' %>">
+                                                                            <td><%= binBom.PUR + '-PUR' %></td>
+                                                                        </tr>
+                                                                    <% } %>
+
+
+                                                                    <% if (Array.isArray(binBom.STR) == true) { %>
+                                                                        <% if (binBom.STR.length != 0) { %>
+                                                                            <input type="text" hidden="hidden" name="binTracker_STR_<%=layoutBom.lineup.slice(0,7) + binBom.section %>" value="<%=layoutBom.lineup.slice(0,7) + binBom.section + '-STR' %>">
+                                                                            <tr data-toggle="collapse" data-target="#STR_<%=currentLayoutBom%>_<%=currentBom%>" class="accordion-toggle">
+                                                                                <td>
+                                                                                    <span class="dripicons-checkmark icon-success"></span>
+                                                                                    <%= binBom.section + '-STR' %>
+                                                                                    <i class="fas fa-angle-down rotate-icon"></i>
+                                                                                </td>
+                                                                            </tr>
+                                                                            <tr>
+                                                                                <td id="bomTD" colspan="6" class="hiddenRow">
+                                                                                    <div class="accordion-body collapse in no-transition" id="STR_<%=currentLayoutBom%>_<%=currentBom%>">
+                                                                                        <input type="text" hidden="hidden" name="title_<%=layoutBom.lineup.slice(0,7) + binBom.section + '-STR' %>" value="<%=layoutBom.lineup.slice(0,7) + binBom.section + '-STR' %>">
+                                                                                        <h6><%= binBom.section + '-STR' %></h6>
+                                                                                        <table id="bomTable" align="center">
+                                                                                            <thead>
+                                                                                            <tr>
+                                                                                                <th style="width: 10%">Qty</th>
+                                                                                                <th style="width: 60%">Description</th>
+                                                                                                <th style="width: 30%">P/N</th>
+                                                                                                <th style="display:none;"></th>
+                                                                                            </tr>
+                                                                                            </thead>
+                                                                                            <tbody>
+                                                                                            <% for(let row of binBom.STR){ %>
+                                                                                            <tr>
+                                                                                                <td><input type="text" hidden="hidden" name="qty_<%=layoutBom.lineup.slice(0,7) + binBom.section + '-STR' %>" value="<%=row.qty%>"><%=row.qty%></td>
+                                                                                                <td><input type="text" hidden="hidden" name="partDesc_<%=layoutBom.lineup.slice(0,7) + binBom.section + '-STR' %>" value="<%=row.partDesc%>"><%=row.partDesc%></td>
+                                                                                                <td><input type="text" hidden="hidden" name="part_<%=layoutBom.lineup.slice(0,7) + binBom.section + '-STR' %>" value="<%=row.part.slice(0,15) %>"><%= row.part.slice(0,15) %></td>
+                                                                                                <td style="display:none;"><input type="text" hidden="hidden" name="weight_<%=layoutBom.lineup.slice(0,7) + binBom.section + '-STR' %>" value="<%=row.weight %>"><%=row.weight%></td>
+                                                                                            </tr>
+                                                                                            <% } %>
+                                                                                            </tbody>
+                                                                                        </table>
+                                                                                    </div>
+                                                                                </td>
+                                                                            </tr>
+                                                                        <% } %>
+                                                                    <% } else { %>
+                                                                        <tr style="background-color: #e8e8e8;">
+                                                                            <td>
+                                                                                <input type="text" hidden="hidden" name="binTracker_STR_<%=layoutBom.lineup.slice(0,7) + binBom.section %>" value="<%= layoutBom.lineup.slice(0,7) +  binBom.STR + '-STR' %>">
+                                                                                <%= binBom.STR + '-STR' %></td>
+                                                                        </tr>
+                                                                    <% } %>
+
+                                                                    <% if (Array.isArray(binBom.PNL) == true) { %>
+                                                                        <% if (binBom.PNL.length != 0) { %>
+                                                                        <input type="text" hidden="hidden" name="binTracker_PNL_<%=layoutBom.lineup.slice(0,7) + binBom.section %>" value="<%=layoutBom.lineup.slice(0,7) + binBom.section + '-PNL' %>">
+                                                                        <tr data-toggle="collapse" data-target="#PNL_<%=currentLayoutBom%>_<%=currentBom%>" class="accordion-toggle">
+                                                                            <td>
+                                                                                <span class="dripicons-checkmark icon-success"></span>
+                                                                                <%= binBom.section + '-PNL' %>
+                                                                                <i class="fas fa-angle-down rotate-icon"></i>
+                                                                            </td>
+                                                                        </tr>
+                                                                        <tr>
+                                                                            <td id="bomTD" colspan="6" class="hiddenRow">
+                                                                                <div class="accordion-body collapse in no-transition" id="PNL_<%=currentLayoutBom%>_<%=currentBom%>">
+                                                                                    <input type="text" hidden="hidden" name="title_<%=layoutBom.lineup.slice(0,7) + binBom.section + '-PNL' %>" value="<%=layoutBom.lineup.slice(0,7) + binBom.section + '-PNL' %>">
+                                                                                    <h6><%= binBom.section + '-PNL' %></h6>
+                                                                                    <table id="bomTable" align="center">
+                                                                                        <thead>
+                                                                                        <tr>
+                                                                                            <th style="width: 10%">Qty</th>
+                                                                                            <th style="width: 60%">Description</th>
+                                                                                            <th style="width: 30%">P/N</th>
+                                                                                            <th style="display:none;"></th>
+                                                                                        </tr>
+                                                                                        </thead>
+                                                                                        <tbody>
+                                                                                        <% for(let row of binBom.PNL){ %>
+                                                                                        <tr>
+                                                                                            <td><input type="text" hidden="hidden" name="qty_<%=layoutBom.lineup.slice(0,7) + binBom.section + '-PNL' %>" value="<%=row.qty%>"><%=row.qty%></td>
+                                                                                            <td><input type="text" hidden="hidden" name="partDesc_<%=layoutBom.lineup.slice(0,7) + binBom.section + '-PNL' %>" value="<%=row.partDesc%>"><%=row.partDesc%></td>
+                                                                                            <td><input type="text" hidden="hidden" name="part_<%=layoutBom.lineup.slice(0,7) + binBom.section + '-PNL' %>" value="<%=row.part.slice(0,15)%>"><%= row.part.slice(0,15) %></td>
+                                                                                            <td style="display:none;"><input type="text" hidden="hidden" name="weight_<%=layoutBom.lineup.slice(0,7) + binBom.section + '-PNL' %>" value="<%=row.weight%>"><%=row.weight%></td>
+                                                                                        </tr>
+                                                                                        <% } %>
+                                                                                        </tbody>
+                                                                                    </table>
+                                                                                </div>
+                                                                            </td>
+                                                                        </tr>
+                                                                        <% } %>
+                                                                    <% } else { %>
+                                                                        <tr style="background-color: #e8e8e8;">
+                                                                            <input type="text" hidden="hidden" name="binTracker_PNL_<%=layoutBom.lineup.slice(0,7) + binBom.section %>" value="<%= layoutBom.lineup.slice(0,7) + binBom.PNL + '-PNL' %>">
+                                                                            <td><%= binBom.PNL + '-PNL' %></td>
+                                                                        </tr>
+                                                                    <% } %>
+
+
+                                                                    <% if (Array.isArray(binBom.CTL) == true) { %>
+                                                                        <% if (binBom.CTL.length != 0) { %>
+                                                                            <input type="text" hidden="hidden" name="binTracker_CTL_<%=layoutBom.lineup.slice(0,7) + binBom.section %>" value="<%=layoutBom.lineup.slice(0,7) + binBom.section + '-CTL' %>">
+                                                                            <tr data-toggle="collapse" data-target="#CTL_<%=currentLayoutBom%>_<%=currentBom%>" class="accordion-toggle">
+                                                                                <td>
+                                                                                    <span class="dripicons-checkmark icon-success"></span>
+                                                                                    <%= binBom.section + '-CTL' %>
+                                                                                    <i class="fas fa-angle-down rotate-icon"></i>
+                                                                                </td>
+                                                                            </tr>
+                                                                            <tr>
+                                                                                <td id="bomTD" colspan="6" class="hiddenRow">
+                                                                                    <div class="accordion-body collapse in no-transition" id="CTL_<%=currentLayoutBom%>_<%=currentBom%>">
+                                                                                        <input type="text" hidden="hidden" name="title_<%=layoutBom.lineup.slice(0,7) + binBom.section + '-CTL' %>" value="<%=layoutBom.lineup.slice(0,7) + binBom.section + '-CTL' %>">
+                                                                                        <h6><%= binBom.section + '-CTL' %></h6>
+                                                                                        <table id="bomTable" align="center">
+                                                                                            <thead>
+                                                                                            <tr>
+                                                                                                <th style="width: 10%">Qty</th>
+                                                                                                <th style="width: 60%">Description</th>
+                                                                                                <th style="width: 30%">P/N</th>
+                                                                                                <th style="display:none;"></th>
+                                                                                            </tr>
+                                                                                            </thead>
+                                                                                            <tbody>
+                                                                                            <% for(let row of binBom.CTL){ %>
+                                                                                            <tr>
+                                                                                                <td><input type="text" hidden="hidden" name="qty_<%=layoutBom.lineup.slice(0,7) + binBom.section + '-CTL' %>" value="<%=row.qty%>"><%=row.qty%></td>
+                                                                                                <td><input type="text" hidden="hidden" name="partDesc_<%=layoutBom.lineup.slice(0,7) + binBom.section + '-CTL' %>" value="<%=row.partDesc%>"><%=row.partDesc%></td>
+                                                                                                <td><input type="text" hidden="hidden" name="part_<%=layoutBom.lineup.slice(0,7) + binBom.section + '-CTL' %>" value="<%=row.part.slice(0,15)%>"><%= row.part.slice(0,15) %></td>
+                                                                                                <td style="display:none;"><input type="text" hidden="hidden" name="weight_<%=layoutBom.lineup.slice(0,7) + binBom.section + '-CTL' %>" value="<%=row.weight%>"><%=row.weight%></td>
+                                                                                            </tr>
+                                                                                            <% } %>
+                                                                                            </tbody>
+                                                                                        </table>
+                                                                                    </div>
+                                                                                </td>
+                                                                            </tr>
+                                                                        <% } %>
+                                                                    <% } else { %>
+                                                                        <tr style="background-color: #e8e8e8;">
+                                                                            <input type="text" hidden="hidden" name="binTracker_CTL_<%=layoutBom.lineup.slice(0,7) + binBom.section %>" value="<%=layoutBom.lineup.slice(0,7) + binBom.CTL + '-CTL' %>">
+                                                                            <td><%= binBom.CTL + '-CTL' %></td>
+                                                                        </tr>
+                                                                    <% } %>
+
+                                                                    <% if (Array.isArray(binBom.INT) == true) { %>
+                                                                        <% if (binBom.INT.length != 0) { %>
+                                                                            <input type="text" hidden="hidden" name="binTracker_INT_<%=layoutBom.lineup.slice(0,7) + binBom.section %>" value="<%=layoutBom.lineup.slice(0,7) + binBom.section + '-INT' %>">
+                                                                            <tr data-toggle="collapse" data-target="#INT_<%=currentLayoutBom%>_<%=currentBom%>" class="accordion-toggle">
+                                                                                <td>
+                                                                                    <span class="dripicons-checkmark icon-success"></span>
+                                                                                    <%= binBom.section + '-INT' %>
+                                                                                    <i class="fas fa-angle-down rotate-icon"></i>
+                                                                                </td>
+                                                                            </tr>
+                                                                            <tr>
+                                                                                <td id="bomTD" colspan="6" class="hiddenRow">
+                                                                                    <div class="accordion-body collapse in no-transition" id="INT_<%=currentLayoutBom%>_<%=currentBom%>">
+                                                                                        <input type="text" hidden="hidden" name="title_<%=layoutBom.lineup.slice(0,7) + binBom.section + '-INT' %>" value="<%=layoutBom.lineup.slice(0,7) + binBom.section + '-INT' %>">
+                                                                                        <h6><%= binBom.section + '-INT' %></h6>
+                                                                                        <table id="bomTable" align="center">
+                                                                                            <thead>
+                                                                                            <tr>
+                                                                                                <th style="width: 10%">Qty</th>
+                                                                                                <th style="width: 60%">Description</th>
+                                                                                                <th style="width: 30%">P/N</th>
+                                                                                                <th style="display:none;"></th>
+                                                                                            </tr>
+                                                                                            </thead>
+                                                                                            <tbody>
+                                                                                            <% for(let row of binBom.INT){ %>
+                                                                                            <tr>
+                                                                                                <td><input type="text" hidden="hidden" name="qty_<%=layoutBom.lineup.slice(0,7) + binBom.section + '-INT' %>" value="<%=row.qty%>"><%=row.qty%></td>
+                                                                                                <td><input type="text" hidden="hidden" name="partDesc_<%=layoutBom.lineup.slice(0,7) + binBom.section + '-INT' %>" value="<%=row.partDesc%>"><%=row.partDesc%></td>
+                                                                                                <td><input type="text" hidden="hidden" name="part_<%=layoutBom.lineup.slice(0,7) + binBom.section + '-INT' %>" value="<%=row.part.slice(0,15)%>"><%= row.part.slice(0,15) %></td>
+                                                                                                <td style="display:none;"><input type="text" hidden="hidden" name="weight_<%=layoutBom.lineup.slice(0,7) + binBom.section + '-INT' %>" value="<%=row.weight%>"><%= row.weight%></td>
+                                                                                            </tr>
+                                                                                            <% } %>
+                                                                                            </tbody>
+                                                                                        </table>
+                                                                                    </div>
+                                                                                </td>
+                                                                            </tr>
+                                                                        <% } %>
+                                                                    <% } else { %>
+                                                                        <tr style="background-color: #e8e8e8;">
+                                                                            <input type="text" hidden="hidden" name="binTracker_INT_<%=layoutBom.lineup.slice(0,7) + binBom.section %>" value="<%= layoutBom.lineup.slice(0,7) + binBom.INT + '-INT' %>">
+                                                                            <td><%= binBom.INT + '-INT' %></td>
+                                                                        </tr>
+                                                                    <% } %>
+
+                                                                    <% if (Array.isArray(binBom.EXT) == true) { %>
+                                                                        <% if (binBom.EXT.length != 0) { %>
+                                                                        <input type="text" hidden="hidden" name="binTracker_EXT_<%=layoutBom.lineup.slice(0,7) + binBom.section %>" value="<%=layoutBom.lineup.slice(0,7) + binBom.section + '-EXT' %>">
+                                                                            <tr data-toggle="collapse" data-target="#EXT_<%=currentLayoutBom%>_<%=currentBom%>" class="accordion-toggle">
+                                                                                <td>
+                                                                                    <span class="dripicons-checkmark icon-success"></span>
+                                                                                    <%= binBom.section + '-EXT' %>
+                                                                                    <i class="fas fa-angle-down rotate-icon"></i>
+                                                                                </td>
+                                                                            </tr>
+                                                                            <tr>
+                                                                                <td id="bomTD" colspan="6" class="hiddenRow">
+                                                                                    <div class="accordion-body collapse in no-transition" id="EXT_<%=currentLayoutBom%>_<%=currentBom%>">
+                                                                                        <input type="text" hidden="hidden" name="title_<%=layoutBom.lineup.slice(0,7) + binBom.section + '-EXT' %>" value="<%=layoutBom.lineup.slice(0,7) + binBom.section + '-EXT' %>">
+                                                                                        <h6><%= binBom.section + '-EXT' %></h6>
+                                                                                        <table id="bomTable" align="center">
+                                                                                            <thead>
+                                                                                            <tr>
+                                                                                                <th style="width: 10%">Qty</th>
+                                                                                                <th style="width: 60%">Description</th>
+                                                                                                <th style="width: 30%">P/N</th>
+                                                                                                <th style="display:none;"></th>
+                                                                                            </tr>
+                                                                                            </thead>
+                                                                                            <tbody>
+                                                                                            <% for(let row of binBom.EXT){ %>
+                                                                                            <tr>
+                                                                                                <td><input type="text" hidden="hidden" name="qty_<%=layoutBom.lineup.slice(0,7) + binBom.section + '-EXT' %>" value="<%=row.qty%>"><%=row.qty%></td>
+                                                                                                <td><input type="text" hidden="hidden" name="partDesc_<%=layoutBom.lineup.slice(0,7) + binBom.section + '-EXT' %>" value="<%=row.partDesc%>"><%=row.partDesc%></td>
+                                                                                                <td><input type="text" hidden="hidden" name="part_<%=layoutBom.lineup.slice(0,7) + binBom.section + '-EXT' %>" value="<%=row.part.slice(0,15)%>"><%= row.part.slice(0,15) %></td>
+                                                                                                <td style="display:none;"><input type="text" hidden="hidden" name="weight_<%=layoutBom.lineup.slice(0,7) + binBom.section + '-EXT' %>" value="<%=row.weight%>"><%= row.weight%></td>
+                                                                                            </tr>
+                                                                                            <% } %>
+                                                                                            </tbody>
+                                                                                        </table>
+                                                                                    </div>
+                                                                                </td>
+                                                                            </tr>
+                                                                        <% } %>
+                                                                    <% } else { %>
+                                                                        <tr style="background-color: #e8e8e8;">
+                                                                            <input type="text" hidden="hidden" name="binTracker_EXT_<%=layoutBom.lineup.slice(0,7) + binBom.section %>" value="<%= layoutBom.lineup.slice(0,7) + binBom.EXT + '-EXT' %>">
+                                                                            <td><%= binBom.EXT + '-EXT' %></td>
+                                                                        </tr>
+                                                                    <% } %>
+
+                                                                    <% if (Array.isArray(binBom.SCL) == true) { %>
+                                                                        <% if (binBom.SCL.length != 0) { %>
+                                                                        <input type="text" hidden="hidden" name="binTracker_SCL_<%=layoutBom.lineup.slice(0,7) + binBom.section %>" value="<%=layoutBom.lineup.slice(0,7) + binBom.section + '-SCL' %>">
+                                                                            <tr data-toggle="collapse" data-target="#SCL_<%=currentLayoutBom%>_<%=currentBom%>" class="accordion-toggle">
+                                                                                <td>
+                                                                                    <span class="dripicons-checkmark icon-success"></span>
+                                                                                    <%= binBom.section + '-SCL' %>
+                                                                                    <i class="fas fa-angle-down rotate-icon"></i>
+                                                                                </td>
+                                                                            </tr>
+                                                                            <tr>
+                                                                                <td id="bomTD" colspan="6" class="hiddenRow">
+                                                                                    <div class="accordion-body collapse in no-transition" id="SCL_<%=currentLayoutBom%>_<%=currentBom%>">
+                                                                                        <input type="text" hidden="hidden" name="title_<%=layoutBom.lineup.slice(0,7) + binBom.section + '-SCL' %>" value="<%=layoutBom.lineup.slice(0,7) + binBom.section + '-SCL' %>">
+                                                                                        <h6><%= binBom.section + '-SCL' %></h6>
+                                                                                        <table id="bomTable" align="center">
+                                                                                            <thead>
+                                                                                            <tr>
+                                                                                                <th style="width: 10%">Qty</th>
+                                                                                                <th style="width: 60%">Description</th>
+                                                                                                <th style="width: 30%">P/N</th>
+                                                                                                <th style="display:none;"></th>
+                                                                                                <th style="display:none;"></th>
+                                                                                            </tr>
+                                                                                            </thead>
+                                                                                            <tbody>
+                                                                                            <% for(let row of binBom.SCL){ %>
+                                                                                            <tr>
+                                                                                                <td><input type="text" hidden="hidden" name="qty_<%=layoutBom.lineup.slice(0,7) + binBom.section + '-SCL' %>" value="<%=row.qty%>"><%=row.qty%></td>
+                                                                                                <td><input type="text" hidden="hidden" name="partDesc_<%=layoutBom.lineup.slice(0,7) + binBom.section + '-SCL' %>" value="<%=row.partDesc%>"><%=row.partDesc%></td>
+                                                                                                <td><input type="text" hidden="hidden" name="part_<%=layoutBom.lineup.slice(0,7) + binBom.section + '-SCL' %>" value="<%=row.part.slice(0,15)%>"><%= row.part.slice(0,15) %></td>
+                                                                                                <td style="display:none;"><input type="text" hidden="hidden" name="weight_<%=layoutBom.lineup.slice(0,7) + binBom.section + '-SCL' %>" value="<%=row.weight%>"><%=row.weight%></td>
+                                                                                                <td style="display:none;"><input type="text" hidden="hidden" name="cutLength_<%=layoutBom.lineup.slice(0,7) + binBom.section + '-SCL' %>" value="<%=row.cutLength%>"><%=row.cutLength%></td>
+                                                                                            </tr>
+                                                                                            <% } %>
+                                                                                            </tbody>
+                                                                                        </table>
+                                                                                    </div>
+                                                                                </td>
+                                                                            </tr>
+                                                                        <% } %>
+                                                                    <% } else { %>
+                                                                        <tr style="background-color: #e8e8e8;">
+                                                                            <input type="text" hidden="hidden" name="binTracker_SCL_<%=layoutBom.lineup.slice(0,7) + binBom.section %>" value="<%= layoutBom.lineup.slice(0,7) + binBom.SCL + '-SCL' %>">
+                                                                            <td><%= binBom.SCL + '-SCL' %></td>
+                                                                        </tr>
+                                                                    <% } %>
+                                                                    </tbody>
+                                                                </table>
+                                                            <% } %>
+                                                        <% } %>
+                                                    <% } %>
+                                                <!--</form>-->
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-sm-6">
+                                        <div class="card m-b-20">
+                                            <div class="card-body">
+                                                <h4 class="mt-0 header-title">Drawings</h4>
+                                                    <!--<input id="genButton" type="submit" value="Generate" class="btn btn-lg btn-outline-success waves-effect waves-light" onclick="this.form.action='./generateDrawings'" style="margin-bottom:1%;" />-->
+                                                    <div class="checkBoxes">
+                                                        <div class="row justify-content-center">
+                                                                <div class="form-check" style="margin-left:5%">
+                                                                    <label><input class="form-check-input checkAllSteel" id="checkAllSteel" type="checkbox">Steel</label>
+                                                                </div>
+                                                                <div class="form-check" style="margin-left:5%">
+                                                                    <label><input class="form-check-input checkAllCopper" id="checkAllCopper" type="checkbox">Copper</label>
+                                                                </div>
+                                                                <div class="form-check" style="margin-left:5%">
+                                                                    <label><input class="form-check-input checkAllGlastic" id="checkAllGlastic" type="checkbox">Glastic</label>
+                                                                </div>
+                                                                <div class="form-check" style="margin-left:5%">
+                                                                    <label><input class="form-check-input checkAllNameplate" id="checkAllNameplate" type="checkbox">NP</label>
+                                                                </div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="row justify-content-center">
+                                                        <div class="col-sm-12">
+                                                            <table id="creoDrawingTable" class="table table-bordered dt-responsive nowrap" style="border-collapse: collapse; border-spacing: 0; width: 100%;">
+                                                                <thead>
+                                                                <tr class="header">
+                                                                    <th style="width:70%;">Drawing</th>
+                                                                    <th style="width:15%;">PDF</th>
+                                                                    <th style="width:15%;">DXF</th>
+                                                                </tr>
+                                                                </thead>
+                                                                <tbody>
+                                                                <% let stdNamplates = []; %>
+                                                                <% for (let layoutBom of layoutBoms) { %>
+                                                                    <% for (let row of layoutBom.NP) { %>
+                                                                        <% if (row.template == 'A' || row.template == 'B' || row.template == 'C' || row.template == 'D') { %>
+                                                                            <% stdNamplates.push(row.part.slice(0,15)) %>
+                                                                        <% } %>
+                                                                    <% } %>
+                                                                <% } %>
+
+                                                                <% for (var i = 0; i < sortedCheckedDwgs.length; i++) { %>
+                                                                    <% let part = sortedCheckedDwgs[i].drawing.slice(0,15); %>
+                                                                    <% if (stdNamplates.includes(part) == false) { %>
+                                                                        <tr>
+                                                                            <td>
+                                                                                <input type="text" name="drawingName" value="<%= sortedCheckedDwgs[i].drawing%>" hidden="hidden" />
+                                                                                <% if (sortedCheckedDwgs[i].message == 'OK') { %>
+                                                                                <span class="dripicons-checkmark icon-success" data-toggle="tooltip" data-placement="bottom" title="<%=sortedCheckedDwgs[i].message%>"></span> <%=sortedCheckedDwgs[i].drawing%>
+                                                                                <% } else { %>
+                                                                                <span class="dripicons-warning icon-danger" data-toggle="tooltip" data-placement="bottom" title="<%=sortedCheckedDwgs[i].message%>"></span> <%=sortedCheckedDwgs[i].drawing%>
+                                                                                <% } %>
+                                                                            </td>
+                                                                            <td><input type="hidden" value="0" name="pdfCheck"><input class="form-check-input pdfCheck" type="checkbox" id="PDF_<%=sortedCheckedDwgs[i].drawing%>" onclick="this.previousSibling.value=1-this.previousSibling.value" style="margin-left:5%; margin-top:-1%;"></td>
+                                                                            <td><input type="hidden" value="0" name="dxfCheck"><input class="form-check-input dxfCheck" type="checkbox" id="DXF_<%=sortedCheckedDwgs[i].drawing%>" onclick="this.previousSibling.value=1-this.previousSibling.value" style="margin-left:5%; margin-top:-1%;"></td>
+                                                                        </tr>
+                                                                    <% } %>
+                                                                <% } %>
+                                                                </tbody>
+                                                            </table>
+                                                        </div>
+                                                    </div>
+                                                    <input type="text" value="<%=sortedCheckedDwgs.length%>" name="drawingCount" hidden="hidden" />
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                </form>
+                            <% } %>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div> <!-- content-page -->
+<footer class="footer">
+    © 2019 SAI, Advanced Power Solutions Inc.
+</footer>
+</div> <!-- wrapper -->
+
+
+<!-- Responsive-table-->
+<script src="/public/plugins/RWD-Table-Patterns/dist/js/rwd-table.min.js"></script>
+<script>
+    $(function() {
+        $('.table-responsive').responsiveTable({
+            addDisplayAllBtn: 'btn btn-secondary'
+        });
+    });
+</script>
+
+<!-- Plugins js -->
+<script src="/public/plugins/morris/morris.min.js"></script>
+<script src="/public/plugins/raphael/raphael-min.js"></script>
+<script src="/public/plugins/bootstrap-colorpicker/js/bootstrap-colorpicker.min.js"></script>
+<script src="/public/plugins/bootstrap-datepicker/js/bootstrap-datepicker.js"></script>
+<script src="/public/plugins/select2/js/select2.min.js"></script>
+<script src="/public/plugins/bootstrap-maxlength/bootstrap-maxlength.min.js"></script>
+<script src="/public/plugins/bootstrap-filestyle/js/bootstrap-filestyle.min.js"></script>
+<script src="/public/plugins/bootstrap-touchspin/js/jquery.bootstrap-touchspin.min.js"></script>
+<script src="/public/plugins/ion-rangeslider/ion.rangeSlider.min.js"></script>
+<script src="/public/plugins/jquery-sparkline/jquery.sparkline.min.js"></script>
+
+<!-- Assets js -->
+<script src="/public/assets/js/jquery.min.js"></script>
+<script src="/public/assets/js/bootstrap.bundle.min.js"></script>
+<script src="/public/assets/js/metisMenu.min.js"></script>
+<script src="/public/assets/js/jquery.slimscroll.js"></script>
+<script src="/public/assets/js/waves.min.js"></script>
+<script src="/public/assets/pages/dashboard.js"></script>
+<script src="/public/assets/pages/rangeslider-init.js"></script>
+<script src="/public/assets/pages/form-advanced.js"></script>
+<script src="/public/assets/js/breakerDragDrop.js"></script>
+<script src="/public/assets/js/app.js"></script>
+<script src="/public/assets/js/pdfDxfBinBomCheck.js"></script>
+
+
+</body>
+</html>

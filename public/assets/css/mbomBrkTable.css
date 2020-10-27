@@ -1,0 +1,43 @@
+/*breaker table*/
+.datatable{
+    border-collapse: collapse;
+    border-spacing: 0;
+    width: 100%;
+}
+
+/*breaker acc table*/
+.no-transition {
+    -webkit-transition: height 0.001s;
+    -moz-transition: height 0.001s;
+    -ms-transition: height 0.001s;
+    -o-transition: height 0.001s;
+    transition: height 0.001s;
+}
+
+.accordion-body{
+    background-color: #f2f2f2;
+    padding: .5% 2% 1% 2%;
+    max-height: none;
+}
+
+#brkAccTable{
+    width: 100%;
+    background-color: white;
+}
+
+#bomTable{
+    width: 100%;
+    background-color: white;
+}
+
+#brkAccTD{
+    padding: 0 !important;
+}
+
+#bomTD{
+    padding: 0 !important;
+}
+
+.fa-angle-down{
+    float: right;
+}

@@ -1,0 +1,35 @@
+.profile-pic {
+    max-width: 150px;
+    max-height: 150px;
+    display: block;
+}
+
+.file-upload {
+    display: none;
+}
+.circle {
+    border-radius: 1000px !important;
+    overflow: hidden;
+    width: 175px;
+    height: 175px;
+    border: 8px solid rgba(239,239,239, 1);
+    position: absolute;
+}
+.p-image {
+    position: absolute;
+    color: #666666;
+    transition: all .3s cubic-bezier(.175, .885, .32, 1.275);
+}
+.p-image:hover {
+    transition: all .3s cubic-bezier(.175, .885, .32, 1.275);
+}
+.upload-button {
+    font-size: 2em;
+    margin-top: 9rem;
+    margin-left: 2.5rem;
+}
+
+.upload-button:hover {
+    transition: all .3s cubic-bezier(.175, .885, .32, 1.275);
+    color: #999;
+}
