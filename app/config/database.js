@@ -1,7 +1,7 @@
 const fs = require('fs');
 
 module.exports = {
-    /*"connection": {
+    "connection": {
         'user': 'doadmin',
         'password': 'xaikjabounn01k3i',
         'host': 'saidb-do-user-6679940-0.db.ondigitalocean.com',
@@ -24,19 +24,19 @@ module.exports = {
                 cert: fs.readFileSync('app/config/ca-certificate.crt')
             }
         },
-    },*/
+    },
 
-    'connection': {
+    /*'connection': {
         'host': 'localhost',
         'user': 'root',
         'port' : 3306,
         'database': 'sai_test',
         'password': 'E5i5wks15',
         'multipleStatements': true
-    },
+    },*/
 
     //Database
-    'database': 'sai_test',
+    'database': 'saidb',
     /*'creoDatabase': 'creoDB',
     'database2': 'quotePricing',
     'masterDatabase': 'saidb',*/
