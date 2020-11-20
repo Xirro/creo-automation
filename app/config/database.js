@@ -15,7 +15,7 @@ module.exports = {
             max: 100,
             min: 0,
             idle: 200000,
-            acquire: 1000000,
+            acquire: 10000000,
         },
         'ssl': true,
         'dialectOptions': {

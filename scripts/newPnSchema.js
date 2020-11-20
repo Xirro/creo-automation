@@ -297,7 +297,7 @@ connection.query("INSERT INTO "+database+"."+dbConfig.layout_paramType_restricti
 
 
 
-/*
+
 // submittalSum
 connection.query('\
 CREATE TABLE IF NOT EXISTS ' + database + '.' + dbConfig.submittal_summary_table + ' ( \
@@ -486,7 +486,7 @@ CREATE TABLE IF NOT EXISTS ' + database + '.' + dbConfig.submittal_panel_breaker
     ENGINE = InnoDB;', function(err) { if(err) throw err; });
 
 
- */
+
 
 console.log("createSubSchema successful");
 
