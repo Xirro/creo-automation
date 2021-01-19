@@ -1,0 +1,1516 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=0, minimal-ui">
+    <title><%= title %></title>
+    <meta content="Quote Detail" name="SAI-APS-Portal" />
+    <link rel="shortcut icon" href="/public/assets/images/SAI-Logo.JPG">
+    <link rel="stylesheet" href="/public/plugins/morris/morris.css">
+
+    <link href="/public/plugins/RWD-Table-Patterns/dist/css/rwd-table.min.css" rel="stylesheet" type="text/css" media="screen" />
+    <link href="/public/plugins/bootstrap-colorpicker/css/bootstrap-colorpicker.min.css" rel="stylesheet" />
+    <link href="/public/plugins/bootstrap-datepicker/dist/css/bootstrap-datepicker.min.css" rel="stylesheet" />
+    <link href="/public/plugins/select2/css/select2.min.css" rel="stylesheet" type="text/css" />
+    <link href="/public/plugins/bootstrap-touchspin/css/jquery.bootstrap-touchspin.min.css" rel="stylesheet" />
+
+
+    <!-- ION Slider -->
+    <link href="/public/plugins/ion-rangeslider/ion.rangeSlider.css" rel="stylesheet" type="text/css"/>
+    <link href="/public/plugins/ion-rangeslider/ion.rangeSlider.skinModern.css" rel="stylesheet" type="text/css"/>
+
+    <link href="/public/assets/css/bootstrap.min.css" rel="stylesheet" type="text/css">
+    <link href="/public/assets/css/metismenu.min.css" rel="stylesheet" type="text/css">
+    <link href="/public/assets/css/icons.css" rel="stylesheet" type="text/css">
+    <link href="/public/assets/css/style.css" rel="stylesheet" type="text/css">
+    <link href="/public/assets/css/quoteControlTable.css" rel="stylesheet" type="text/css">
+    <link href="/public/assets/css/quoteBrkTable.css" rel="stylesheet" type="text/css">
+
+    <link href="https://cdn.datatables.net/1.10.20/css/dataTables.bootstrap.min.css" rel="stylesheet" type="text/css">
+    <link href="https://cdn.datatables.net/1.10.20/css/jquery.dataTables.min.css" rel="stylesheet" type="text/css">
+
+    <style>
+        .icon-success {
+            color: #00C851;
+        }
+        .icon-danger {
+            color: #ff4444;
+        }
+    </style>
+    <style>
+        div{
+            overflow: visible !important;
+        }
+        div#accContainer, div#pbConfig{
+            overflow: auto !important;
+        }
+
+        .carousel-inner>.carousel-item {
+            -webkit-transition: -webkit-transform 150ms ease-in-out !important;
+            -o-transition: -o-transform 150ms ease-in-out !important;
+            transition: transform 150ms ease-in-out !important;
+        }
+
+        .dropdown-toggle::after {
+            content: none;
+        }
+
+        .modal {
+            overflow-y:auto !important;
+        }
+
+    </style>
+
+    <script src="/public/assets/js/jquery.min.js"></script>
+    <script src="https://cdn.datatables.net/1.10.20/js/jquery.dataTables.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            $('#mbomSumTable').DataTable({
+                "scrollCollapse": true,
+                "paging": true,
+                "pagingType": "simple"
+            });
+        });
+    </script>
+    <script>
+        $(document).ready(function() {
+            $('#mbomComItemTable').DataTable({
+                "scrollCollapse": true,
+                "paging": true,
+                "pagingType": "simple"
+            });
+        });
+    </script>
+    <% if (message == null) { %>
+        <script>
+            document.addEventListener("DOMContentLoaded", function(event) {
+                var scrollpos = localStorage.getItem('scrollpos');
+                if (scrollpos) window.scrollTo(0, scrollpos);
+            });
+
+            window.onbeforeunload = function(e) {
+                localStorage.setItem('scrollpos', window.scrollY);
+            };
+        </script>
+    <% } %>
+    <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.5.0/jquery.min.js"></script>
+    <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.8.9/jquery-ui.min.js"></script>
+
+
+    <!--<script type="text/javascript">
+
+        $( saveSections );
+        function saveSections() {
+            $('#warningMessage').hide();
+        }
+    </script>-->
+    <link href="/public/assets/css/submittalDragDrop.css" rel="stylesheet" type="text/css">
+
+</head>
+
+<body>
+
+<div id="wrapper">
+    <!-- Top Bar Start -->
+    <div class="topbar">
+
+        <!-- LOGO -->
+        <div class="topbar-left" style="background-color: white;">
+            <a href="" class="logo">
+                        <span>
+                            <img src="/public/assets/images/SAI-Logo.JPG" alt="" height="67">
+                        </span>
+                <i>
+                    <img src="/public/assets/images/SAI-Logo.JPG" alt="" height="22">
+                </i>
+            </a>
+        </div>
+
+        <nav class="navbar-custom">
+            <ul class="navbar-right d-flex list-inline float-right mb-0">
+                <li class="dropdown notification-list d-none d-sm-block">
+                    <form role="search" class="app-search">
+                        <div class="form-group mb-0">
+                            <input type="text" class="form-control" placeholder="Search..">
+                            <button type="submit"><i class="fa fa-search"></i></button>
+                        </div>
+                    </form>
+                </li>
+            </ul>
+
+            <ul class="list-inline menu-left mb-0">
+                <li class="float-left">
+                    <button class="button-menu-mobile open-left waves-effect">
+                        <i class="mdi mdi-menu"></i>
+                    </button>
+                </li>
+            </ul>
+
+        </nav>
+
+    </div>
+    <!-- Top Bar End -->
+
+    <!-- ========== Left Sidebar Start ========== -->
+    <div class="left side-menu">
+        <div class="slimscroll-menu" id="remove-scroll">
+
+            <!--- Sidemenu -->
+            <div id="sidebar-menu">
+                <!-- Left Menu Start -->
+                <ul class="metismenu" id="side-menu">
+                    <li class="menu-title">CREO Automation</li>
+                    <li>
+                        <a href="../MBOM" class="waves-effect">
+                            <i class="mdi mdi-content-duplicate"></i> <span> MBOM </span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="../PDF-DXF-BIN_BOM" class="waves-effect">
+                            <i class="mdi mdi-content-duplicate"></i> <span> PDF / DXF / BIN BOM </span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="../submittal" class="waves-effect">
+                            <i class="mdi mdi-file-pdf"></i> <span> Submittal </span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="../slimVAC_NAR" class="waves-effect">
+                            <i class="mdi mdi-content-duplicate"></i> <span> SlimVAC NAR </span>
+                        </a>
+                    </li>
+                </ul>
+
+            </div>
+            <!-- Sidebar -->
+            <div class="clearfix"></div>
+
+        </div>
+        <!-- Sidebar -left -->
+
+    </div>
+    <!-- Left Sidebar End -->
+
+    <div class="content-page">
+        <!-- Content Start -->
+
+        <div class="content">
+            <div class="container-fluid">
+                <div class="row">
+                    <div class="col-sm-12">
+                        <div class="page-title-box">
+                            <h4 class="page-title">Current Layout - Latest Rev</h4>
+                            <div class="row justify-content-center">
+                                <div class="col-sm-6">
+                                    <div class="card m-b-20" style="height:94%;">
+                                        <div class="card-body">
+                                            <h4 class="mt-0 header-title">Project Data</h4>
+                                            <% if (message != null) { %>
+                                                <% if (message.location == 1) { %>
+                                                    <h6 style="color:red;"><%= message.text %></h6>
+                                                <% } %>
+                                            <% } %>
+                                            <% if  (layoutData.length != 0) { %>
+                                                <% for (let i = 0; i < layoutData.length; i++) { %>
+                                                <form id="layoutForm" class="layoutForm" action="" method="POST">
+                                                    <div class="form-group">
+                                                        <div class="row">
+                                                            <div class="col-sm-3">
+                                                                <label for="example-text-input" class="col-form-label">Job #</label>
+                                                                <input type="text" name="jobNum" class="form-control" value="<%=layoutData[i].jobNum%>" placeholder="Type Number Here" id="example-text-input" autocomplete="off" readonly="readonly">
+                                                            </div>
+                                                            <div class="col-sm-2">
+                                                                <label for="example-text-input" class="col-form-label">Release</label>
+                                                                <input type="text" name="releaseNum" class="form-control" value="<%=layoutData[i].releaseNum%>" placeholder="Type Release Here" id="example-text-input" autocomplete="off" readonly="readonly">
+                                                            </div>
+                                                            <div class="col-sm-2">
+                                                                <label for="example-text-input" class="col-form-label">Rev</label>
+                                                                <input type="text" name="revNum" class="form-control" value="00" placeholder="Type Rev Here" id="example-text-input" autocomplete="off" readonly="readonly">
+                                                            </div>
+                                                            <div class="col-sm-5">
+                                                                <label for="example-text-input" class="col-form-label">Customer</label>
+                                                                <input type="text" name="customer" class="form-control" value="<%=layoutData[i].customer%>" placeholder="Type Customer Here" id="example-text-input" autocomplete="off" readonly="readonly">
+                                                            </div>
+                                                        </div>
+                                                        <div class="row">
+                                                            <div class="col-sm-12">
+                                                                <label for="example-text-input" class="col-form-label">Job Name</label>
+                                                                <input type="text" name="jobName" class="form-control" value="<%=layoutData[i].jobName%>" placeholder="Type Name Here" id="example-text-input" autocomplete="off" readonly="readonly">
+                                                            </div>
+                                                        </div>
+                                                        <div class="row">
+                                                            <div class="col-sm-12">
+                                                                <label for="example-text-input" class="col-form-label">Layout Name</label>
+                                                                <input type="text" name="layoutName" class="form-control" value="<%=layoutData[i].layoutName%>" placeholder="Type Designation Here" id="example-text-input" autocomplete="off" readonly="readonly">
+                                                            </div>
+                                                        </div>
+                                                        <div class="row">
+                                                            <div class="col-sm-2">
+                                                                <label for="example-text-input" class="col-form-label">Drawn</label>
+                                                                <input type="text" name="drawnBy" class="form-control" value="<%=layoutData[i].drawnBy%>" placeholder="Type Initials Here" id="example-text-input" autocomplete="off" readonly="readonly">
+                                                            </div>
+                                                            <div class="col-sm-4">
+                                                                <label for="example-text-input" class="col-form-label">Drawn Date</label>
+                                                                <input type="date" name="drawnDate" class="form-control" value="<%=layoutData[i].drawnDate%>" placeholder="Type Date Here" id="example-text-input" autocomplete="off" readonly="readonly">
+                                                            </div>
+                                                            <div class="col-sm-2">
+                                                                <label for="example-text-input" class="col-form-label">Checked</label>
+                                                                <input type="text" name="checkedBy" class="form-control" value="<%=layoutData[i].checkedBy%>" placeholder="Type Initials Here" id="example-text-input" autocomplete="off" readonly="readonly">
+                                                            </div>
+                                                            <div class="col-sm-4">
+                                                                <label for="example-text-input" class="col-form-label">Checked Date</label>
+                                                                <input type="date" name="checkedDate" class="form-control" value="<%=layoutData[i].checkedDate%>" placeholder="Type Date Here" id="example-text-input" autocomplete="off" readonly="readonly">
+                                                            </div>
+                                                        </div>
+                                                        <div class="row">
+                                                            <div class="col-sm-12">
+                                                                <label for="example-text-input" class="col-form-label">Rev Note</label>
+                                                                <input type="text" name="revNote" class="form-control" value="" placeholder="Type Note Here" id="example-text-input" autocomplete="off" readonly="readonly">
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </form>
+                                                <!-- EDIT CURRENT LAYOUT -->
+                                                <div class="row justify-content-center">
+                                                    <div class="col-3">
+                                                        <input id="editLayoutBtn" type="button" value="Edit" class="btn-block btn btn-outline-warning waves-effect waves-light" data-toggle="modal" data-target="#editLayoutModal" style="margin-bottom:10%;"/>
+                                                        <div class="modal fade" id="editLayoutModal" tabindex="-1" role="dialog" aria-labelledby="editLayoutModalTitle" aria-hidden="true">
+                                                            <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+                                                                <div class="modal-content">
+                                                                    <div class="modal-header">
+                                                                        <h5 class="modal-title" id="editLayoutModalTitle">Edit Layout</h5>
+                                                                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                                                            <span aria-hidden="true">&times;</span>
+                                                                        </button>
+                                                                    </div>
+                                                                    <div class="modal-body">
+                                                                        <form id="editLayoutForm" class="editLayoutForm" action="../editLayoutData/?layoutID=<%= layoutData[0].jobNum%><%= layoutData[0].releaseNum%>_<%= layoutData[0].layoutID%>" method="POST">
+                                                                            <div class="form-group">
+                                                                                <p class="mb-0">
+                                                                                    Please fill out the following and click "Save" afterwards
+                                                                                </p>
+                                                                                <p class="text-muted m-b-5"></p>
+
+                                                                                <div class="row">
+                                                                                    <div class="col-sm-2">
+                                                                                        <label for="example-text-input" class="col-form-label">Job #</label>
+                                                                                        <input type="text" name="jobNum" class="form-control" value="<%=layoutData[i].jobNum%>" placeholder="Type Number Here" id="example-text-input" autocomplete="off" readonly="readonly">
+                                                                                    </div>
+                                                                                    <div class="col-sm-2">
+                                                                                        <label for="example-text-input" class="col-form-label">Release</label>
+                                                                                        <input type="text" name="releaseNum" class="form-control" value="<%=layoutData[i].releaseNum%>" placeholder="Type Release Here" id="example-text-input" autocomplete="off" readonly="readonly">
+                                                                                    </div>
+                                                                                    <div class="col-sm-2">
+                                                                                        <label for="example-text-input" class="col-form-label">Rev</label>
+                                                                                        <input type="text" name="revNum" class="form-control" value="00" placeholder="Type Rev Here" id="example-text-input" autocomplete="off" readonly="readonly">
+                                                                                    </div>
+                                                                                    <div class="col-sm-6">
+                                                                                        <label for="example-text-input" class="col-form-label">Customer</label>
+                                                                                        <input type="text" name="customer" class="form-control" value="<%=layoutData[i].customer%>" placeholder="Type Customer Here" id="example-text-input" autocomplete="off">
+                                                                                    </div>
+                                                                                </div>
+                                                                                <div class="row">
+                                                                                    <div class="col-sm-12">
+                                                                                        <label for="example-text-input" class="col-form-label">Job Name</label>
+                                                                                        <input type="text" name="jobName" class="form-control" value="<%=layoutData[i].jobName%>" placeholder="Type Name Here" id="example-text-input" autocomplete="off">
+                                                                                    </div>
+                                                                                </div>
+                                                                                <div class="row">
+                                                                                    <div class="col-sm-12">
+                                                                                        <label for="example-text-input" class="col-form-label">Layout Name</label>
+                                                                                        <input type="text" name="layoutName" class="form-control" value="<%=layoutData[i].layoutName%>" placeholder="Type Designation Here" id="example-text-input" autocomplete="off">
+                                                                                    </div>
+                                                                                </div>
+                                                                                <div class="row">
+                                                                                    <div class="col-sm-2">
+                                                                                        <label for="example-text-input" class="col-form-label">Drawn</label>
+                                                                                        <input type="text" name="drawnBy" class="form-control" value="<%=layoutData[i].drawnBy%>" placeholder="Type Initials Here" id="example-text-input" autocomplete="off">
+                                                                                    </div>
+                                                                                    <div class="col-sm-4">
+                                                                                        <label for="example-text-input" class="col-form-label">Drawn Date</label>
+                                                                                        <input type="date" name="drawnDate" class="form-control" value="<%=layoutData[i].drawnDate%>" placeholder="Type Date Here" id="example-text-input" autocomplete="off">
+                                                                                    </div>
+                                                                                    <div class="col-sm-2">
+                                                                                        <label for="example-text-input" class="col-form-label">Checked</label>
+                                                                                        <input type="text" name="checkedBy" class="form-control" value="<%=layoutData[i].checkedBy%>" placeholder="Type Initials Here" id="example-text-input" autocomplete="off">
+                                                                                    </div>
+                                                                                    <div class="col-sm-4">
+                                                                                        <label for="example-text-input" class="col-form-label">Checked Date</label>
+                                                                                        <input type="date" name="checkedDate" class="form-control" value="<%=layoutData[i].checkedDate%>" placeholder="Type Date Here" id="example-text-input" autocomplete="off">
+                                                                                    </div>
+                                                                                </div>
+                                                                                <div class="row">
+                                                                                    <div class="col-sm-12">
+                                                                                        <label for="example-text-input" class="col-form-label">Rev Note</label>
+                                                                                        <input type="text" name="revNote" class="form-control" value="" placeholder="Type Note Here" id="example-text-input" autocomplete="off" readonly="readonly">
+                                                                                    </div>
+                                                                                </div>
+                                                                            </div>
+                                                                            <div class="modal-footer justify-content-center">
+                                                                                <div class="w-50">
+                                                                                    <input id="editLayoutModalButton" type="submit" value="Save" class="btn-block btn btn-outline-info waves-effect waves-light" />
+                                                                                </div>
+                                                                            </div>
+                                                                        </form>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <!-- END EDIT CURRENT LAYOUT -->
+                                                <% } %>
+                                            <% } %>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="col-sm-6">
+                                    <div class="card m-b-20" style="height:94%;">
+                                        <div class="card-body">
+                                            <h4 class="mt-0 header-title">Creo Data</h4>
+                                            <% if (message != null) { %>
+                                                <% if (message.location == 2) { %>
+                                                    <h6 style="color:red;"><%= message.text %></h6>
+                                                <% } %>
+                                            <% } %>
+                                            <% if  (creoData.length != 0) { %>
+                                                <% for (let i = 0; i < creoData.length; i++) { %>
+                                                    <form id="creoDataForm" class="creoDataForm" action="../layoutSetWD/?layoutID=<%= layoutData[0].jobNum%><%= layoutData[0].releaseNum%>_<%= layoutData[0].layoutID%>" method="POST">
+                                                        <div class="form-group">
+                                                            <div class="row">
+                                                                <div class="col-sm-12">
+                                                                    <label for="example-text-input" class="col-form-label">Layout Assembly</label>
+                                                                    <input type="text" name="layoutAsm" class="form-control" value="<%=creoData[i].layoutAsm%>" placeholder="Type Layout Assembly Here" id="example-text-input" autocomplete="off" readonly="readonly">
+                                                                </div>
+                                                            </div>
+                                                            <div class="row">
+                                                                <div class="col-sm-12">
+                                                                    <label for="example-text-input" class="col-form-label">Layout Drawing</label>
+                                                                    <input type="text" name="layoutDrw" class="form-control" value="<%=creoData[i].layoutDrw%>" placeholder="Type Layout Drawing Here" id="example-text-input" autocomplete="off" readonly="readonly">
+                                                                </div>
+                                                            </div>
+                                                            <div class="row">
+                                                                <div class="col-sm-12">
+                                                                    <label for="example-text-input" class="col-form-label">Working Directory</label>
+                                                                    <input type="text" name="workingDir" class="form-control" value="<%=creoData[i].workingDir%>" placeholder="Type Working Directory Here" id="example-text-input" autocomplete="off">
+                                                                </div>
+                                                            </div>
+                                                            <div class="row">
+                                                                <div class="col-sm-12">
+                                                                    <label for="example-text-input" class="col-form-label">Standard Library</label>
+                                                                    <input type="text" name="standardLib" class="form-control" value="<%=creoData[i].standardLib%>" placeholder="Type Standard Library Here" id="example-text-input" autocomplete="off">
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <div class="form-group">
+                                                            <div class="row justify-content-center">
+                                                                <div class="col-4">
+                                                                    <input id="setWDBtn" type="submit" value="Set Working Directory" class="btn-block btn btn-outline-secondary waves-effect waves-light" />
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </form>
+                                                    <form id="generateLayoutForm" class="generateLayoutForm" action="../generateLayout/?layoutID=<%= layoutData[0].jobNum%><%= layoutData[0].releaseNum%>_<%= layoutData[0].layoutID%>" method="POST">
+                                                        <div class="row justify-content-center">
+                                                            <div class="col-4">
+                                                                <input id="generateLayoutBtn" type="submit" value="Generate Layout" class="btn-block btn btn-outline-success waves-effect waves-light" />
+                                                            </div>
+                                                        </div>
+                                                    </form>
+                                                <% } %>
+                                            <% } %>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row justify-content-center">
+                                <div class="col-sm-12">
+                                    <div class="card m-b-20" style="height:94%;">
+                                        <div class="card-body">
+                                            <h4 class="mt-0 header-title">Layout Data</h4>
+                                            <% if (layoutDetail.length == 0) { %>
+                                            <form id="layoutPnForm" class="layoutPnForm" action="/reverseEngineerLayoutDetail/?layoutID=<%=layoutData[0].jobNum%><%=layoutData[0].releaseNum%>_<%=layoutData[0].layoutID%>" method="POST">
+                                                <% if (reverseEngineerLayoutDetail.length == 0) { %>
+                                                    <div class="row justify-content-center">
+                                                        <div class="col-sm-4">
+                                                            <div class="form-group">
+                                                                <label for="example-text-input" class="col-form-label">Product Part Number</label>
+                                                                <div class="input-group mb-3">
+                                                                    <input type="text" name="layoutCatalogPN" class="form-control" placeholder="Type Part Number Here" aria-label="Type Part Number Here" aria-describedby="basic-addon2" autocomplete="off">
+                                                                    <div class="input-group-append">
+                                                                        <button class="btn btn-outline-secondary" type="submit">Reverse Engineer</button>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                <% } else { %>
+                                                    <div class="row justify-content-center">
+                                                        <div class="col-sm-4">
+                                                            <div class="form-group">
+                                                                <label for="example-text-input" class="col-form-label">Product Part Number</label>
+                                                                <div class="input-group mb-3">
+                                                                    <input type="text" name="layoutCatalogPN" value="<%= reverseEngineerLayoutDetail[0].layoutCatalogPN %>" class="form-control" placeholder="Type Part Number Here" aria-label="Type Part Number Here" aria-describedby="basic-addon2" autocomplete="off">
+                                                                    <div class="input-group-append">
+                                                                        <button class="btn btn-outline-secondary" type="submit">Reverse Engineer</button>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                <% } %>
+                                            </form>
+                                            <form id="layoutDetailForm" class="layoutDetailForm" action="/addLayoutDetail/?layoutID=<%=layoutData[0].jobNum%><%=layoutData[0].releaseNum%>_<%=layoutData[0].layoutID%>" method="POST">
+                                                <% if (reverseEngineerLayoutDetail.length == 0) { %>
+                                                    <div class="row">
+                                                        <div class="col-sm-3">
+                                                            <div class="form-group">
+                                                                <label for="productFamily" class="col-form-label">Product Family</label>
+                                                                <select class="form-control" name="productFamily" id="productFamily">
+                                                                    <option value="">Select</option>
+                                                                    <% for (let family of productPnOpts.family) { %>
+                                                                        <option data-parent value="<%= family.description %>"><%= family.description %></option>
+                                                                    <% } %>
+                                                                </select>
+                                                            </div>
+                                                        </div>
+                                                        <div class="col-sm-3">
+                                                            <div class="form-group">
+                                                                <label for="productLine" class="col-form-label">Product Line</label>
+                                                                <select class="form-control" name="productLine" id="productLine">
+                                                                    <option value="">Select</option>
+                                                                    <% for (let prodLine of productPnOpts.prodLine) { %>
+                                                                        <option data-parent value="<%= prodLine.description %>"><%= prodLine.description %></option>
+                                                                    <% } %>
+                                                                </select>
+                                                            </div>
+                                                        </div>
+                                                        <div class="col-sm-2">
+                                                            <div class="form-group">
+                                                                <label for="systemVolt" class="col-form-label">System Voltage</label>
+                                                                <select class="form-control" name="systemVolt" id="systemVolt">
+                                                                    <option value="">Select</option>
+                                                                    <% for (let systemVolt of productPnOpts.systemVolt) { %>
+                                                                        <option data-parent value="<%= systemVolt.description %>"><%= systemVolt.description %></option>
+                                                                    <% } %>
+                                                                </select>
+                                                            </div>
+                                                        </div>
+                                                        <div class="col-sm-2">
+                                                            <div class="form-group">
+                                                                <label for="currentRating" class="col-form-label">Current Rating</label>
+                                                                <select class="form-control" name="currentRating" id="currentRating">
+                                                                    <option value="">Select</option>
+                                                                    <% for (let currentRating of productPnOpts.currentRating) { %>
+                                                                        <option data-parent value="<%= currentRating.description %>"><%= currentRating.description %></option>
+                                                                    <% } %>
+                                                                </select>
+                                                            </div>
+                                                        </div>
+                                                        <div class="col-sm-2">
+                                                            <div class="form-group">
+                                                                <label for="interruptingRating" class="col-form-label">Interrupting Rating</label>
+                                                                <select class="form-control" name="interruptingRating" id="interruptingRating">
+                                                                    <option value="">Select</option>
+                                                                    <% for (let interruptingRating of productPnOpts.interruptingRating) { %>
+                                                                        <option data-parent value="<%= interruptingRating.description %>"><%= interruptingRating.description %></option>
+                                                                    <% } %>
+                                                                </select>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="row">
+                                                        <div class="col-sm-3">
+                                                            <div class="form-group">
+                                                                <label for="enclosure" class="col-form-label">Enclosure</label>
+                                                                <select class="form-control" name="enclosure" id="enclosure">
+                                                                    <option value="">Select</option>
+                                                                    <% for (let enclosure of productPnOpts.enclosure) { %>
+                                                                        <option data-parent value="<%= enclosure.description %>"><%= enclosure.description %></option>
+                                                                    <% } %>
+                                                                </select>
+                                                            </div>
+                                                        </div>
+                                                        <div class="col-sm-3">
+                                                            <div class="form-group">
+                                                                <label for="finish" class="col-form-label">Finish</label>
+                                                                <select class="form-control" name="finish" id="finish">
+                                                                    <option value="">Select</option>
+                                                                    <% for (let finish of productPnOpts.finish) { %>
+                                                                        <option data-parent value="<%= finish.description %>"><%= finish.description %></option>
+                                                                    <% } %>
+                                                                </select>
+                                                            </div>
+                                                        </div>
+                                                        <div class="col-sm-3">
+                                                            <div class="form-group">
+                                                                <label for="accessibility" class="col-form-label">Accessibility</label>
+                                                                <select class="form-control" name="accessibility" id="accessibility">
+                                                                    <option value="">Select</option>
+                                                                    <% for (let accessibility of productPnOpts.accessibility) { %>
+                                                                        <option data-parent value="<%= accessibility.description %>"><%= accessibility.description %></option>
+                                                                    <% } %>
+                                                                </select>
+                                                            </div>
+                                                        </div>
+                                                        <div class="col-sm-3">
+                                                            <div class="form-group">
+                                                                <label for="controlVolt" class="col-form-label">Control Voltage</label>
+                                                                <select class="form-control" name="controlVolt" id="controlVolt">
+                                                                    <option value="">Select</option>
+                                                                    <% for (let controlVolt of productPnOpts.controlVolt) { %>
+                                                                        <option data-parent value="<%= controlVolt.description %>"><%= controlVolt.description %></option>
+                                                                    <% } %>
+                                                                </select>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                <% } else { %>
+                                                    <div class="row">
+                                                        <div class="col-sm-3">
+                                                            <div class="form-group">
+                                                                <label for="productFamily" class="col-form-label">Product Family</label>
+                                                                <select class="form-control" name="productFamily" id="productFamily">
+                                                                    <option value="">Select</option>
+                                                                    <% for (let family of productPnOpts.family) { %>
+                                                                        <% if (family.description == reverseEngineerLayoutDetail[0].productFamily) { %>
+                                                                            <option data-parent value="<%= family.description %>" selected="selected"><%= family.description %></option>
+                                                                        <% } else { %>
+                                                                            <option data-parent value="<%= family.description %>"><%= family.description %></option>
+                                                                        <% } %>
+                                                                    <% } %>
+                                                                </select>
+                                                            </div>
+                                                        </div>
+                                                        <div class="col-sm-3">
+                                                            <div class="form-group">
+                                                                <label for="productLine" class="col-form-label">Product Line</label>
+                                                                <select class="form-control" name="productLine" id="productLine">
+                                                                    <option value="">Select</option>
+                                                                    <% for (let prodLine of productPnOpts.prodLine) { %>
+                                                                        <% if (prodLine.description == reverseEngineerLayoutDetail[0].productLine) { %>
+                                                                            <option data-parent value="<%= prodLine.description %>" selected="selected"><%= prodLine.description %></option>
+                                                                        <% } else { %>
+                                                                            <option data-parent value="<%= prodLine.description %>"><%= prodLine.description %></option>
+                                                                        <% } %>
+                                                                    <% } %>
+                                                                </select>
+                                                            </div>
+                                                        </div>
+                                                        <div class="col-sm-2">
+                                                            <div class="form-group">
+                                                                <label for="systemVolt" class="col-form-label">System Voltage</label>
+                                                                <select class="form-control" name="systemVolt" id="systemVolt">
+                                                                    <option value="">Select</option>
+                                                                    <% for (let systemVolt of productPnOpts.systemVolt) { %>
+                                                                        <% if (systemVolt.description == reverseEngineerLayoutDetail[0].systemVolt) { %>
+                                                                            <option data-parent value="<%= systemVolt.description %>" selected="selected"><%= systemVolt.description %></option>
+                                                                        <% } else { %>
+                                                                            <option data-parent value="<%= systemVolt.description %>"><%= systemVolt.description %></option>
+                                                                        <% } %>
+                                                                    <% } %>
+                                                                </select>
+                                                            </div>
+                                                        </div>
+                                                        <div class="col-sm-2">
+                                                            <div class="form-group">
+                                                                <label for="currentRating" class="col-form-label">Current Rating</label>
+                                                                <select class="form-control" name="currentRating" id="currentRating">
+                                                                    <option value="">Select</option>
+                                                                    <% for (let currentRating of productPnOpts.currentRating) { %>
+                                                                        <% if (currentRating.description == reverseEngineerLayoutDetail[0].currentRating) { %>
+                                                                            <option data-parent value="<%= currentRating.description %>" selected="selected"><%= currentRating.description %></option>
+                                                                        <% } else { %>
+                                                                            <option data-parent value="<%= currentRating.description %>"><%= currentRating.description %></option>
+                                                                        <% } %>
+                                                                    <% } %>
+                                                                </select>
+                                                            </div>
+                                                        </div>
+                                                        <div class="col-sm-2">
+                                                            <div class="form-group">
+                                                                <label for="interruptingRating" class="col-form-label">Interrupting Rating</label>
+                                                                <select class="form-control" name="interruptingRating" id="interruptingRating">
+                                                                    <option value="">Select</option>
+                                                                    <% for (let interruptingRating of productPnOpts.interruptingRating) { %>
+                                                                        <% if (interruptingRating.description == reverseEngineerLayoutDetail[0].interruptingRating) { %>
+                                                                            <option data-parent value="<%= interruptingRating.description %>" selected="selected"><%= interruptingRating.description %></option>
+                                                                        <% } else { %>
+                                                                            <option data-parent value="<%= interruptingRating.description %>"><%= interruptingRating.description %></option>
+                                                                        <% } %>
+                                                                    <% } %>
+                                                                </select>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="row">
+                                                        <div class="col-sm-3">
+                                                            <div class="form-group">
+                                                                <label for="enclosure" class="col-form-label">Enclosure</label>
+                                                                <select class="form-control" name="enclosure" id="enclosure">
+                                                                    <option value="">Select</option>
+                                                                    <% for (let enclosure of productPnOpts.enclosure) { %>
+                                                                        <% if (enclosure.description == reverseEngineerLayoutDetail[0].enclosure) { %>
+                                                                            <option data-parent value="<%= enclosure.description %>" selected="selected"><%= enclosure.description %></option>
+                                                                        <% } else { %>
+                                                                            <option data-parent value="<%= enclosure.description %>"><%= enclosure.description %></option>
+                                                                        <% } %>
+                                                                    <% } %>
+                                                                </select>
+                                                            </div>
+                                                        </div>
+                                                        <div class="col-sm-3">
+                                                            <div class="form-group">
+                                                                <label for="finish" class="col-form-label">Finish</label>
+                                                                <select class="form-control" name="finish" id="finish">
+                                                                    <option value="">Select</option>
+                                                                    <% for (let finish of productPnOpts.finish) { %>
+                                                                        <% if (finish.description == reverseEngineerLayoutDetail[0].finish) { %>
+                                                                            <option data-parent value="<%= finish.description %>" selected="selected"><%= finish.description %></option>
+                                                                        <% } else { %>
+                                                                            <option data-parent value="<%= finish.description %>"><%= finish.description %></option>
+                                                                        <% } %>
+                                                                    <% } %>
+                                                                </select>
+                                                            </div>
+                                                        </div>
+                                                        <div class="col-sm-3">
+                                                            <div class="form-group">
+                                                                <label for="accessibility" class="col-form-label">Accessibility</label>
+                                                                <select class="form-control" name="accessibility" id="accessibility">
+                                                                    <option value="">Select</option>
+                                                                    <% for (let accessibility of productPnOpts.accessibility) { %>
+                                                                        <% if (accessibility.description == reverseEngineerLayoutDetail[0].accessibility) { %>
+                                                                            <option data-parent value="<%= accessibility.description %>" selected="selected"><%= accessibility.description %></option>
+                                                                        <% } else { %>
+                                                                            <option data-parent value="<%= accessibility.description %>"><%= accessibility.description %></option>
+                                                                        <% } %>
+                                                                    <% } %>
+                                                                </select>
+                                                            </div>
+                                                        </div>
+                                                        <div class="col-sm-3">
+                                                            <div class="form-group">
+                                                                <label for="controlVolt" class="col-form-label">Control Voltage</label>
+                                                                <select class="form-control" name="controlVolt" id="controlVolt">
+                                                                    <option value="">Select</option>
+                                                                    <% for (let controlVolt of productPnOpts.controlVolt) { %>
+                                                                        <% if (controlVolt.description == reverseEngineerLayoutDetail[0].controlVolt) { %>
+                                                                            <option data-parent value="<%= controlVolt.description %>" selected="selected"><%= controlVolt.description %></option>
+                                                                        <% } else { %>
+                                                                            <option data-parent value="<%= controlVolt.description %>"><%= controlVolt.description %></option>
+                                                                        <% } %>
+                                                                    <% } %>
+                                                                </select>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                <% } %>
+                                                <div class="row justify-content-center" style="margin-bottom:1%;">
+                                                    <div class="col-sm-3">
+                                                        <input id="addLayoutDetailBtn" type="submit" value="Create Layout" class="btn-block btn btn-outline-success waves-effect waves-light" />
+                                                    </div>
+                                                </div>
+                                            </form>
+                                            <% } else { %>
+                                            <form id="layoutDetailForm" class="layoutDetailForm" action="/editLayoutDetail/?layoutID=<%=layoutData[0].jobNum%><%=layoutData[0].releaseNum%>_<%=layoutData[0].layoutID%>" method="POST">
+                                                <div class="row justify-content-center">
+                                                    <div class="col-sm-4">
+                                                        <div class="form-group">
+                                                            <label for="example-text-input" class="col-form-label">Product Part Number</label>
+                                                            <input type="text" name="productPN" class="form-control" value="<%=layoutDetail[0].layoutCatalogPN%>" placeholder="Type Part Number Here" aria-label="Type Part Number Here" readonly="readonly">
+
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="row">
+                                                    <div class="col-sm-3">
+                                                        <div class="form-group">
+                                                            <label for="productFamily" class="col-form-label">Product Family</label>
+                                                            <select class="form-control" name="productFamily" id="productFamily">
+                                                                <option value="">Select</option>
+                                                                <% for (let family of productPnOpts.family) { %>
+                                                                    <% if (family.description == layoutDetail[0].productFamily) { %>
+                                                                        <option data-parent value="<%= family.description %>" selected="selected"><%= family.description %></option>
+                                                                    <% } else { %>
+                                                                        <option data-parent value="<%= family.description %>"><%= family.description %></option>
+                                                                    <% } %>
+                                                                <% } %>
+                                                            </select>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-sm-3">
+                                                        <div class="form-group">
+                                                            <label for="productLine" class="col-form-label">Product Line</label>
+                                                            <select class="form-control" name="productLine" id="productLine">
+                                                                <option value="">Select</option>
+                                                                <% for (let prodLine of productPnOpts.prodLine) { %>
+                                                                    <% if (prodLine.description == layoutDetail[0].productLine) { %>
+                                                                        <option data-parent value="<%= prodLine.description %>" selected="selected"><%= prodLine.description %></option>
+                                                                    <% } else { %>
+                                                                        <option data-parent value="<%= prodLine.description %>"><%= prodLine.description %></option>
+                                                                    <% } %>
+                                                                <% } %>
+                                                            </select>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-sm-2">
+                                                        <div class="form-group">
+                                                            <label for="systemVolt" class="col-form-label">System Voltage</label>
+                                                            <select class="form-control" name="systemVolt" id="systemVolt">
+                                                                <option value="">Select</option>
+                                                                <% for (let systemVolt of productPnOpts.systemVolt) { %>
+                                                                    <% if (systemVolt.description == layoutDetail[0].systemVolt) { %>
+                                                                        <option data-parent value="<%= systemVolt.description %>" selected="selected"><%= systemVolt.description %></option>
+                                                                    <% } else { %>
+                                                                        <option data-parent value="<%= systemVolt.description %>"><%= systemVolt.description %></option>
+                                                                    <% } %>
+                                                                <% } %>
+                                                            </select>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-sm-2">
+                                                        <div class="form-group">
+                                                            <label for="currentRating" class="col-form-label">Current Rating</label>
+                                                            <select class="form-control" name="currentRating" id="currentRating">
+                                                                <option value="">Select</option>
+                                                                <% for (let currentRating of productPnOpts.currentRating) { %>
+                                                                    <% if (currentRating.description == layoutDetail[0].currentRating) { %>
+                                                                        <option data-parent value="<%= currentRating.description %>" selected="selected"><%= currentRating.description %></option>
+                                                                    <% } else { %>
+                                                                        <option data-parent value="<%= currentRating.description %>"><%= currentRating.description %></option>
+                                                                    <% } %>
+                                                                <% } %>
+                                                            </select>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-sm-2">
+                                                        <div class="form-group">
+                                                            <label for="interruptingRating" class="col-form-label">Interrupting Rating</label>
+                                                            <select class="form-control" name="interruptingRating" id="interruptingRating">
+                                                                <option value="">Select</option>
+                                                                <% for (let interruptingRating of productPnOpts.interruptingRating) { %>
+                                                                    <% if (interruptingRating.description == layoutDetail[0].interruptingRating) { %>
+                                                                        <option data-parent value="<%= interruptingRating.description %>" selected="selected"><%= interruptingRating.description %></option>
+                                                                    <% } else { %>
+                                                                        <option data-parent value="<%= interruptingRating.description %>"><%= interruptingRating.description %></option>
+                                                                    <% } %>
+                                                                <% } %>
+                                                            </select>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="row">
+                                                    <div class="col-sm-3">
+                                                        <div class="form-group">
+                                                            <label for="enclosure" class="col-form-label">Enclosure</label>
+                                                            <select class="form-control" name="enclosure" id="enclosure">
+                                                                <option value="">Select</option>
+                                                                <% for (let enclosure of productPnOpts.enclosure) { %>
+                                                                    <% if (enclosure.description == layoutDetail[0].enclosure) { %>
+                                                                        <option data-parent value="<%= enclosure.description %>" selected="selected"><%= enclosure.description %></option>
+                                                                    <% } else { %>
+                                                                        <option data-parent value="<%= enclosure.description %>"><%= enclosure.description %></option>
+                                                                    <% } %>
+                                                                <% } %>
+                                                            </select>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-sm-3">
+                                                        <div class="form-group">
+                                                            <label for="finish" class="col-form-label">Finish</label>
+                                                            <select class="form-control" name="finish" id="finish">
+                                                                <option value="">Select</option>
+                                                                <% for (let finish of productPnOpts.finish) { %>
+                                                                    <% if (finish.description == layoutDetail[0].finish) { %>
+                                                                        <option data-parent value="<%= finish.description %>" selected="selected"><%= finish.description %></option>
+                                                                    <% } else { %>
+                                                                        <option data-parent value="<%= finish.description %>"><%= finish.description %></option>
+                                                                    <% } %>
+                                                                <% } %>
+                                                            </select>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-sm-3">
+                                                        <div class="form-group">
+                                                            <label for="accessibility" class="col-form-label">Accessibility</label>
+                                                            <select class="form-control" name="accessibility" id="accessibility">
+                                                                <option value="">Select</option>
+                                                                <% for (let accessibility of productPnOpts.accessibility) { %>
+                                                                    <% if (accessibility.description == layoutDetail[0].accessibility) { %>
+                                                                        <option data-parent value="<%= accessibility.description %>" selected="selected"><%= accessibility.description %></option>
+                                                                    <% } else { %>
+                                                                        <option data-parent value="<%= accessibility.description %>"><%= accessibility.description %></option>
+                                                                    <% } %>
+                                                                <% } %>
+                                                            </select>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-sm-3">
+                                                        <div class="form-group">
+                                                            <label for="controlVolt" class="col-form-label">Control Voltage</label>
+                                                            <select class="form-control" name="controlVolt" id="controlVolt">
+                                                                <option value="">Select</option>
+                                                                <% for (let controlVolt of productPnOpts.controlVolt) { %>
+                                                                    <% if (controlVolt.description == layoutDetail[0].controlVolt) { %>
+                                                                        <option data-parent value="<%= controlVolt.description %>" selected="selected"><%= controlVolt.description %></option>
+                                                                    <% } else { %>
+                                                                        <option data-parent value="<%= controlVolt.description %>"><%= controlVolt.description %></option>
+                                                                    <% } %>
+                                                                <% } %>
+                                                            </select>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="row justify-content-center" style="margin-bottom:1%;">
+                                                    <div class="col-sm-3">
+                                                        <input id="editLayoutDetailBtn" type="submit" value="Edit Layout" class="btn-block btn btn-outline-warning waves-effect waves-light" />
+                                                    </div>
+                                                </div>
+                                            </form>
+                                            <% } %>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row justify-content-center">
+                                <div class="col-sm-12">
+                                    <div class="card m-b-20" style="height:94%;">
+                                        <div class="card-body">
+                                            <h4 class="mt-0 header-title">Section Data</h4>
+                                            <% if (layoutDetail.length == 0) { %>
+                                                <div class="row justify-content-center">
+                                                    <p>Please fill out the Layout Data above first!</p>
+                                                </div>
+                                            <% } else { %>
+                                                <% if (editSecData.length != 0) { %>
+                                                    <form id="editSectionDetailForm" class="editSectionDetailForm" action="/saveSectionDetail/?secID=<%=editSecData[0].secID%>&layoutID=<%=layoutData[0].jobNum%><%=layoutData[0].releaseNum%>_<%=layoutData[0].layoutID%>" method="POST">
+                                                        <div class="row justify-content-center">
+                                                            <div class="col-sm-4">
+                                                                    <label for="example-text-input" class="col-form-label">Section Part Number</label>
+                                                                    <input type="text" name="sectionCatalogPN" class="form-control" value="<%=editSecData[0].sectionCatalogPN%>" placeholder="Type Part Number Here" aria-label="Type Part Number Here" autocomplete="off" readonly="readonly">
+                                                            </div>
+                                                        </div>
+                                                        <div class="row">
+                                                            <div class="col-sm-3">
+                                                                <div class="form-group">
+                                                                    <label for="productFamily_sec" class="col-form-label">Product Family</label>
+                                                                    <select class="form-control" name="productFamily_sec" id="productFamily_sec">
+                                                                        <option value="">Select</option>
+                                                                        <% for (let family of slimvacSecPnOpts.family) { %>
+                                                                            <% if (family.description == editSecData[0].productFamily) { %>
+                                                                                <option data-parent value="<%= family.description %>" selected="selected"><%= family.description %></option>
+                                                                            <% } else { %>
+                                                                                <option data-parent value="<%= family.description %>"><%= family.description %></option>
+                                                                            <% } %>
+                                                                        <% } %>
+                                                                    </select>
+                                                                </div>
+                                                            </div>
+                                                            <div class="col-sm-3">
+                                                                <div class="form-group">
+                                                                    <label for="brkMfg" class="col-form-label">Breaker Mfg.</label>
+                                                                    <select class="form-control" name="brkMfg" id="brkMfg">
+                                                                        <option value="">Select</option>
+                                                                        <% for (let brkMfg of slimvacSecPnOpts.brkMfg) { %>
+                                                                            <% if (brkMfg.description == editSecData[0].brkMfg) { %>
+                                                                                <option data-parent value="<%= brkMfg.description %>" selected="selected"><%= brkMfg.description %></option>
+                                                                            <% } else { %>
+                                                                                <option data-parent value="<%= brkMfg.description %>"><%= brkMfg.description %></option>
+                                                                            <% } %>
+                                                                        <% } %>
+                                                                    </select>
+                                                                </div>
+                                                            </div>
+                                                            <div class="col-sm-3">
+                                                                <div class="form-group">
+                                                                    <label for="kaRating" class="col-form-label">kA Rating</label>
+                                                                    <select class="form-control" name="kaRating" id="kaRating">
+                                                                        <option value="">Select</option>
+                                                                        <% for (let kaRating of slimvacSecPnOpts.kaRating) { %>
+                                                                            <% if (kaRating.description == editSecData[0].kaRating) { %>
+                                                                                <option data-parent value="<%= kaRating.description %>" selected="selected"><%= kaRating.description %></option>
+                                                                            <% } else { %>
+                                                                                <option data-parent value="<%= kaRating.description %>"><%= kaRating.description %></option>
+                                                                            <% } %>
+                                                                        <% } %>
+                                                                    </select>
+                                                                </div>
+                                                            </div>
+                                                            <div class="col-sm-3">
+                                                                <div class="form-group">
+                                                                    <label for="mainBusRating" class="col-form-label">Main Bus Rating</label>
+                                                                    <select class="form-control" name="mainBusRating" id="mainBusRating">
+                                                                        <option value="">Select</option>
+                                                                        <% for (let mainBusRating of slimvacSecPnOpts.mainBusRating) { %>
+                                                                            <% if (mainBusRating.description == editSecData[0].mainBusRating) { %>
+                                                                                <option data-parent value="<%= mainBusRating.description %>" selected="selected"><%= mainBusRating.description %></option>
+                                                                            <% } else { %>
+                                                                                <option data-parent value="<%= mainBusRating.description %>"><%= mainBusRating.description %></option>
+                                                                            <% } %>
+                                                                        <% } %>
+                                                                    </select>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <div class="row">
+                                                            <div class="col-sm-3">
+                                                                <div class="form-group">
+                                                                    <label for="upperComp" class="col-form-label">Upper Compartment</label>
+                                                                    <select class="form-control" name="upperComp" id="upperComp">
+                                                                        <option value="">Select</option>
+                                                                        <% for (let upperComp of slimvacSecPnOpts.upperComp) { %>
+                                                                            <% if (upperComp.description == editSecData[0].upperComp) { %>
+                                                                                <option data-parent value="<%= upperComp.description %>" selected="selected"><%= upperComp.description %></option>
+                                                                            <% } else { %>
+                                                                                <option data-parent value="<%= upperComp.description %>"><%= upperComp.description %></option>
+                                                                            <% } %>
+                                                                        <% } %>
+                                                                    </select>
+                                                                </div>
+                                                            </div>
+                                                            <div class="col-sm-3">
+                                                                <div class="form-group">
+                                                                    <label for="upperCompAcc" class="col-form-label">Upper Compartment Acc.</label>
+                                                                    <select class="form-control" name="upperCompAcc" id="upperCompAcc">
+                                                                        <option value="">Select</option>
+                                                                        <% for (let upperCompAcc of slimvacSecPnOpts.upperCompAcc) { %>
+                                                                            <% if (upperCompAcc.description == editSecData[0].upperCompAcc) { %>
+                                                                                <option data-parent value="<%= upperCompAcc.description %>" selected="selected"><%= upperCompAcc.description %></option>
+                                                                            <% } else { %>
+                                                                                <option data-parent value="<%= upperCompAcc.description %>"><%= upperCompAcc.description %></option>
+                                                                            <% } %>
+                                                                        <% } %>
+                                                                    </select>
+                                                                </div>
+                                                            </div>
+                                                            <div class="col-sm-3">
+                                                                <div class="form-group">
+                                                                    <label for="lowerComp" class="col-form-label">Lower Compartment</label>
+                                                                    <select class="form-control" name="lowerComp" id="lowerComp">
+                                                                        <option value="">Select</option>
+                                                                        <% for (let lowerComp of slimvacSecPnOpts.lowerComp) { %>
+                                                                            <% if (lowerComp.description == editSecData[0].lowerComp) { %>
+                                                                                <option data-parent value="<%= lowerComp.description %>" selected="selected"><%= lowerComp.description %></option>
+                                                                            <% } else { %>
+                                                                                <option data-parent value="<%= lowerComp.description %>"><%= lowerComp.description %></option>
+                                                                            <% } %>
+                                                                        <% } %>
+                                                                    </select>
+                                                                </div>
+                                                            </div>
+                                                            <div class="col-sm-3">
+                                                                <div class="form-group">
+                                                                    <label for="lowerCompAcc" class="col-form-label">Lower Compartment Acc.</label>
+                                                                    <select class="form-control" name="lowerCompAcc" id="lowerCompAcc">
+                                                                        <option value="">Select</option>
+                                                                        <% for (let lowerCompAcc of slimvacSecPnOpts.lowerCompAcc) { %>
+                                                                            <% if (lowerCompAcc.description == editSecData[0].lowerCompAcc) { %>
+                                                                                <option data-parent value="<%= lowerCompAcc.description %>" selected="selected"><%= lowerCompAcc.description %></option>
+                                                                            <% } else { %>
+                                                                                <option data-parent value="<%= lowerCompAcc.description %>"><%= lowerCompAcc.description %></option>
+                                                                            <% } %>
+                                                                        <% } %>
+                                                                    </select>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <div class="row">
+                                                            <div class="col-sm-3">
+                                                                <div class="form-group">
+                                                                    <label for="enclosureType" class="col-form-label">Enclosure Type</label>
+                                                                    <select class="form-control" name="enclosureType" id="enclosureType">
+                                                                        <option value="">Select</option>
+                                                                        <% for (let enclosureType of slimvacSecPnOpts.enclosureType) { %>
+                                                                            <% if (enclosureType.description == editSecData[0].enclosureType) { %>
+                                                                                <option data-parent value="<%= enclosureType.description %>" selected="selected"><%= enclosureType.description %></option>
+                                                                            <% } else { %>
+                                                                                <option data-parent value="<%= enclosureType.description %>"><%= enclosureType.description %></option>
+                                                                            <% } %>
+                                                                        <% } %>
+                                                                    </select>
+                                                                </div>
+                                                            </div>
+                                                            <div class="col-sm-3">
+                                                                <div class="form-group">
+                                                                    <label for="enclosureWidth" class="col-form-label">Enclosure Width</label>
+                                                                    <select class="form-control" name="enclosureWidth" id="enclosureWidth">
+                                                                        <option value="">Select</option>
+                                                                        <% for (let enclosureWidth of slimvacSecPnOpts.enclosureWidth) { %>
+                                                                            <% if (enclosureWidth.description == editSecData[0].enclosureWidth) { %>
+                                                                                <option data-parent value="<%= enclosureWidth.description %>" selected="selected"><%= enclosureWidth.description %></option>
+                                                                            <% } else { %>
+                                                                                <option data-parent value="<%= enclosureWidth.description %>"><%= enclosureWidth.description %></option>
+                                                                            <% } %>
+                                                                        <% } %>
+                                                                    </select>
+                                                                </div>
+                                                            </div>
+                                                            <div class="col-sm-3">
+                                                                <div class="form-group">
+                                                                    <label for="cableEntry" class="col-form-label">Cable Entry</label>
+                                                                    <select class="form-control" name="cableEntry" id="cableEntry">
+                                                                        <option value="">Select</option>
+                                                                        <% for (let cableEntry of slimvacSecPnOpts.cableEntry) { %>
+                                                                            <% if (cableEntry.description == editSecData[0].cableEntry) { %>
+                                                                                <option data-parent value="<%= cableEntry.description %>" selected="selected"><%= cableEntry.description %></option>
+                                                                            <% } else { %>
+                                                                                <option data-parent value="<%= cableEntry.description %>"><%= cableEntry.description %></option>
+                                                                            <% } %>
+                                                                        <% } %>
+                                                                    </select>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <div class="row justify-content-center" style="margin-bottom:1%;">
+                                                            <div class="col-sm-3">
+                                                                <input id="saveSectionDetailBtn" type="submit" value="Save Section" class="btn-block btn btn-outline-success waves-effect waves-light" />
+                                                            </div>
+                                                        </div>
+                                                    </form>
+                                                <% } else { %>
+                                                    <form id="sectionPnForm" class="sectionPnForm" action="/reverseEngineerSectionDetail/?layoutID=<%=layoutData[0].jobNum%><%=layoutData[0].releaseNum%>_<%=layoutData[0].layoutID%>" method="POST">
+                                                        <% if (reverseEngineerSectionDetail.length == 0) { %>
+                                                            <div class="row justify-content-center">
+                                                                <div class="col-sm-4">
+                                                                    <div class="form-group">
+                                                                        <label for="example-text-input" class="col-form-label">Section Part Number</label>
+                                                                        <div class="input-group mb-3">
+                                                                            <input type="text" name="sectionCatalogPN" class="form-control" placeholder="Type Part Number Here" aria-label="Type Part Number Here" aria-describedby="basic-addon2" autocomplete="off">
+                                                                            <div class="input-group-append">
+                                                                                <button class="btn btn-outline-secondary" type="submit">Reverse Engineer</button>
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        <% } else { %>
+                                                            <div class="row justify-content-center">
+                                                                <div class="col-sm-4">
+                                                                    <div class="form-group">
+                                                                        <label for="example-text-input" class="col-form-label">Section Part Number</label>
+                                                                        <div class="input-group mb-3">
+                                                                            <input type="text" name="sectionCatalogPN" value="<%= reverseEngineerSectionDetail[0].sectionCatalogPN %>" class="form-control" placeholder="Type Part Number Here" aria-label="Type Part Number Here" aria-describedby="basic-addon2" autocomplete="off">
+                                                                            <div class="input-group-append">
+                                                                                <button class="btn btn-outline-secondary" type="submit">Reverse Engineer</button>
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        <% } %>
+                                                    </form>
+                                                    <form id="sectionDetailForm" class="sectionDetailForm" action="/addSectionDetail/?layoutID=<%=layoutData[0].jobNum%><%=layoutData[0].releaseNum%>_<%=layoutData[0].layoutID%>" method="POST">
+                                                        <% if (reverseEngineerSectionDetail.length == 0) { %>
+                                                            <div class="row">
+                                                                <div class="col-sm-3">
+                                                                    <div class="form-group">
+                                                                        <label for="productFamily_sec" class="col-form-label">Product Family</label>
+                                                                        <select class="form-control" name="productFamily_sec" id="productFamily_sec">
+                                                                            <option value="">Select</option>
+                                                                            <% for (let family of slimvacSecPnOpts.family) { %>
+                                                                                <option data-parent value="<%= family.description %>"><%= family.description %></option>
+                                                                            <% } %>
+                                                                        </select>
+                                                                    </div>
+                                                                </div>
+                                                                <div class="col-sm-3">
+                                                                    <div class="form-group">
+                                                                        <label for="brkMfg" class="col-form-label">Breaker Mfg.</label>
+                                                                        <select class="form-control" name="brkMfg" id="brkMfg">
+                                                                            <option value="">Select</option>
+                                                                            <% for (let brkMfg of slimvacSecPnOpts.brkMfg) { %>
+                                                                                <option data-parent value="<%= brkMfg.description %>"><%= brkMfg.description %></option>
+                                                                            <% } %>
+                                                                        </select>
+                                                                    </div>
+                                                                </div>
+                                                                <div class="col-sm-3">
+                                                                    <div class="form-group">
+                                                                        <label for="kaRating" class="col-form-label">kA Rating</label>
+                                                                        <select class="form-control" name="kaRating" id="kaRating">
+                                                                            <option value="">Select</option>
+                                                                            <% for (let kaRating of slimvacSecPnOpts.kaRating) { %>
+                                                                                <option data-parent value="<%= kaRating.description %>"><%= kaRating.description %></option>
+                                                                            <% } %>
+                                                                        </select>
+                                                                    </div>
+                                                                </div>
+                                                                <div class="col-sm-3">
+                                                                    <div class="form-group">
+                                                                        <label for="mainBusRating" class="col-form-label">Main Bus Rating</label>
+                                                                        <select class="form-control" name="mainBusRating" id="mainBusRating">
+                                                                            <option value="">Select</option>
+                                                                            <% for (let mainBusRating of slimvacSecPnOpts.mainBusRating) { %>
+                                                                                <option data-parent value="<%= mainBusRating.description %>"><%= mainBusRating.description %></option>
+                                                                            <% } %>
+                                                                        </select>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                            <div class="row">
+                                                                <div class="col-sm-3">
+                                                                    <div class="form-group">
+                                                                        <label for="upperComp" class="col-form-label">Upper Compartment</label>
+                                                                        <select class="form-control" name="upperComp" id="upperComp">
+                                                                            <option value="">Select</option>
+                                                                            <% for (let upperComp of slimvacSecPnOpts.upperComp) { %>
+                                                                                <option data-parent value="<%= upperComp.description %>"><%= upperComp.description %></option>
+                                                                            <% } %>
+                                                                        </select>
+                                                                    </div>
+                                                                </div>
+                                                                <div class="col-sm-3">
+                                                                    <div class="form-group">
+                                                                        <label for="upperCompAcc" class="col-form-label">Upper Compartment Acc.</label>
+                                                                        <select class="form-control" name="upperCompAcc" id="upperCompAcc">
+                                                                            <option value="">Select</option>
+                                                                            <% for (let upperCompAcc of slimvacSecPnOpts.upperCompAcc) { %>
+                                                                                <option data-parent value="<%= upperCompAcc.description %>"><%= upperCompAcc.description %></option>
+                                                                            <% } %>
+                                                                        </select>
+                                                                    </div>
+                                                                </div>
+                                                                <div class="col-sm-3">
+                                                                    <div class="form-group">
+                                                                        <label for="lowerComp" class="col-form-label">Lower Compartment</label>
+                                                                        <select class="form-control" name="lowerComp" id="lowerComp">
+                                                                            <option value="">Select</option>
+                                                                            <% for (let lowerComp of slimvacSecPnOpts.lowerComp) { %>
+                                                                                <option data-parent value="<%= lowerComp.description %>"><%= lowerComp.description %></option>
+                                                                            <% } %>
+                                                                        </select>
+                                                                    </div>
+                                                                </div>
+                                                                <div class="col-sm-3">
+                                                                    <div class="form-group">
+                                                                        <label for="lowerCompAcc" class="col-form-label">Lower Compartment Acc.</label>
+                                                                        <select class="form-control" name="lowerCompAcc" id="lowerCompAcc">
+                                                                            <option value="">Select</option>
+                                                                            <% for (let lowerCompAcc of slimvacSecPnOpts.lowerCompAcc) { %>
+                                                                                <option data-parent value="<%= lowerCompAcc.description %>"><%= lowerCompAcc.description %></option>
+                                                                            <% } %>
+                                                                        </select>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                            <div class="row">
+                                                                <div class="col-sm-3">
+                                                                    <div class="form-group">
+                                                                        <label for="enclosureType" class="col-form-label">Enclosure Type</label>
+                                                                        <select class="form-control" name="enclosureType" id="enclosureType">
+                                                                            <option value="">Select</option>
+                                                                            <% for (let enclosureType of slimvacSecPnOpts.enclosureType) { %>
+                                                                                <option data-parent value="<%= enclosureType.description %>"><%= enclosureType.description %></option>
+                                                                            <% } %>
+                                                                        </select>
+                                                                    </div>
+                                                                </div>
+                                                                <div class="col-sm-3">
+                                                                    <div class="form-group">
+                                                                        <label for="enclosureWidth" class="col-form-label">Enclosure Width</label>
+                                                                        <select class="form-control" name="enclosureWidth" id="enclosureWidth">
+                                                                            <option value="">Select</option>
+                                                                            <% for (let enclosureWidth of slimvacSecPnOpts.enclosureWidth) { %>
+                                                                                <option data-parent value="<%= enclosureWidth.description %>"><%= enclosureWidth.description %></option>
+                                                                            <% } %>
+                                                                        </select>
+                                                                    </div>
+                                                                </div>
+                                                                <div class="col-sm-3">
+                                                                    <div class="form-group">
+                                                                        <label for="cableEntry" class="col-form-label">Cable Entry</label>
+                                                                        <select class="form-control" name="cableEntry" id="cableEntry">
+                                                                            <option value="">Select</option>
+                                                                            <% for (let cableEntry of slimvacSecPnOpts.cableEntry) { %>
+                                                                                <option data-parent value="<%= cableEntry.description %>"><%= cableEntry.description %></option>
+                                                                            <% } %>
+                                                                        </select>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        <% } else { %>
+                                                            <div class="row">
+                                                                <div class="col-sm-3">
+                                                                    <div class="form-group">
+                                                                        <label for="productFamily_sec" class="col-form-label">Product Family</label>
+                                                                        <select class="form-control" name="productFamily_sec" id="productFamily_sec">
+                                                                            <option value="">Select</option>
+                                                                            <% for (let family of slimvacSecPnOpts.family) { %>
+                                                                                <% if (family.description == reverseEngineerSectionDetail[0].productFamily) { %>
+                                                                                    <option data-parent value="<%= family.description %>" selected="selected"><%= family.description %></option>
+                                                                                <% } else { %>
+                                                                                    <option data-parent value="<%= family.description %>"><%= family.description %></option>
+                                                                                <% } %>
+                                                                            <% } %>
+                                                                        </select>
+                                                                    </div>
+                                                                </div>
+                                                                <div class="col-sm-3">
+                                                                    <div class="form-group">
+                                                                        <label for="brkMfg" class="col-form-label">Breaker Mfg.</label>
+                                                                        <select class="form-control" name="brkMfg" id="brkMfg">
+                                                                            <option value="">Select</option>
+                                                                            <% for (let brkMfg of slimvacSecPnOpts.brkMfg) { %>
+                                                                                <% if (brkMfg.description == reverseEngineerSectionDetail[0].brkMfg) { %>
+                                                                                    <option data-parent value="<%= brkMfg.description %>" selected="selected"><%= brkMfg.description %></option>
+                                                                                <% } else { %>
+                                                                                    <option data-parent value="<%= brkMfg.description %>"><%= brkMfg.description %></option>
+                                                                                <% } %>
+                                                                            <% } %>
+                                                                        </select>
+                                                                    </div>
+                                                                </div>
+                                                                <div class="col-sm-3">
+                                                                    <div class="form-group">
+                                                                        <label for="kaRating" class="col-form-label">kA Rating</label>
+                                                                        <select class="form-control" name="kaRating" id="kaRating">
+                                                                            <option value="">Select</option>
+                                                                            <% for (let kaRating of slimvacSecPnOpts.kaRating) { %>
+                                                                                <% if (kaRating.description == reverseEngineerSectionDetail[0].kaRating) { %>
+                                                                                    <option data-parent value="<%= kaRating.description %>" selected="selected"><%= kaRating.description %></option>
+                                                                                <% } else { %>
+                                                                                    <option data-parent value="<%= kaRating.description %>"><%= kaRating.description %></option>
+                                                                                <% } %>
+                                                                            <% } %>
+                                                                        </select>
+                                                                    </div>
+                                                                </div>
+                                                                <div class="col-sm-3">
+                                                                    <div class="form-group">
+                                                                        <label for="mainBusRating" class="col-form-label">Main Bus Rating</label>
+                                                                        <select class="form-control" name="mainBusRating" id="mainBusRating">
+                                                                            <option value="">Select</option>
+                                                                            <% for (let mainBusRating of slimvacSecPnOpts.mainBusRating) { %>
+                                                                                <% if (mainBusRating.description == reverseEngineerSectionDetail[0].mainBusRating) { %>
+                                                                                    <option data-parent value="<%= mainBusRating.description %>" selected="selected"><%= mainBusRating.description %></option>
+                                                                                <% } else { %>
+                                                                                    <option data-parent value="<%= mainBusRating.description %>"><%= mainBusRating.description %></option>
+                                                                                <% } %>
+                                                                            <% } %>
+                                                                        </select>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                            <div class="row">
+                                                                <div class="col-sm-3">
+                                                                    <div class="form-group">
+                                                                        <label for="upperComp" class="col-form-label">Upper Compartment</label>
+                                                                        <select class="form-control" name="upperComp" id="upperComp">
+                                                                            <option value="">Select</option>
+                                                                            <% for (let upperComp of slimvacSecPnOpts.upperComp) { %>
+                                                                                <% if (upperComp.description == reverseEngineerSectionDetail[0].upperComp) { %>
+                                                                                    <option data-parent value="<%= upperComp.description %>" selected="selected"><%= upperComp.description %></option>
+                                                                                <% } else { %>
+                                                                                    <option data-parent value="<%= upperComp.description %>"><%= upperComp.description %></option>
+                                                                                <% } %>
+                                                                            <% } %>
+                                                                        </select>
+                                                                    </div>
+                                                                </div>
+                                                                <div class="col-sm-3">
+                                                                    <div class="form-group">
+                                                                        <label for="upperCompAcc" class="col-form-label">Upper Compartment Acc.</label>
+                                                                        <select class="form-control" name="upperCompAcc" id="upperCompAcc">
+                                                                            <option value="">Select</option>
+                                                                            <% for (let upperCompAcc of slimvacSecPnOpts.upperCompAcc) { %>
+                                                                                <% if (upperCompAcc.description == reverseEngineerSectionDetail[0].upperCompAcc) { %>
+                                                                                    <option data-parent value="<%= upperCompAcc.description %>" selected="selected"><%= upperCompAcc.description %></option>
+                                                                                <% } else { %>
+                                                                                    <option data-parent value="<%= upperCompAcc.description %>"><%= upperCompAcc.description %></option>
+                                                                                <% } %>
+                                                                            <% } %>
+                                                                        </select>
+                                                                    </div>
+                                                                </div>
+                                                                <div class="col-sm-3">
+                                                                    <div class="form-group">
+                                                                        <label for="lowerComp" class="col-form-label">Lower Compartment</label>
+                                                                        <select class="form-control" name="lowerComp" id="lowerComp">
+                                                                            <option value="">Select</option>
+                                                                            <% for (let lowerComp of slimvacSecPnOpts.lowerComp) { %>
+                                                                                <% if (lowerComp.description == reverseEngineerSectionDetail[0].lowerComp) { %>
+                                                                                    <option data-parent value="<%= lowerComp.description %>" selected="selected"><%= lowerComp.description %></option>
+                                                                                <% } else { %>
+                                                                                    <option data-parent value="<%= lowerComp.description %>"><%= lowerComp.description %></option>
+                                                                                <% } %>
+                                                                            <% } %>
+                                                                        </select>
+                                                                    </div>
+                                                                </div>
+                                                                <div class="col-sm-3">
+                                                                    <div class="form-group">
+                                                                        <label for="lowerCompAcc" class="col-form-label">Lower Compartment Acc.</label>
+                                                                        <select class="form-control" name="lowerCompAcc" id="lowerCompAcc">
+                                                                            <option value="">Select</option>
+                                                                            <% for (let lowerCompAcc of slimvacSecPnOpts.lowerCompAcc) { %>
+                                                                                <% if (lowerCompAcc.description == reverseEngineerSectionDetail[0].lowerCompAcc) { %>
+                                                                                    <option data-parent value="<%= lowerCompAcc.description %>" selected="selected"><%= lowerCompAcc.description %></option>
+                                                                                <% } else { %>
+                                                                                    <option data-parent value="<%= lowerCompAcc.description %>"><%= lowerCompAcc.description %></option>
+                                                                                <% } %>
+                                                                            <% } %>
+                                                                        </select>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                            <div class="row">
+                                                                <div class="col-sm-3">
+                                                                    <div class="form-group">
+                                                                        <label for="enclosureType" class="col-form-label">Enclosure Type</label>
+                                                                        <select class="form-control" name="enclosureType" id="enclosureType">
+                                                                            <option value="">Select</option>
+                                                                            <% for (let enclosureType of slimvacSecPnOpts.enclosureType) { %>
+                                                                                <% if (enclosureType.description == reverseEngineerSectionDetail[0].enclosureType) { %>
+                                                                                    <option data-parent value="<%= enclosureType.description %>" selected="selected"><%= enclosureType.description %></option>
+                                                                                <% } else { %>
+                                                                                    <option data-parent value="<%= enclosureType.description %>"><%= enclosureType.description %></option>
+                                                                                <% } %>
+                                                                            <% } %>
+                                                                        </select>
+                                                                    </div>
+                                                                </div>
+                                                                <div class="col-sm-3">
+                                                                    <div class="form-group">
+                                                                        <label for="enclosureWidth" class="col-form-label">Enclosure Width</label>
+                                                                        <select class="form-control" name="enclosureWidth" id="enclosureWidth">
+                                                                            <option value="">Select</option>
+                                                                            <% for (let enclosureWidth of slimvacSecPnOpts.enclosureWidth) { %>
+                                                                                <% if (enclosureWidth.description == reverseEngineerSectionDetail[0].enclosureWidth) { %>
+                                                                                    <option data-parent value="<%= enclosureWidth.description %>" selected="selected"><%= enclosureWidth.description %></option>
+                                                                                <% } else { %>
+                                                                                    <option data-parent value="<%= enclosureWidth.description %>"><%= enclosureWidth.description %></option>
+                                                                                <% } %>
+                                                                            <% } %>
+                                                                        </select>
+                                                                    </div>
+                                                                </div>
+                                                                <div class="col-sm-3">
+                                                                    <div class="form-group">
+                                                                        <label for="cableEntry" class="col-form-label">Cable Entry</label>
+                                                                        <select class="form-control" name="cableEntry" id="cableEntry">
+                                                                            <option value="">Select</option>
+                                                                            <% for (let cableEntry of slimvacSecPnOpts.cableEntry) { %>
+                                                                                <% if (cableEntry.description == reverseEngineerSectionDetail[0].cableEntry) { %>
+                                                                                    <option data-parent value="<%= cableEntry.description %>" selected="selected"><%= cableEntry.description %></option>
+                                                                                <% } else { %>
+                                                                                    <option data-parent value="<%= cableEntry.description %>"><%= cableEntry.description %></option>
+                                                                                <% } %>
+                                                                            <% } %>
+                                                                        </select>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        <% } %>
+                                                        <div class="row justify-content-center" style="margin-bottom:1%;">
+                                                            <div class="col-sm-3">
+                                                                <input id="addSectionDetailBtn" type="submit" value="Add Section" class="btn-block btn btn-outline-success waves-effect waves-light" />
+                                                            </div>
+                                                        </div>
+                                                    </form>
+                                                <% } %>
+                                            <% } %>
+
+                                            <% if (sectionDetail.length != 0 ) { %>
+                                                <table class="table table-hover">
+                                                    <thead>
+                                                    <tr>
+                                                        <th scope="col">Section #</th>
+                                                        <th scope="col">Part #</th>
+                                                        <th scope="col"></th>
+                                                    </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                    <% for (let i = 0; i < sectionDetail.length; i++) { %>
+                                                        <tr>
+                                                            <th scope="row"><%=i+1%></th>
+                                                            <td><%=sectionDetail[i].sectionCatalogPN%></td>
+                                                            <td>
+                                                                <div class="row justify-content-end">
+                                                                    <div class="col-sm-4">
+                                                                        <form id="sectionEditForm" class="sectionEditForm" action="/editSectionDetail/?secID=<%=sectionDetail[i].secID%>&layoutID=<%=layoutData[0].jobNum%><%=layoutData[0].releaseNum%>_<%=layoutData[0].layoutID%>" method="POST">
+                                                                            <input id="editSectionDetailBtn" type="submit" value="Edit" class="btn-block btn btn-outline-warning waves-effect waves-light" />
+                                                                        </form>
+                                                                    </div>
+                                                                    <div class="col-sm-4">
+                                                                        <form id="sectionDeleteForm" class="sectionDeleteForm" action="/deleteSectionDetail/?secID=<%=sectionDetail[i].secID%>&layoutID=<%=layoutData[0].jobNum%><%=layoutData[0].releaseNum%>_<%=layoutData[0].layoutID%>" method="POST">
+                                                                            <input id="deleteSectionDetailBtn" type="submit" value="Delete" class="btn-block btn btn-outline-danger waves-effect waves-light" />
+                                                                        </form>
+                                                                    </div>
+                                                                </div>
+
+                                                            </td>
+                                                        </tr>
+                                                    <% } %>
+                                                    </tbody>
+                                                </table>
+                                            <% } %>
+
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+
+
+
+    </div>
+
+</div>
+
+<footer class="footer">
+    © 2019 SAI, Advanced Power Solutions Inc.
+</footer>
+</div> <!-- wrapper -->
+
+
+<!-- Responsive-table-->
+<script src="/public/plugins/RWD-Table-Patterns/dist/js/rwd-table.min.js"></script>
+<script>
+    $(function() {
+        $('.table-responsive').responsiveTable({
+            addDisplayAllBtn: 'btn btn-secondary'
+        });
+    });
+</script>
+
+<!-- Plugins js -->
+<script src="/public/plugins/morris/morris.min.js"></script>
+<script src="/public/plugins/raphael/raphael-min.js"></script>
+<script src="/public/plugins/bootstrap-colorpicker/js/bootstrap-colorpicker.min.js"></script>
+<script src="/public/plugins/bootstrap-datepicker/js/bootstrap-datepicker.js"></script>
+<script src="/public/plugins/select2/js/select2.min.js"></script>
+<script src="/public/plugins/bootstrap-maxlength/bootstrap-maxlength.min.js"></script>
+<script src="/public/plugins/bootstrap-filestyle/js/bootstrap-filestyle.min.js"></script>
+<script src="/public/plugins/bootstrap-touchspin/js/jquery.bootstrap-touchspin.min.js"></script>
+<script src="/public/plugins/ion-rangeslider/ion.rangeSlider.min.js"></script>
+<script src="/public/plugins/jquery-sparkline/jquery.sparkline.min.js"></script>
+
+<!-- Assets js -->
+<script src="/public/assets/js/jquery.min.js"></script>
+<script src="/public/assets/js/bootstrap.bundle.min.js"></script>
+<script src="/public/assets/js/metisMenu.min.js"></script>
+<script src="/public/assets/js/jquery.slimscroll.js"></script>
+<script src="/public/assets/js/waves.min.js"></script>
+<script src="/public/assets/pages/dashboard.js"></script>
+<script src="/public/assets/pages/rangeslider-init.js"></script>
+<script src="/public/assets/pages/form-advanced.js"></script>
+<script src="/public/assets/js/app.js"></script>
+<script src="/public/assets/js/pdfDxfBinBomCheck.js"></script>
+<script src="/public/assets/js/quoteFilterDropdown.js"></script>
+<script src="/public/assets/js/quoteCheckbox.js"></script>
+<script src="/public/assets/js/submittalLayoutRestrictions.js"></script>
+<script src="/public/assets/js/submittalDragDrop.js"></script>
+
+
+</body>
+</html>

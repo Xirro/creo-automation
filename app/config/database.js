@@ -80,10 +80,12 @@ module.exports = {
     'secSV_productLine_table': 'productLine_secSV',
     'secSV_sectionType_table': 'sectionType_secSV',
     'secSV_brkMfg_table': 'brkMfg_secSV',
-    'secSV_upperComp_table': 'upperComp_secSV',
-    'secSV_lowerComp_table': 'lowerComp_secSV',
     'secSV_kaRating_table': 'kaRating_secSV',
     'secSV_mainBusRating_table': 'mainBusRating_secSV',
+    'secSV_upperComp_table': 'upperComp_secSV',
+    'secSV_upperCompAcc_table': 'upperCompAcc_secSV',
+    'secSV_lowerComp_table': 'lowerComp_secSV',
+    'secSV_lowerCompAcc_table': 'lowerCompAcc_secSV',
     'secSV_enclosureWidth_table': 'enclosureWidth_secSV',
     'secSV_enclosureType_table': 'enclosureType_secSV',
     'secSV_cableEntry_table': 'cableEntry_secSV',
@@ -245,5 +247,11 @@ module.exports = {
     'submittal_secType_table': 'sectionTypes',
     'submittal_breaker_table': 'submittalBrkSum',
     'submittal_brkAcc_table': 'submittalBrkAccSum',
-    'submittal_brkAcc_options': 'submittalBrkAccOptions'
+    'submittal_brkAcc_options': 'submittalBrkAccOptions',
+
+    //Mechanical Eng Submittal Tables
+    'layout_summary_table': 'layoutSum',
+    'layout_rev_table': 'layoutRevSum',
+    'layout_detail_table': 'layoutDetail',
+    'section_detail_table': 'sectionDetail'
 };

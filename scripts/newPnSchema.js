@@ -14,294 +14,461 @@ let connection = mysql.createConnection({
     multipleStatements: true,
 });
 
+
+connection.query('DROP SCHEMA IF EXISTS ' + dbConfig.database, function(err,rows) { if(err) throw err; }); // DROPS RESIDUAL DATABASE/TABLES
+
+connection.query('CREATE DATABASE ' + dbConfig.database, function(err,rows) { if(err) throw err; }); // CREATES SAI_db SCHEMA
+
 connection.query('USE ' + database, function(err,rows) { if(err) throw err; });
 
-// layoutParamTypes
+
+//!**************************************!//
+//!******** PRODUCT PART NUMBERS ********!//
+//!**************************************!//
+
+//productFamily_prod
 connection.query('\
-CREATE TABLE IF NOT EXISTS ' + database + '.' + dbConfig.layout_paramTypes_table + ' ( \
-    dropdownID INT UNSIGNED NOT NULL AUTO_INCREMENT,\
-    dropdownType VARCHAR(100) NULL,\
-    dropdownValue VARCHAR(100) NULL,\
-    PRIMARY KEY (dropdownID), \
-    UNIQUE INDEX dropdownID_UNIQUE (dropdownID ASC)) \
+CREATE TABLE IF NOT EXISTS ' + database + '.' + dbConfig.prod_productFamily_table + ' ( \
+    idFamily INT NOT NULL AUTO_INCREMENT, \
+    code VARCHAR(2) NOT NULL, \
+    description VARCHAR(100) NOT NULL, \
+    PRIMARY KEY (idFamily), \
+    UNIQUE INDEX idFamily_UNIQUE (idFamily ASC))\
     ENGINE = InnoDB;', function(err,rows) { if(err) throw err; });
 
-connection.query("INSERT INTO "+database+"."+dbConfig.layout_paramTypes_table+" (dropdownType, dropdownValue) VALUES " +
-    //productFamily
-    "('productFamily', 'SERIES 1 SWITCHBOARD'), " +
-    "('productFamily', 'SERIES 2 SWITCHBOARD'), " +
-    "('productFamily', 'SERIES 3 SWITCHBOARD'), " +
-    "('productFamily', 'SERIES 1 SWITCHGEAR'), " +
-    "('productFamily', 'POWER DISTRIBUTION UNIT'), " +
-    "('productFamily', 'SUBSTATION'), " +
-    "('productFamily', 'ANSI STD. SWITCHGEAR CLASS'), " +
-    "('productFamily', '15kV SLIMVAC'), " +
-    "('productFamily', '15kV SLIMVAC AR'), " +
+connection.query("INSERT INTO "+database+"."+dbConfig.prod_productFamily_table+" (code, description) VALUES " +
+    "('S1', 'SERIES 1 SWITCHBOARD'), " +
+    "('S2', 'SERIES 2 SWITCHBOARD'), " +
+    "('S3', 'SERIES 3 SWITCHBOARD'), " +
+    "('SG', 'SERIES 1 SWITCHGEAR'), " +
+    "('PD', 'POWER DISTRIBUTION UNIT'), " +
+    "('SS', 'SUBSTATION'), " +
+    "('AS', 'ANSI STD. SWITCHGEAR CLASS'), " +
+    "('SV', '15kV SLIMVAC'), " +
+    "('SA', '15kV SLIMVAC AR'); ", function (err, result) { if(err) throw err; });
 
-    //productLine
-    "('productLine', 'SIEMENS'), " +
-    "('productLine', 'SQUARE D'), " +
-    "('productLine', 'ABB'), " +
-    "('productLine', 'EATON'), " +
-    "('productLine', 'LSIS'), " +
-    "('productLine', 'GENERAL ELECTRIC'), " +
-
-    //ulListing
-    "('ulListing', 'UL891'), " +
-    "('ulListing', 'UL1558'), " +
-    "('ulListing', 'UL/ANSI'), " +
-    "('ulListing', 'UL508A'), " +
-
-    //systemType
-    "('systemType', '208Y/120VAC - 3PH, 4W'), " +
-    "('systemType', '240VAC - 3PH, 3W'), " +
-    "('systemType', '380Y/220VAC - 3PH, 4W'), " +
-    "('systemType', '400Y/230VAC - 3PH, 4W'), " +
-    "('systemType', '415Y/240VAC - 3PH, 4W'), " +
-    "('systemType', '480VAC - 3PH, 3W'), " +
-    "('systemType', '480Y/277VAC - 3PH, 4W'), " +
-    "('systemType', '600VAC - 3PH, 3W'), " +
-    "('systemType', '600Y/347VAC - 3PH, 4W'), " +
-    "('systemType', '125VDC - 2W'), " +
-    "('systemType', '250VDC - 2W'), " +
-    "('systemType', '500VDC - 2W'), " +
-    "('systemType', '600VDC - 2W'), " +
-    "('systemType', '5kV - 3PH, 3W'), " +
-    "('systemType', '7.5kV - 3PH, 3W'), " +
-    "('systemType', '12kV - 3PH, 3W'), " +
-    "('systemType', '15kV - 3PH, 3W'), " +
-    "('systemType', '27kV - 3PH, 3W'), " +
-    "('systemType', '33kV - 3PH, 3W'), " +
-    "('systemType', '38kV - 3PH, 3W'), " +
-    "('systemType', 'N/A'), " +
-
-    //enclosure
-    "('enclosure', 'NEMA 1 INDOOR'), " +
-    "('enclosure', 'NEMA 3R OUTDOOR'), " +
-    "('enclosure', 'OUTDOOR WALK-IN'), " +
-    "('enclosure', 'CUSTOM ENCLOSURE'), " +
-
-    //accessibility
-    "('accessibility', 'FRONT AND REAR'), " +
-    "('accessibility', 'FRONT AND SIDE'), " +
-    "('accessibility', 'FRONT ONLY'), " +
-
-    //cableAccess
-    "('cableAccess', 'TOP'), " +
-    "('cableAccess', 'BOTTOM'), " +
-    "('cableAccess', 'TOP OR BOTTOM'), " +
-    "('cableAccess', 'N/A'), " +
-
-    //paint
-    "('paint', 'ANSI 49 GRAY - 039/70200 (ASA 49)'), " +
-    "('paint', 'ANSI 61 GRAY - T3-GY19'), " +
-    "('paint', 'BLACK - HBT2-30015-HC'), " +
-    "('paint', 'RAVEN BLACK - HBT2-30015-HC'), " +
-    "('paint', 'TOSHIBA BLACK - H1-BK(AM105-6)-R'), " +
-    "('paint', 'P.O. BLUE - PPL87314'), " +
-    "('paint', 'RED BARON - PPL94334'), " +
-    "('paint', 'GRAPHITE GRAY - PRPL97024'), " +
-    "('paint', 'SKY WHITE - T9-WH1'), " +
-    "('paint', 'PILLER BLUE TEXTURED - RAL 5012(89/40940)'), " +
-    "('paint', 'SE WHITE 3 - HWS8-01703'), " +
-    "('paint', 'MITSUBISHI BEIGE - PAS3-60022'), " +
-    "('paint', 'SILCON GRAY - HAT2-30232'), " +
-    "('paint', 'CPN BEIGE - T2-BG2'), " +
-    "('paint', 'LIGHT GRAY/OFF WHITE - RAL 7035'), " +
-    "('paint', 'BLACK - RAL 9011'), " +
-    "('paint', 'NO PAINT - NONE'), " +
-
-    //systemAmp
-    "('systemAmp', '800A'), " +
-    "('systemAmp', '1200A'), " +
-    "('systemAmp', '1600A'), " +
-    "('systemAmp', '2000A'), " +
-    "('systemAmp', '2500A'), " +
-    "('systemAmp', '3000A'), " +
-    "('systemAmp', '3200A'), " +
-    "('systemAmp', '4000A'), " +
-    "('systemAmp', '5000A'), " +
-    "('systemAmp', '6000A'), " +
-    "('systemAmp', '10000A'), " +
-    "('systemAmp', 'N/A'), " +
-
-    //mainBusAmp
-    "('mainBusAmp', '800A'), " +
-    "('mainBusAmp', '1200A'), " +
-    "('mainBusAmp', '1600A'), " +
-    "('mainBusAmp', '2000A'), " +
-    "('mainBusAmp', '2500A'), " +
-    "('mainBusAmp', '3000A'), " +
-    "('mainBusAmp', '3200A'), " +
-    "('mainBusAmp', '4000A'), " +
-    "('mainBusAmp', '5000A'), " +
-    "('mainBusAmp', '6000A'), " +
-    "('mainBusAmp', '10000A'), " +
-    "('mainBusAmp', 'N/A'), " +
-
-    //Bus Bracing
-    "('busBracing', '65kA'), " +
-    "('busBracing', '100kA'), " +
-    "('busBracing', '31.5kA'), " +
-    "('busBracing', 'N/A'), " +
-
-    //interruptRating
-    "('interruptRating', '35kA'), " +
-    "('interruptRating', '42kA'), " +
-    "('interruptRating', '65kA'), " +
-    "('interruptRating', '85kA'), " +
-    "('interruptRating', '100kA'), " +
-    "('interruptRating', '150kA'), " +
-    "('interruptRating', '200kA'), " +
-    "('interruptRating', '31.5kA'), " +
-    "('interruptRating', '40kA'), " +
-    "('interruptRating', '50kA'), " +
-    "('interruptRating', '63kA'), " +
-    "('interruptRating', 'N/A'), " +
-
-    //busType
-    "('busType', 'SILVER PLATED COPPER'), " +
-    "('busType', 'TIN PLATED COPPER'), " +
-    "('busType', 'N/A'), " +
-
-    //iccbPlatform
-    "('iccbPlatform', 'SQUARE D MASTERPACT NW'), " +
-    "('iccbPlatform', 'SIEMENS WL'), " +
-    "('iccbPlatform', 'EATON MAGNUM DS'), " +
-    "('iccbPlatform', 'EATON MAGNUM SB'), " +
-    "('iccbPlatform', 'EATON NRX'), " +
-    "('iccbPlatform', 'ABB EMAX2'), " +
-    "('iccbPlatform', 'LSIS SUSOL'), " +
-    "('iccbPlatform', 'N/A'), " +
-
-    //mccbPlatform
-    "('mccbPlatform', 'SQUARE D POWERPACT'), " +
-    "('mccbPlatform', 'SIEMENS VL'), " +
-    "('mccbPlatform', 'EATON POWER DEFENSE'), " +
-    "('mccbPlatform', 'ABB TMAX'), " +
-    "('mccbPlatform', 'LSIS SUSOL'), " +
-    "('mccbPlatform', 'N/A'), " +
-
-    //vcbPlatform
-    "('vcbPlatform', 'ABB VD4'), " +
-    "('vcbPlatform', 'N/A'), " +
-
-    //keyInterlocks
-    "('keyInterlocks', 'SCHEME 29'), " +
-    "('keyInterlocks', 'SCHEME 39'), " +
-    "('keyInterlocks', 'SCHEME 29/39'), " +
-    "('keyInterlocks', 'SCHEME 40'), " +
-    "('keyInterlocks', 'OTHER'), " +
-    "('keyInterlocks', 'N/A'); ", function (err, result) { if(err) throw err; });
-
-
-// layoutParamRestrictions
+//productLine_prod
 connection.query('\
-CREATE TABLE IF NOT EXISTS ' + database + '.' + dbConfig.layout_paramType_restrictions + ' ( \
-    dropdownID INT UNSIGNED NOT NULL AUTO_INCREMENT,\
-    dropdownType VARCHAR(100) NULL,\
-    dropdownValue VARCHAR(100) NULL,\
-    dropdownRestrictions JSON NULL,\
-    PRIMARY KEY (dropdownID), \
-    UNIQUE INDEX dropdownID_UNIQUE (dropdownID ASC)) \
+CREATE TABLE IF NOT EXISTS ' + database + '.' + dbConfig.prod_productLine_table + ' ( \
+    idProdLine INT NOT NULL AUTO_INCREMENT, \
+    code VARCHAR(2) NOT NULL, \
+    description VARCHAR(100) NOT NULL, \
+    PRIMARY KEY (idProdLine), \
+    UNIQUE INDEX idProdLine_UNIQUE (idProdLine ASC))\
     ENGINE = InnoDB;', function(err,rows) { if(err) throw err; });
 
+connection.query("INSERT INTO "+database+"."+dbConfig.prod_productLine_table+" (code, description) VALUES " +
+    "('I', 'SIEMENS'), " +
+    "('S', 'SCHNEIDER ELECTRIC'), " +
+    "('A', 'ABB'), " +
+    "('E', 'EATON'), " +
+    "('L', 'LSIS'), " +
+    "('G', 'GENERAL ELECTRIC'); ", function (err, result) { if(err) throw err; });
 
-connection.query("INSERT INTO "+database+"."+dbConfig.layout_paramType_restrictions+" (dropdownType, dropdownValue, dropdownRestrictions) VALUES " +
-
-    //Restrictions due to 891 UL Listing
-    "('ulListing', 'UL891', '{" +
-    "\"systemType\": [\"208Y/120VAC - 3PH, 4W\", \"240VAC - 3PH, 3W\", \"380Y/220VAC - 3PH, 4W\", " +
-    "\"400Y/230VAC - 3PH, 4W\", \"415Y/240VAC - 3PH, 4W\", \"480VAC - 3PH, 3W\", \"480Y/277VAC - 3PH, 4W\", " +
-    "\"600VAC - 3PH, 3W\", \"600Y/347VAC - 3PH, 4W\", \"125VDC - 2W\", \"250VDC - 2W\", \"500VDC - 2W\", \"600VDC - 2W\", \"N/A\"], " +
-    "\"systemAmp\": [\"800A\", \"1200A\", \"1600A\", \"2000A\", \"2500A\", \"3000A\", \"3200A\", \"4000A\", \"5000A\", \"6000A\", \"10000A\", \"N/A\"], " +
-    "\"mainBusAmp\": [\"800A\", \"1200A\", \"1600A\", \"2000A\", \"2500A\", \"3000A\", \"3200A\", \"4000A\", \"5000A\", \"6000A\", \"10000A\", \"N/A\"], " +
-    "\"busBracing\": [\"65kA\", \"100kA\", \"N/A\"], " +
-    "\"interruptRating\": [\"42kAIC\", \"65kAIC\", \"85kAIC\", \"100kAIC\", \"N/A\"], " +
-    "\"enclosure\": [\"NEMA 1 INDOOR\", \"NEMA 3R OUTDOOR\", \"OUTDOOR WALK-IN\", \"CUSTOM ENCLOSURE\"], " +
-    "\"accessibility\": [\"FRONT AND REAR\", \"FRONT AND SIDE\", \"FRONT ONLY\"], " +
-    "\"cableEntry\": [\"TOP\", \"BOTTOM\", \"TOP OR BOTTOM\", \"N/A\"], " +
-    "\"iccbPlatform\": [\"SQUARE D MASTERPACT NW\", \"SIEMENS WL\", \"EATON MAGNUM DS\", \"EATON MAGNUM SB\", \"EATON NRX\", \"ABB EMAX2\", \"LSIS SUSOL\", \"N/A\"], " +
-    "\"mccbPlatform\": [\"SQUARE D POWERPACT\", \"SIEMENS VL\", \"EATON POWER DEFENSE\", \"ABB TMAX\", \"LSIS SUSOL\", \"N/A\"], " +
-    "\"vcbPlatform\": [] " +
-    "}'), " +
-
-    //Restrictions due to 1558 UL Listing
-    "('ulListing', 'UL1558', '{" +
-    "\"systemType\": [\"208Y/120VAC - 3PH, 4W\", \"240VAC - 3PH, 3W\", \"380Y/220VAC - 3PH, 4W\", " +
-    "\"400Y/230VAC - 3PH, 4W\", \"415Y/240VAC - 3PH, 4W\", \"480VAC - 3PH, 3W\", \"480Y/277VAC - 3PH, 4W\", " +
-    "\"600VAC - 3PH, 3W\", \"600Y/347VAC - 3PH, 4W\", \"125VDC - 2W\", \"250VDC - 2W\", \"500VDC - 2W\", \"600VDC - 2W\", \"N/A\"], " +
-    "\"systemAmp\": [\"800A\", \"1200A\", \"1600A\", \"2000A\", \"2500A\", \"3000A\", \"3200A\", \"4000A\", \"5000A\", \"6000A\", \"10000A\", \"N/A\"], " +
-    "\"mainBusAmp\": [\"800A\", \"1200A\", \"1600A\", \"2000A\", \"2500A\", \"3000A\", \"3200A\", \"4000A\", \"5000A\", \"6000A\", \"10000A\", \"N/A\"], " +
-    "\"busBracing\": [\"65kA\", \"100kA\", \"N/A\"], " +
-    "\"interruptRating\": [\"42kAIC\", \"65kAIC\", \"85kAIC\", \"100kAIC\", \"N/A\"], " +
-    "\"enclosure\": [\"NEMA 1 INDOOR\"], " +
-    "\"accessibility\": [\"FRONT AND REAR\"], " +
-    "\"cableEntry\": [\"TOP\", \"BOTTOM\", \"TOP OR BOTTOM\", \"N/A\"], " +
-    "\"iccbPlatform\": [\"SQUARE D MASTERPACT NW\", \"SIEMENS WL\", \"EATON MAGNUM DS\", \"ABB EMAX2\", \"LSIS SUSOL\", \"N/A\"], " +
-    "\"mccbPlatform\": [], " +
-    "\"vcbPlatform\": [] " +
-    "}'), " +
-
-
-    //Restrictions due to UL/ANSI (MV) UL Listing
-    "('ulListing', 'UL/ANSI', '{" +
-    "\"systemType\": [\"4160VAC - 3PH, 3W\", \"12470VAC - 3PH, 3W\", \"13200VAC - 3PH, 3W\", \"13800VAC - 3PH, 3W\", \"N/A\"], " +
-    "\"systemAmp\": [\"1200A\", \"2000A\", \"N/A\"], " +
-    "\"mainBusAmp\": [\"1200A\", \"2000A\", \"N/A\"], " +
-    "\"busBracing\": [\"31.5kA\", \"N/A\"], " +
-    "\"interruptRating\": [\"31.5kAIC\", \"N/A\"], " +
-    "\"enclosure\": [\"NEMA 1 INDOOR\"], " +
-    "\"accessibility\": [\"FRONT AND REAR\"], " +
-    "\"cableEntry\": [\"TOP\", \"BOTTOM\", \"N/A\"], " +
-    "\"iccbPlatform\": [], " +
-    "\"mccbPlatform\": [], " +
-    "\"vcbPlatform\": [\"ABB VD4\", \"N/A\"] " +
-    "}'), " +
-
-
-    //Restrictions due to UL/ANSI (MV) UL Listing
-    "('ulListing', 'UL508A', '{" +
-    "\"systemType\": [\"N/A\"], " +
-    "\"systemAmp\": [\"N/A\"], " +
-    "\"mainBusAmp\": [\"N/A\"], " +
-    "\"busBracing\": [\"N/A\"], " +
-    "\"interruptRating\": [\"N/A\"], " +
-    "\"enclosure\": [\"NEMA 1 INDOOR\"], " +
-    "\"accessibility\": [\"FRONT AND REAR\", \"FRONT AND SIDE\", \"FRONT ONLY\"], " +
-    "\"cableEntry\": [\"TOP\", \"BOTTOM\", \"N/A\"] " +
-    "}'), " +
-
-
-
-
-    //Restrictions due to NEMA 3R Enclosure (only in UL891)
-    "('enclosure', 'NEMA 1 INDOOR', '{" +
-    "\"systemAmp\": [\"800A\", \"1200A\", \"1600A\", \"2000A\", \"2500A\", \"3000A\", \"3200A\", \"4000A\", \"5000A\", \"6000A\", \"10000A\", \"N/A\"], " +
-    "\"mainBusAmp\": [\"800A\", \"1200A\", \"1600A\", \"2000A\", \"2500A\", \"3000A\", \"3200A\", \"4000A\", \"5000A\", \"6000A\", \"10000A\", \"N/A\"] " +
-    "}'), " +
-    "('enclosure', 'NEMA 3R OUTDOOR', '{" +
-    "\"systemAmp\": [\"800A\", \"1200A\", \"1600A\", \"2000A\", \"2500A\", \"3000A\", \"3200A\", \"4000A\", \"N/A\"], " +
-    "\"mainBusAmp\": [\"800A\", \"1200A\", \"1600A\", \"2000A\", \"2500A\", \"3000A\", \"3200A\", \"4000A\", \"N/A\"] " +
-    "}') "
-
-
-
-    , function (err, result) {
-        if (err)
-            console.log("Error inserting : %s ", err);
-    }
-);
-
-
-
-
-
-
-// submittalSum
+//systemVoltageLV_prod
 connection.query('\
-CREATE TABLE IF NOT EXISTS ' + database + '.' + dbConfig.submittal_summary_table + ' ( \
-    subID INT UNSIGNED NOT NULL AUTO_INCREMENT, \
+CREATE TABLE IF NOT EXISTS ' + database + '.' + dbConfig.prod_systemVoltage_LV_table + ' ( \
+    idSystem INT NOT NULL AUTO_INCREMENT, \
+    code VARCHAR(2) NOT NULL, \
+    description VARCHAR(100) NOT NULL, \
+    PRIMARY KEY (idSystem), \
+    UNIQUE INDEX idSystem_UNIQUE (idSystem ASC))\
+    ENGINE = InnoDB;', function(err,rows) { if(err) throw err; });
+
+connection.query("INSERT INTO "+database+"."+dbConfig.prod_systemVoltage_LV_table+" (code, description) VALUES " +
+    "('12', '208Y/120VAC - 3PH, 4W'), " +
+    "('24', '240VAC - 3PH, 3W'), " +
+    "('27', '480Y/277VAC - 3PH, 4W'), " +
+    "('34', '600Y/347VAC - 3PH, 4W'), " +
+    "('48', '480VAC - 3PH, 3W'), " +
+    "('60', '600VAC - 3PH, 3W'), " +
+    "('D1', '125VDC - 2W'), " +
+    "('D2', '250VDC - 2W'), " +
+    "('D5', '500VDC - 2W'), " +
+    "('D6', '600VDC - 2W'), " +
+    "('XX', 'OTHER'); ", function (err, result) { if(err) throw err; });
+
+//systemVoltageMV_prod
+connection.query('\
+CREATE TABLE IF NOT EXISTS ' + database + '.' + dbConfig.prod_systemVoltage_MV_table + ' ( \
+    idSystem INT NOT NULL AUTO_INCREMENT, \
+    code VARCHAR(2) NOT NULL, \
+    description VARCHAR(100) NOT NULL, \
+    PRIMARY KEY (idSystem), \
+    UNIQUE INDEX idSystem_UNIQUE (idSystem ASC))\
+    ENGINE = InnoDB;', function(err,rows) { if(err) throw err; });
+
+connection.query("INSERT INTO " + database + "." + dbConfig.prod_systemVoltage_MV_table + " (code, description) VALUES " +
+    "('05', '5kV RANGE'), " +
+    "('08', '7.5kV RANGE'), " +
+    "('15', '12-15kV RANGE'), " +
+    "('27', '27kV RANGE'), " +
+    "('38', '33-38kV RANGE'); ", function (err, result) { if(err) throw err; });
+
+//currentRating_prod
+connection.query('\
+CREATE TABLE IF NOT EXISTS ' + database + '.' + dbConfig.prod_currentRating_table + ' ( \
+    idCurrent INT NOT NULL AUTO_INCREMENT, \
+    code VARCHAR(2) NOT NULL, \
+    description VARCHAR(100) NOT NULL, \
+    PRIMARY KEY (idCurrent), \
+    UNIQUE INDEX idCurrent_UNIQUE (idCurrent ASC))\
+    ENGINE = InnoDB;', function(err,rows) { if(err) throw err; });
+
+connection.query("INSERT INTO "+database+"."+dbConfig.prod_currentRating_table+" (code, description) VALUES " +
+    "('02', '250A AND BELOW'), " +
+    "('04', '400A'), " +
+    "('06', '600A'), " +
+    "('08', '800A'), " +
+    "('10', '1000A'), " +
+    "('12', '1200A'), " +
+    "('16', '1600A'), " +
+    "('20', '2000A'), " +
+    "('25', '2500A'), " +
+    "('30', '3000A'), " +
+    "('32', '3200A'), " +
+    "('40', '4000A'), " +
+    "('50', '5000A'), " +
+    "('60', '6000A'), " +
+    "('80', '8000A'), " +
+    "('99', '10000A'); ", function (err, result) { if(err) throw err; });
+
+//interruptingRatingLV_prod
+connection.query('\
+CREATE TABLE IF NOT EXISTS ' + database + '.' + dbConfig.prod_interruptingRating_LV_table + ' ( \
+    idKAIC INT NOT NULL AUTO_INCREMENT, \
+    code VARCHAR(2) NOT NULL, \
+    description VARCHAR(100) NOT NULL, \
+    PRIMARY KEY (idKAIC), \
+    UNIQUE INDEX idKAIC_UNIQUE (idKAIC ASC))\
+    ENGINE = InnoDB;', function(err,rows) { if(err) throw err; });
+
+connection.query("INSERT INTO "+database+"."+dbConfig.prod_interruptingRating_LV_table+" (code, description) VALUES " +
+    "('L', '35kA AND BELOW'), " +
+    "('M', '42-65kA'), " +
+    "('H', '85-100kA'), " +
+    "('V', '150-200kA'); ", function (err, result) { if(err) throw err; });
+
+//interruptingRatingMV_prod
+connection.query('\
+CREATE TABLE IF NOT EXISTS ' + database + '.' + dbConfig.prod_interruptingRating_MV_table + ' ( \
+    idKAIC INT NOT NULL AUTO_INCREMENT, \
+    code VARCHAR(2) NOT NULL, \
+    description VARCHAR(100) NOT NULL, \
+    PRIMARY KEY (idKAIC), \
+    UNIQUE INDEX idKAIC_UNIQUE (idKAIC ASC))\
+    ENGINE = InnoDB;', function(err,rows) { if(err) throw err; });
+
+connection.query("INSERT INTO "+database+"."+dbConfig.prod_interruptingRating_MV_table+" (code, description) VALUES " +
+    "('L', '31.5kA AND BELOW'), " +
+    "('M', '40kA'), " +
+    "('H', '50kA'), " +
+    "('V', '63kA'); ", function (err, result) { if(err) throw err; });
+
+//enclosure_prod
+connection.query('\
+CREATE TABLE IF NOT EXISTS ' + database + '.' + dbConfig.prod_enclosure_table + ' ( \
+    idEnc INT NOT NULL AUTO_INCREMENT, \
+    code VARCHAR(2) NOT NULL, \
+    description VARCHAR(100) NOT NULL, \
+    PRIMARY KEY (idEnc), \
+    UNIQUE INDEX idEnc (idEnc ASC))\
+    ENGINE = InnoDB;', function(err,rows) { if(err) throw err; });
+
+connection.query("INSERT INTO "+database+"."+dbConfig.prod_enclosure_table+" (code, description) VALUES " +
+    "('1', 'NEMA 1 INDOOR'), " +
+    "('3', 'NEMA 3R OUTDOOR'), " +
+    "('W', 'OUTDOOR WALK-IN'), " +
+    "('C', 'CUSTOM'); ", function (err, result) { if(err) throw err; });
+
+//finish_prod
+connection.query('\
+CREATE TABLE IF NOT EXISTS ' + database + '.' + dbConfig.prod_finish_table + ' ( \
+    idFinish INT NOT NULL AUTO_INCREMENT, \
+    code VARCHAR(2) NOT NULL, \
+    description VARCHAR(100) NOT NULL, \
+    PRIMARY KEY (idFinish), \
+    UNIQUE INDEX idFinish_UNIQUE (idFinish ASC))\
+    ENGINE = InnoDB;', function(err,rows) { if(err) throw err; });
+
+connection.query("INSERT INTO "+database+"."+dbConfig.prod_finish_table+" (code, description) VALUES " +
+    "('A', 'ANSI 61 GRAY'), " +
+    "('B', 'ANSI 49 GRAY'), " +
+    "('C', 'CUSTOM FINISH'), " +
+    "('D', 'SE WHITE HIGH GLOSS'), " +
+    "('E', 'RED BARON PPL94334'), " +
+    "('F', 'GRAPHITE GRAY PRPL97024'), " +
+    "('G', 'POST OFFICE BLUE PPL87314'), " +
+    "('H', 'RAL9003 (GVM WHITE)'), " +
+    "('I', 'SKY WHITE T9-WH1'), " +
+    "('J', 'RAL5012 (PILLER BLUE)'), " +
+    "('K', 'RAVEN BLACK'), " +
+    "('L', 'SLIMVAC AR MV BEIGE'), " +
+    "('X', 'NO PAINT'); ", function (err, result) { if(err) throw err; });
+
+//accessibility_prod
+connection.query('\
+CREATE TABLE IF NOT EXISTS ' + database + '.' + dbConfig.prod_accessibility_table + ' ( \
+    idAccess INT NOT NULL AUTO_INCREMENT, \
+    code VARCHAR(2) NOT NULL, \
+    description VARCHAR(100) NOT NULL, \
+    PRIMARY KEY (idAccess), \
+    UNIQUE INDEX idAccess_UNIQUE (idAccess ASC))\
+    ENGINE = InnoDB;', function(err,rows) { if(err) throw err; });
+
+connection.query("INSERT INTO "+database+"."+dbConfig.prod_accessibility_table+" (code, description) VALUES " +
+    "('F', 'FRONT ONLY'), " +
+    "('R', 'FRONT AND REAR'), " +
+    "('S', 'FRONT AND SIDE'); ", function (err, result) { if(err) throw err; });
+
+//controlVoltage_prod
+connection.query('\
+CREATE TABLE IF NOT EXISTS ' + database + '.' + dbConfig.prod_controlVoltage_table + ' ( \
+    idCtrlVolt INT NOT NULL AUTO_INCREMENT, \
+    code VARCHAR(2) NOT NULL, \
+    description VARCHAR(100) NOT NULL, \
+    PRIMARY KEY (idCtrlVolt), \
+    UNIQUE INDEX idCtrlVolt_UNIQUE (idCtrlVolt ASC))\
+    ENGINE = InnoDB;', function(err,rows) { if(err) throw err; });
+
+connection.query("INSERT INTO "+database+"."+dbConfig.prod_controlVoltage_table+" (code, description) VALUES " +
+    "('X', 'NO CONTROL'), " +
+    "('A', '120VAC'), " +
+    "('B', 'ALT. AC RATING'), " +
+    "('D', '125VDC'), " +
+    "('E', 'ALT. DC RATING'); ", function (err, result) { if(err) throw err; });
+
+
+//!**************************************!//
+//!**** SLIMVAC SECTION PART NUMBERS ****!//
+//!**************************************!//
+
+//productLine_secSV
+connection.query('\
+CREATE TABLE IF NOT EXISTS ' + database + '.' + dbConfig.secSV_productLine_table + ' ( \
+    idProdLine INT NOT NULL AUTO_INCREMENT, \
+    code VARCHAR(2) NOT NULL, \
+    description VARCHAR(100) NOT NULL, \
+    PRIMARY KEY (idProdLine), \
+    UNIQUE INDEX idProdLine_UNIQUE (idProdLine ASC))\
+    ENGINE = InnoDB;', function(err,rows) { if(err) throw err; });
+
+connection.query("INSERT INTO "+database+"."+dbConfig.secSV_productLine_table+" (code, description) VALUES " +
+    "('SV', '15kV SLIMVAC'); ", function (err, result) { if(err) throw err; });
+
+//brkMfg_secSV
+connection.query('\
+CREATE TABLE IF NOT EXISTS ' + database + '.' + dbConfig.secSV_brkMfg_table + ' ( \
+    idBrkMfg INT NOT NULL AUTO_INCREMENT, \
+    code VARCHAR(2) NOT NULL, \
+    description VARCHAR(100) NOT NULL, \
+    PRIMARY KEY (idBrkMfg), \
+    UNIQUE INDEX idBrkMfg_UNIQUE (idBrkMfg ASC))\
+    ENGINE = InnoDB;', function(err,rows) { if(err) throw err; });
+
+connection.query("INSERT INTO "+database+"."+dbConfig.secSV_brkMfg_table+" (code, description) VALUES " +
+    "('A', 'ABB'); ", function (err, result) { if(err) throw err; });
+
+//kaRating_secSV
+connection.query('\
+CREATE TABLE IF NOT EXISTS ' + database + '.' + dbConfig.secSV_kaRating_table + ' ( \
+    idKaRating INT NOT NULL AUTO_INCREMENT, \
+    code VARCHAR(2) NOT NULL, \
+    description VARCHAR(100) NOT NULL, \
+    PRIMARY KEY (idKaRating), \
+    UNIQUE INDEX idKaRating_UNIQUE (idKaRating ASC))\
+    ENGINE = InnoDB;', function(err,rows) { if(err) throw err; });
+
+connection.query("INSERT INTO "+database+"."+dbConfig.secSV_kaRating_table+" (code, description) VALUES " +
+    "('3', '31.5kA OR BELOW'), " +
+    "('4', '40kA'), " +
+    "('X', 'N/A'); ", function (err, result) { if(err) throw err; });
+
+//mainBusRating_secSV
+connection.query('\
+CREATE TABLE IF NOT EXISTS ' + database + '.' + dbConfig.secSV_mainBusRating_table + ' ( \
+    idMainBusRating INT NOT NULL AUTO_INCREMENT, \
+    code VARCHAR(2) NOT NULL, \
+    description VARCHAR(100) NOT NULL, \
+    PRIMARY KEY (idMainBusRating), \
+    UNIQUE INDEX idMainBusRating_UNIQUE (idMainBusRating ASC))\
+    ENGINE = InnoDB;', function(err,rows) { if(err) throw err; });
+
+connection.query("INSERT INTO "+database+"."+dbConfig.secSV_mainBusRating_table+" (code, description) VALUES " +
+    "('12', '1200A'), " +
+    "('20', '2000A'), " +
+    "('XX', 'N/A'); ", function (err, result) { if(err) throw err; });
+
+//upperComp_secSV
+connection.query('\
+CREATE TABLE IF NOT EXISTS ' + database + '.' + dbConfig.secSV_upperComp_table + ' ( \
+    idUpperComp INT NOT NULL AUTO_INCREMENT, \
+    code VARCHAR(2) NOT NULL, \
+    description VARCHAR(100) NOT NULL, \
+    PRIMARY KEY (idUpperComp), \
+    UNIQUE INDEX idUpperComp_UNIQUE (idUpperComp ASC))\
+    ENGINE = InnoDB;', function(err,rows) { if(err) throw err; });
+
+connection.query("INSERT INTO "+database+"."+dbConfig.secSV_upperComp_table+" (code, description) VALUES " +
+    "('1', '1200A BRK'), " +
+    "('2', '2000A BRK'), " +
+    "('V', 'VT (BUS CONNECTED)'), " +
+    "('L', 'VT (LUG CONNECTED)'), " +
+    "('P', 'CPT (BUS CONNECTED)'), " +
+    "('R', 'CPT (LUG CONNECTED)'), " +
+    "('A', 'AUXILIARY COMPARTMENT'), " +
+    "('T', 'BUS TRANSITION FOR TIE'), " +
+    "('B', 'BUS TRANSITION FOR TIE W/ VT'); ", function (err, result) { if(err) throw err; });
+
+//upperCompAcc_secSV
+connection.query('\
+CREATE TABLE IF NOT EXISTS ' + database + '.' + dbConfig.secSV_upperCompAcc_table + ' ( \
+    idUpperCompAcc INT NOT NULL AUTO_INCREMENT, \
+    code VARCHAR(2) NOT NULL, \
+    description VARCHAR(100) NOT NULL, \
+    PRIMARY KEY (idUpperCompAcc), \
+    UNIQUE INDEX idUpperCompAcc_UNIQUE (idUpperCompAcc ASC))\
+    ENGINE = InnoDB;', function(err,rows) { if(err) throw err; });
+
+connection.query("INSERT INTO "+database+"."+dbConfig.secSV_upperCompAcc_table+" (code, description) VALUES " +
+    "('A', 'BREAKER, CT (BUS)'), " +
+    "('B', 'BREAKER, CT (LUG)'), " +
+    "('D', 'BREAKER, CT (BUS & LUG)'), " +
+    "('E', 'BREAKER, CT (BUS), LA (BUS)'), " +
+    "('F', 'BREAKER, CT (BUS), LA (LUG)'), " +
+    "('G', 'BREAKER, CT (LUG), LA (BUS)'), " +
+    "('H', 'BREAKER, CT (LUG), LA (LUG)'), " +
+    "('I', 'BREAKER, CT (BUS & LUG), LA (BUS)'), " +
+    "('J', 'BREAKER, CT (BUS & LUG), LA (LUG)'), " +
+    "('K', 'BREAKER, BUS TIE 2 RACKS'), " +
+    "('L', 'BREAKER, BUS TIE 2 RACKS, CT BOTH'), " +
+    "('M', 'BREAKER, BUS TIE 2 RACKS, CT UPPER'), " +
+    "('N', 'BREAKER, BUS TIE 2 RACKS, CT LOWER'), " +
+    "('O', 'BREAKER, BUS TIE 2 RACKS, LA UPPER'), " +
+    "('P', 'BREAKER, BUS TIE 2 RACKS, CT UPPER, LA UPPER'), " +
+    "('Q', 'BREAKER, BUS TIE 2 RACKS, CT LOWER, LA UPPER'), " +
+    "('R', 'BREAKER, BUS TIE 2 RACKS, CT BOTH, LA UPPER'), " +
+    "('S', 'BREAKER, BUS TIE 2 RACKS, LA LOWER'), " +
+    "('T', 'BREAKER, BUS TIE 2 RACKS, CT UPPER, LA LOWER'), " +
+    "('U', 'BREAKER, BUS TIE 2 RACKS, CT LOWER, LA LOWER'), " +
+    "('V', 'BREAKER, BUS TIE 2 RACKS, CT BOTH, LA LOWER'), " +
+    "('X', 'N/A'); ", function (err, result) { if(err) throw err; });
+
+
+//lowerComp_secSV
+connection.query('\
+CREATE TABLE IF NOT EXISTS ' + database + '.' + dbConfig.secSV_lowerComp_table + ' ( \
+    idLowerComp INT NOT NULL AUTO_INCREMENT, \
+    code VARCHAR(2) NOT NULL, \
+    description VARCHAR(100) NOT NULL, \
+    PRIMARY KEY (idLowerComp), \
+    UNIQUE INDEX idLowerComp_UNIQUE (idLowerComp ASC))\
+    ENGINE = InnoDB;', function(err,rows) { if(err) throw err; });
+
+connection.query("INSERT INTO "+database+"."+dbConfig.secSV_lowerComp_table+" (code, description) VALUES " +
+    "('1', '1200A BRK'), " +
+    "('2', '2000A BRK'), " +
+    "('V', 'VT (BUS CONNECTED)'), " +
+    "('L', 'VT (LUG CONNECTED)'), " +
+    "('P', 'CPT (BUS CONNECTED)'), " +
+    "('R', 'CPT (LUG CONNECTED)'), " +
+    "('A', 'AUXILIARY COMPARTMENT'), " +
+    "('T', 'BUS TRANSITION FOR TIE'), " +
+    "('B', 'BUS TRANSITION FOR TIE W/ VT'); ", function (err, result) { if(err) throw err; });
+
+//lowerCompAcc_secSV
+connection.query('\
+CREATE TABLE IF NOT EXISTS ' + database + '.' + dbConfig.secSV_lowerCompAcc_table + ' ( \
+    idLowerCompAcc INT NOT NULL AUTO_INCREMENT, \
+    code VARCHAR(2) NOT NULL, \
+    description VARCHAR(100) NOT NULL, \
+    PRIMARY KEY (idLowerCompAcc), \
+    UNIQUE INDEX idLowerCompAcc_UNIQUE (idLowerCompAcc ASC))\
+    ENGINE = InnoDB;', function(err,rows) { if(err) throw err; });
+
+connection.query("INSERT INTO "+database+"."+dbConfig.secSV_lowerCompAcc_table+" (code, description) VALUES " +
+    "('A', 'BREAKER, CT (BUS)'), " +
+    "('B', 'BREAKER, CT (LUG)'), " +
+    "('D', 'BREAKER, CT (BUS & LUG)'), " +
+    "('E', 'BREAKER, CT (BUS), LA (BUS)'), " +
+    "('F', 'BREAKER, CT (BUS), LA (LUG)'), " +
+    "('G', 'BREAKER, CT (LUG), LA (BUS)'), " +
+    "('H', 'BREAKER, CT (LUG), LA (LUG)'), " +
+    "('I', 'BREAKER, CT (BUS & LUG), LA (BUS)'), " +
+    "('J', 'BREAKER, CT (BUS & LUG), LA (LUG)'), " +
+    "('K', 'BREAKER, BUS TIE 2 RACKS'), " +
+    "('L', 'BREAKER, BUS TIE 2 RACKS, CT BOTH'), " +
+    "('M', 'BREAKER, BUS TIE 2 RACKS, CT UPPER'), " +
+    "('N', 'BREAKER, BUS TIE 2 RACKS, CT LOWER'), " +
+    "('O', 'BREAKER, BUS TIE 2 RACKS, LA UPPER'), " +
+    "('P', 'BREAKER, BUS TIE 2 RACKS, CT UPPER, LA UPPER'), " +
+    "('Q', 'BREAKER, BUS TIE 2 RACKS, CT LOWER, LA UPPER'), " +
+    "('R', 'BREAKER, BUS TIE 2 RACKS, CT BOTH, LA UPPER'), " +
+    "('S', 'BREAKER, BUS TIE 2 RACKS, LA LOWER'), " +
+    "('T', 'BREAKER, BUS TIE 2 RACKS, CT UPPER, LA LOWER'), " +
+    "('U', 'BREAKER, BUS TIE 2 RACKS, CT LOWER, LA LOWER'), " +
+    "('V', 'BREAKER, BUS TIE 2 RACKS, CT BOTH, LA LOWER'), " +
+    "('X', 'N/A'); ", function (err, result) { if(err) throw err; });
+
+//enclosureType_secSV
+connection.query('\
+CREATE TABLE IF NOT EXISTS ' + database + '.' + dbConfig.secSV_enclosureType_table + ' ( \
+    idEncType INT NOT NULL AUTO_INCREMENT, \
+    code VARCHAR(2) NOT NULL, \
+    description VARCHAR(100) NOT NULL, \
+    PRIMARY KEY (idEncType), \
+    UNIQUE INDEX idEncType_UNIQUE (idEncType ASC))\
+    ENGINE = InnoDB;', function(err,rows) { if(err) throw err; });
+
+connection.query("INSERT INTO "+database+"."+dbConfig.secSV_enclosureType_table+" (code, description) VALUES " +
+    "('1', 'NEMA 1 INDOOR'), " +
+    "('3', 'NEMA 3R OUTDOOR'), " +
+    "('W', 'NEMA 3R WALK-IN'), " +
+    "('C', 'CUSTOM'); ", function (err, result) { if(err) throw err; });
+
+//enclosureWidth_secSV
+connection.query('\
+CREATE TABLE IF NOT EXISTS ' + database + '.' + dbConfig.secSV_enclosureWidth_table + ' ( \
+    idEncWidth INT NOT NULL AUTO_INCREMENT, \
+    code VARCHAR(2) NOT NULL, \
+    description VARCHAR(100) NOT NULL, \
+    PRIMARY KEY (idEncWidth), \
+    UNIQUE INDEX idEncWidth_UNIQUE (idEncWidth ASC))\
+    ENGINE = InnoDB;', function(err,rows) { if(err) throw err; });
+
+connection.query("INSERT INTO "+database+"."+dbConfig.secSV_enclosureWidth_table+" (code, description) VALUES " +
+    "('26', '26 IN.'), " +
+    "('30', '30 IN.'), " +
+    "('36', '36 IN.'), " +
+    "('XX', 'CUSTOM'); ", function (err, result) { if(err) throw err; });
+
+
+//cableEntry_secSV
+connection.query('\
+CREATE TABLE IF NOT EXISTS ' + database + '.' + dbConfig.secSV_cableEntry_table + ' ( \
+    idCabEntry INT NOT NULL AUTO_INCREMENT, \
+    code VARCHAR(2) NOT NULL, \
+    description VARCHAR(100) NOT NULL, \
+    PRIMARY KEY (idCabEntry), \
+    UNIQUE INDEX idCabEntry_UNIQUE (idCabEntry ASC))\
+    ENGINE = InnoDB;', function(err,rows) { if(err) throw err; });
+
+connection.query("INSERT INTO "+database+"."+dbConfig.secSV_cableEntry_table+" (code, description) VALUES " +
+    "('S', 'SPLIT TOP/BOTTOM'), " +
+    "('T', 'TOP'), " +
+    "('B', 'BOTTOM'), " +
+    "('X', 'N/A'); ", function (err, result) { if(err) throw err; });
+
+
+
+// ********************************************************************************** //
+// *********************** MECHANICAL ENGINEERING TABLES **************************** //
+// ********************************************************************************** //
+
+// layoutSum
+connection.query('\
+CREATE TABLE IF NOT EXISTS ' + database + '.' + dbConfig.layout_summary_table + ' ( \
+    layoutID INT UNSIGNED NOT NULL AUTO_INCREMENT, \
     jobNum VARCHAR(6) NULL, \
     releaseNum VARCHAR(10) NULL, \
     jobName VARCHAR(100) NULL, \
@@ -311,183 +478,78 @@ CREATE TABLE IF NOT EXISTS ' + database + '.' + dbConfig.submittal_summary_table
     drawnDate DATE NULL, \
     checkedBy VARCHAR(5) NULL, \
     checkedDate DATE NULL, \
-    PRIMARY KEY (subID), \
-    UNIQUE INDEX subID_UNIQUE (subID ASC))\
+    PRIMARY KEY (layoutID), \
+    UNIQUE INDEX layoutID_UNIQUE (layoutID ASC))\
     ENGINE = InnoDB;', function(err,rows) { if(err) throw err; });
 
-// submittalRevSum
+// layoutRevSum
 connection.query('\
-CREATE TABLE IF NOT EXISTS ' + database + '.' + dbConfig.submittal_rev_table + ' ( \
+CREATE TABLE IF NOT EXISTS ' + database + '.' + dbConfig.layout_rev_table + ' ( \
     revID INT UNSIGNED NOT NULL AUTO_INCREMENT, \
-    subID INT UNSIGNED NOT NULL, \
+    layoutID INT UNSIGNED NOT NULL, \
     revNum VARCHAR(3) NULL, \
     revNote VARCHAR(100) NULL, \
     PRIMARY KEY (revID), \
-    CONSTRAINT fk_subID \
-    FOREIGN KEY (subID) \
-        REFERENCES submittalSum(subID) \
+    CONSTRAINT fk_jobID \
+    FOREIGN KEY (layoutID) \
+        REFERENCES layoutSum(layoutID) \
         ON DELETE CASCADE \
         ON UPDATE CASCADE, \
     UNIQUE INDEX revID_UNIQUE (revID ASC)) \
     ENGINE = InnoDB;', function(err,rows) { if(err) throw err; });
 
-// submittalLayoutSum
+// layoutDetail
 connection.query('\
-CREATE TABLE IF NOT EXISTS ' + database + '.' + dbConfig.submittal_layout_table + ' ( \
-    layoutID INT UNSIGNED NOT NULL AUTO_INCREMENT, \
-    subID INT UNSIGNED NOT NULL, \
-    layoutName VARCHAR(100) NULL, \
+CREATE TABLE IF NOT EXISTS ' + database + '.' + dbConfig.layout_detail_table + ' ( \
+    layoutID INT UNSIGNED NOT NULL, \
     layoutCatalogPN VARCHAR(100) NULL, \
     productFamily VARCHAR(100) NULL, \
     productLine VARCHAR(100) NULL, \
-    ulListing VARCHAR(100) NULL, \
-    systemType VARCHAR(100) NULL, \
-    systemAmp VARCHAR(100) NULL, \
-    mainBusAmp VARCHAR(100) NULL, \
+    systemVolt VARCHAR(100) NULL, \
+    currentRating VARCHAR(100) NULL, \
+    interruptingRating VARCHAR(100) NULL, \
     enclosure VARCHAR(100) NULL, \
+    finish VARCHAR(100) NULL,\
     accessibility VARCHAR(100) NULL, \
-    cableAccess VARCHAR(100) NULL, \
-    paint VARCHAR(100) NULL,\
-    interruptRating VARCHAR(100) NULL, \
-    busBracing VARCHAR(100) NULL, \
-    busType VARCHAR(100) NULL, \
-    insulatedBus VARCHAR(1) NOT NULL, \
-    boots VARCHAR(1) NOT NULL, \
-    keyInterlocks VARCHAR(100) NULL, \
-    seismic VARCHAR(1) NOT NULL, \
-    mimic VARCHAR(1) NOT NULL, \
-    ir VARCHAR(1) NOT NULL, \
-    wireway VARCHAR(1) NOT NULL, \
-    trolley VARCHAR(1) NOT NULL, \
+    controlVolt VARCHAR(100) NULL, \
     numSections INT NOT NULL, \
     PRIMARY KEY (layoutID), \
     CONSTRAINT fk_layoutSubID \
-    FOREIGN KEY (subID) \
-        REFERENCES submittalSum(subID) \
+    FOREIGN KEY (layoutID) \
+        REFERENCES layoutSum(layoutID) \
         ON DELETE CASCADE \
         ON UPDATE CASCADE, \
     UNIQUE INDEX layoutID_UNIQUE (layoutID ASC)) \
     ENGINE = InnoDB;', function(err,rows) { if(err) throw err; });
 
-// submittalSectionSum
+// sectionDetail
 connection.query('\
-CREATE TABLE IF NOT EXISTS ' + database + '.' + dbConfig.submittal_sections_table + ' ( \
+CREATE TABLE IF NOT EXISTS ' + database + '.' + dbConfig.section_detail_table + ' ( \
     secID INT UNSIGNED NOT NULL AUTO_INCREMENT, \
     layoutID INT UNSIGNED NULL, \
-    sectionNum VARCHAR(100) NULL, \
+    sectionNum INT UNSIGNED NULL, \
     sectionCatalogPN VARCHAR(100) NULL, \
-    compType JSON NULL, \
-    controlAsmID VARCHAR(100) NULL, \
-    secType VARCHAR(100) NULL, \
-    brkType VARCHAR(100) NULL, \
-    secAmp VARCHAR(100) NULL, \
-    secPoles INT NULL, \
-    secHeight INT NULL, \
-    secWidth INT NULL, \
-    secDepth INT NULL, \
+    productFamily VARCHAR(100) NULL, \
+    brkMfg VARCHAR(100) NULL, \
+    kaRating VARCHAR(100) NULL, \
+    mainBusRating VARCHAR(100) NULL, \
+    upperComp VARCHAR(100) NULL, \
+    upperCompAcc VARCHAR(100) NULL, \
+    lowerComp VARCHAR(100) NULL, \
+    lowerCompAcc VARCHAR(100) NULL, \
+    enclosureWidth VARCHAR(100) NULL, \
+    enclosureType VARCHAR(100) NULL, \
+    cableEntry VARCHAR(100) NULL, \
     PRIMARY KEY (secID), \
     CONSTRAINT fk_layoutID \
     FOREIGN KEY (layoutID) \
-        REFERENCES submittalLayoutSum(layoutID) \
+        REFERENCES layoutDetail(layoutID) \
         ON DELETE CASCADE \
         ON UPDATE CASCADE, \
     UNIQUE INDEX secID_UNIQUE (secID ASC))\
     ENGINE = InnoDB;', function(err) { if(err) throw err; });
 
-// submittalBrkSum
-connection.query('\
-CREATE TABLE IF NOT EXISTS ' + database + '.' + dbConfig.submittal_breaker_table + ' ( \
-    devID INT UNSIGNED NOT NULL AUTO_INCREMENT, \
-    layoutID INT UNSIGNED NOT NULL, \
-    secID INT UNSIGNED NULL,\
-    comp VARCHAR(100) NULL, \
-    devDesignation VARCHAR(100) NULL, \
-    devFunction VARCHAR(100) NOT NULL, \
-    unitOfIssue VARCHAR(2)  DEFAULT "EA", \
-    catCode VARCHAR(100) NULL, \
-    platform VARCHAR(100) NULL, \
-    brkPN VARCHAR(100) NULL, \
-    cradlePN VARCHAR(100) NULL, \
-    devMount VARCHAR(100) NULL, \
-    rearAdaptType VARCHAR(100) NULL, \
-    devUL VARCHAR(100) NULL, \
-    devLevel VARCHAR(100) NULL, \
-    devOperation VARCHAR(100) NULL, \
-    devCtrlVolt VARCHAR(100) NULL, \
-    devMaxVolt VARCHAR(100) NULL, \
-    devKAIC VARCHAR(100) NULL, \
-    devFrameSet VARCHAR(100) NULL, \
-    devSensorSet VARCHAR(100) NULL, \
-    devTripSet VARCHAR(100) NULL, \
-    devTripUnit VARCHAR(100) NULL, \
-    devTripParam VARCHAR(100) NULL, \
-    devPoles VARCHAR(100) NULL,  \
-    devLugQty VARCHAR(100) NULL,  \
-    devLugType VARCHAR(100) NULL, \
-    devLugSize VARCHAR(100) NULL, \
-    PRIMARY KEY (devID), \
-    CONSTRAINT fk_layoutID_1 \
-    FOREIGN KEY (layoutID) \
-        REFERENCES submittalLayoutSum(layoutID) \
-        ON DELETE CASCADE \
-        ON UPDATE CASCADE, \
-    CONSTRAINT fk_secID_1 \
-    FOREIGN KEY (secID) \
-        REFERENCES submittalSectionSum(secID) \
-        ON DELETE SET NULL \
-        ON UPDATE CASCADE, \
-    UNIQUE INDEX devID_UNIQUE (devID ASC))\
-    ENGINE = InnoDB;', function(err) { if(err) throw err; });
 
-// submittalBrkAccSum
-connection.query('\
-CREATE TABLE IF NOT EXISTS ' + database + '.' + dbConfig.submittal_brkAcc_table + ' ( \
-    brkAccID INT UNSIGNED NOT NULL AUTO_INCREMENT, \
-    brkAccDropdownID INT UNSIGNED NULL,\
-    devID INT UNSIGNED NULL,\
-    PRIMARY KEY (brkAccID), \
-    CONSTRAINT fk_devID_1 \
-    FOREIGN KEY (devID) \
-        REFERENCES submittalBrkSum(devID) \
-        ON DELETE CASCADE \
-        ON UPDATE CASCADE, \
-    CONSTRAINT fk_brkAccDropdownID \
-    FOREIGN KEY (brkAccDropdownID) \
-        REFERENCES brkAccOptions(brkAccDropdownID) \
-        ON DELETE CASCADE \
-        ON UPDATE CASCADE, \
-    UNIQUE INDEX brkAccID_UNIQUE (brkAccID ASC))\
-    ENGINE = InnoDB;', function(err) { if(err) throw err; });
-
-
-
-//submittalPanelBrkSum
-connection.query('\
-CREATE TABLE IF NOT EXISTS ' + database + '.' + dbConfig.submittal_panel_breakers + ' ( \
-    panelBrkID INT UNSIGNED NOT NULL AUTO_INCREMENT, \
-    secID INT UNSIGNED NULL, \
-    devID INT UNSIGNED NULL, \
-    panelRow INT UNSIGNED NULL, \
-    configuration VARCHAR(100) NULL, \
-    mounting VARCHAR(100) NULL, \
-    frame VARCHAR(100) NULL, \
-    PRIMARY KEY (panelBrkID), \
-    CONSTRAINT fk_secID_2 \
-    FOREIGN KEY (secID) \
-        REFERENCES submittalSectionSum(secID) \
-        ON DELETE CASCADE \
-        ON UPDATE CASCADE, \
-    CONSTRAINT fk_devID_2 \
-    FOREIGN KEY (devID) \
-        REFERENCES submittalBrkSum(devID) \
-        ON DELETE SET NULL \
-        ON UPDATE CASCADE, \
-    UNIQUE INDEX panelBrkID_UNIQUE (panelBrkID ASC))\
-    ENGINE = InnoDB;', function(err) { if(err) throw err; });
-
-
-
-
-console.log("createSubSchema successful");
+console.log("newPnSchema successful");
 
 connection.end();

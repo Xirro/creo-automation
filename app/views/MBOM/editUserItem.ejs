@@ -288,6 +288,11 @@
                                                                 <% } else { %>
                                                                     <option value="FT">FT</option>
                                                                 <% } %>
+                                                                <% if (userItemData.unitOfIssue == 'LBS') { %>
+                                                                    <option value="LBS" selected="selected">FT</option>
+                                                                <% } else { %>
+                                                                    <option value="LBS">FT</option>
+                                                                <% } %>
                                                             </select>
                                                         </div>
                                                         <div class="col-sm-2">
