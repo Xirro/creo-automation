@@ -223,6 +223,11 @@
                                                                 <% } else { %>
                                                                     <option value="FT">FT</option>
                                                                 <% } %>
+                                                                <% if (editComItemData.unitOfIssue == 'LBS') { %>
+                                                                    <option value="LBS" selected="selected">LBS</option>
+                                                                <% } else { %>
+                                                                    <option value="LBS">LBS</option>
+                                                                <% } %>
                                                             </select>
                                                         </div>
                                                         <div class="col-sm-3">
