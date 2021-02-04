@@ -26,7 +26,7 @@ module.exports = {
         },
     },
 
-   /* 'connection': {
+    /*'connection': {
         'host': 'localhost',
         'user': 'root',
         'port' : 3306,

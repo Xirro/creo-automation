@@ -28,6 +28,48 @@ $('#checkAllSteel').change(function() {
    }
 });
 
+$('#checkOutsourceAllSteel').change(function() {
+    if (this.checked) {
+        $('.pdfCheck').each(function() {
+            if (this.id.slice(11,12) == '1' || this.id.slice(11,12) == '2') {
+                this.checked = false;
+                this.click();
+            }
+        })
+        $('.dxfCheck').each(function() {
+            if (this.id.slice(11,12) == '1' || this.id.slice(11,12) == '2') {
+                this.checked = false;
+                this.click();
+            }
+        })
+        $('.stepCheck').each(function() {
+            if (this.id.slice(12,13) == '1' || this.id.slice(11,12) == '2') {
+                this.checked = false;
+                this.click();
+            }
+        })
+    } else {
+        $('.pdfCheck').each(function() {
+            if (this.id.slice(11,12) == '1' || this.id.slice(11,12) == '2') {
+                this.checked = true;
+                this.click();
+            }
+        })
+        $('.dxfCheck').each(function() {
+            if (this.id.slice(11,12) == '1' || this.id.slice(11,12) == '2') {
+                this.checked = true;
+                this.click();
+            }
+        })
+        $('.stepCheck').each(function() {
+            if (this.id.slice(12,13) == '1' || this.id.slice(11,12) == '2') {
+                this.checked = true;
+                this.click();
+            }
+        })
+    }
+})
+
 $('#checkAllCopper').change(function() {
     if (this.checked) {
         $('.pdfCheck').each(function() {
@@ -58,6 +100,48 @@ $('#checkAllCopper').change(function() {
     }
 });
 
+$('#checkOutsourceAllCopper').change(function() {
+    if (this.checked) {
+        $('.pdfCheck').each(function() {
+            if (this.id.slice(11,12) == '3') {
+                this.checked = false;
+                this.click();
+            }
+        })
+        $('.dxfCheck').each(function() {
+            if (this.id.slice(11,12) == '3') {
+                this.checked = false;
+                this.click();
+            }
+        })
+        $('.stepCheck').each(function() {
+            if (this.id.slice(12,13) == '3') {
+                this.checked = false;
+                this.click();
+            }
+        })
+    } else {
+        $('.pdfCheck').each(function() {
+            if (this.id.slice(11,12) == '3') {
+                this.checked = true;
+                this.click();
+            }
+        })
+        $('.dxfCheck').each(function() {
+            if (this.id.slice(11,12) == '3') {
+                this.checked = true;
+                this.click();
+            }
+        })
+        $('.stepCheck').each(function() {
+            if (this.id.slice(12,13) == '3') {
+                this.checked = true;
+                this.click();
+            }
+        })
+    }
+})
+
 $('#checkAllGlastic').change(function() {
     if (this.checked) {
         $('.pdfCheck').each(function() {
@@ -80,6 +164,45 @@ $('#checkAllGlastic').change(function() {
     }
 });
 
+$('#checkOutsourceAllGlastic').change(function() {
+    if (this.checked) {
+        $('.pdfCheck').each(function() {
+            if (this.id.slice(11,12) == '4') {
+                if (this.id.slice(11,15) != '4105') {
+                    this.checked = false;
+                    this.click();
+                }
+            }
+        });
+        $('.stepCheck').each(function() {
+            if (this.id.slice(12,13) == '4') {
+                if (this.id.slice(12,16) != '4105') {
+                    this.checked = false;
+                    this.click();
+                }
+            }
+        });
+    } else {
+        $('.pdfCheck').each(function() {
+            if (this.id.slice(11,12) == '4') {
+                if (this.id.slice(11,15) != '4105') {
+                    this.checked = true;
+                    this.click();
+                }
+            }
+        });
+        $('.stepCheck').each(function() {
+            if (this.id.slice(12,13) == '4') {
+                if (this.id.slice(12,16) != '4105') {
+                    this.checked = true;
+                    this.click();
+                }
+            }
+        });
+    }
+})
+
+
 $('#checkAllNameplate').change(function() {
     if (this.checked) {
         $('.dxfCheck').each(function() {
@@ -89,7 +212,6 @@ $('#checkAllNameplate').change(function() {
             }
         })
     } else {
-
         $('.dxfCheck').each(function() {
             if (this.id.slice(11,14) == '410') {
                 this.checked = true;
@@ -98,6 +220,36 @@ $('#checkAllNameplate').change(function() {
         })
     }
 });
+
+$('#checkOutsourceAllNameplate').change(function() {
+    if (this.checked) {
+        $('.dxfCheck').each(function() {
+            if (this.id.slice(11,14) == '410') {
+                this.checked = false;
+                this.click();
+            }
+        })
+        $('.stepCheck').each(function() {
+            if (this.id.slice(12,15) == '410') {
+                this.checked = false;
+                this.click();
+            }
+        })
+    } else {
+        $('.dxfCheck').each(function() {
+            if (this.id.slice(11,14) == '410') {
+                this.checked = true;
+                this.click();
+            }
+        })
+        $('.stepCheck').each(function() {
+            if (this.id.slice(12,15) == '410') {
+                this.checked = true;
+                this.click();
+            }
+        })
+    }
+})
 
 
 $("#checkAllPDF").change(function() {
@@ -166,6 +318,37 @@ $(".dxfCheck").click(function () {
         $("#checkAllDXF").prop("checked", false);
     }
 });
+
+$('#checkAllStep').change(function() {
+    if (this.checked) {
+        $(".stepCheck").each(function() {
+            this.checked = false;
+            this.click();
+        });
+    } else {
+        $(".stepCheck").each(function() {
+            this.checked = true;
+            this.click();
+        });
+    }
+})
+
+$(".stepCheck").click(function() {
+    if ($(this).is(":checked")) {
+        var isAllChecked = 0;
+
+        $(".stepCheck").each(function() {
+            if (!this.checked)
+                isAllChecked = 1;
+        });
+
+        if (isAllChecked == 0) {
+            $("#checkAllStep").prop("checked", true);
+        }
+    } else {
+        $("#checkAllStep").prop("checked", false);
+    }
+})
 
 /*
 $(".includeInExportCheck").click(function() {

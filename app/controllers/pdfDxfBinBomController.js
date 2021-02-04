@@ -143,6 +143,13 @@ exports.setWD = function(req, res) {
                         "dirname": "_outputDir\\NAMEPLATES"
                     }
                 });
+                await creo(sessionId, {
+                    command: "creo",
+                    function: "mkdir",
+                    data: {
+                        "dirname": "_outputDir\\STEP"
+                    }
+                });
             } else {
                 message = "_outputDir already exists within the working directory. Please remove before continuing.";
             }
@@ -190,6 +197,13 @@ exports.setWD = function(req, res) {
                     function: "mkdir",
                     data: {
                         "dirname": "_outputDir\\NAMEPLATES"
+                    }
+                });
+                await creo(sessionId, {
+                    command: "creo",
+                    function: "mkdir",
+                    data: {
+                        "dirname": "_outputDir\\STEP"
                     }
                 });
             } else {
@@ -1286,7 +1300,6 @@ exports.loadDesign = function(req, res) {
                 return jsonArray2.every( o => jsonArray1.has(ser(o)) );
             }
 
-            console.log(binBoms);
 
             for (let binBom of binBoms) {
                 sections.push(binBom.section);
@@ -1298,9 +1311,6 @@ exports.loadDesign = function(req, res) {
                 extBOMS.push(binBom.EXT);
                 sclBOMS.push(binBom.SCL);
             }
-
-            console.log(sections);
-
 
 
             for (let i = 0; i < sections.length; i++) {
@@ -1526,6 +1536,8 @@ exports.generateAll = function(req, res) {
     let drawingNames = req.body.drawingName;
     let pdfs = req.body.pdfCheck;
     let dxfs = req.body.dxfCheck;
+    let steps = req.body.stepCheck;
+
     let drawings = [];
 
     async function exportSheet1PDF(sessionId, drawing) {
@@ -1683,6 +1695,45 @@ exports.generateAll = function(req, res) {
         });
     }
 
+    async function exportPartSTEP(sessionId, drawing) {
+        let part = drawing.name.slice(0,drawing.name.length - 4)+".prt";
+
+        await creo(sessionId, {
+            command: "file",
+            function: "open",
+            data: {
+                "file": part,
+                "display": true,
+                "activate": true
+            }
+        });
+
+
+        return await creo(sessionId, {
+            command: "interface",
+            function: "mapkey",
+            data: {
+                "script": "~ Close `main_dlg_cur` `appl_casc`;~ Command `ProCmdModelSaveAs` ;~ Open `file_saveas` `type_option`;~ Close `file_saveas` `type_option`;~ Select `file_saveas` `type_option` 1 `db_539`;~ Activate `file_saveas` `OK`;~ Activate `intf_export` `curves_points` 1;~ Activate `intf_export` `facets` 1;~ Activate `intf_export` `OkPushBtn`;"
+            }
+        });
+
+        /*return await creo(sessionId, {
+            command: "interface",
+            function: "export_file",
+            data: {
+                "file": part,
+                "type": "STEP",
+                "dirname":path.join(outputDir, "STEP"),
+                "filename": drawing.name.slice(0, drawing.name.length - 4) + ".stp"
+            }
+        });*/
+
+
+
+
+
+    }
+
     let layoutBoms = req.body.layoutBom;
     let layoutSections = req.body.layoutSections;
     let sectionBoms = req.body.binBomSection;
@@ -1706,6 +1757,8 @@ exports.generateAll = function(req, res) {
     let EXT = [];
     let SCL = [];
     let BIN_TRACKER = [];
+    let OUTSOURCE = [];
+
 
     if (Array.isArray(layoutBoms) == true) {
         for (let i = 0; i < layoutBoms.length; i++) {
@@ -2897,9 +2950,211 @@ exports.generateAll = function(req, res) {
         drawings.push({
             name: drawingNames[i],
             pdf: parseInt(pdfs[i]),
-            dxf: parseInt(dxfs[i])
+            dxf: parseInt(dxfs[i]),
+            step: parseInt(steps[i])
         })
     }
+
+    for (let layout of layouts) {
+        OUTSOURCE.push({
+            layout: layout.layout,
+            sections: layout.sections.split(','),
+            data: []
+        });
+    }
+
+    for (let drawing of drawings) {
+        if (drawing.name != undefined && drawing.step == 1) {
+            for (let outsource of OUTSOURCE) {
+                let trackerFilter = BIN_TRACKER.filter(e => e.layout == outsource.layout);
+                for (let section of outsource.sections) {
+                    let sectionFilter = trackerFilter[0].data.filter(e => e.section == section);
+                    console.log(sectionFilter);
+                    let secSTR = sectionFilter[0].data.STR;
+                    let secPNL = sectionFilter[0].data.PNL;
+                    let secCTL = sectionFilter[0].data.CTL;
+                    let secINT = sectionFilter[0].data.INT;
+                    let secEXT = sectionFilter[0].data.EXT;
+
+                    if (secSTR != 'N/A') {
+                        let filterSTR = STR.filter(e => e.bom == secSTR);
+                        if (filterSTR.length != 0) {
+                            for (let item of filterSTR[0].data) {
+                                if (item.part == drawing.name.slice(0,drawing.name.length - 4)) {
+                                    if (outsource.data.filter(e => e.part == item.part).length == 0) {
+                                        outsource.data.push({
+                                            qty: parseInt(item.qty),
+                                            partDesc: item.partDesc,
+                                            part: item.part,
+                                            weight: item.weight
+                                        });
+                                    } else {
+                                        outsource.data.filter(e => e.part == item.part)[0].qty += parseInt(item.qty);
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    if (secPNL != 'N/A') {
+                        let filterPNL = PNL.filter(e => e.bom == secPNL);
+                        if (filterPNL.length != 0) {
+                            for (let item of filterPNL[0].data) {
+                                if (item.part == drawing.name.slice(0,drawing.name.length - 4)) {
+                                    if (outsource.data.filter(e => e.part == item.part).length == 0) {
+                                        outsource.data.push({
+                                            qty: parseInt(item.qty),
+                                            partDesc: item.partDesc,
+                                            part: item.part,
+                                            weight: item.weight
+                                        });
+                                    } else {
+                                        outsource.data.filter(e => e.part == item.part)[0].qty += parseInt(item.qty);
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    if (secCTL != 'N/A') {
+                        let filterCTL = CTL.filter(e => e.bom == secCTL);
+                        if (filterCTL.length != 0) {
+                            for (let item of filterCTL[0].data) {
+                                if (item.part == drawing.name.slice(0,drawing.name.length - 4)) {
+                                    if (outsource.data.filter(e => e.part == item.part).length == 0) {
+                                        outsource.data.push({
+                                            qty: parseInt(item.qty),
+                                            partDesc: item.partDesc,
+                                            part: item.part,
+                                            weight: item.weight
+                                        });
+                                    } else {
+                                        outsource.data.filter(e => e.part == item.part)[0].qty += parseInt(item.qty);
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    if (secINT != 'N/A') {
+                        let filterINT = INT.filter(e => e.bom == secINT);
+                        if (filterINT.length != 0) {
+                            for (let item of filterINT[0].data) {
+                                if (item.part == drawing.name.slice(0,drawing.name.length - 4)) {
+                                    if (outsource.data.filter(e => e.part == item.part).length == 0) {
+                                        outsource.data.push({
+                                            qty: parseInt(item.qty),
+                                            partDesc: item.partDesc,
+                                            part: item.part,
+                                            weight: item.weight
+                                        });
+                                    } else {
+                                        outsource.data.filter(e => e.part == item.part)[0].qty += parseInt(item.qty);
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    if (secEXT != 'N/A') {
+                        let filterEXT = EXT.filter(e => e.bom == secEXT);
+                        if (filterEXT.length != 0) {
+                            for (let item of filterEXT[0].data) {
+                                if (item.part == drawing.name.slice(0,drawing.name.length - 4)) {
+                                    if (outsource.data.filter(e => e.part == item.part).length == 0) {
+                                        outsource.data.push({
+                                            qty: parseInt(item.qty),
+                                            partDesc: item.partDesc,
+                                            part: item.part,
+                                            weight: item.weight
+                                        });
+                                    } else {
+                                        outsource.data.filter(e => e.part == item.part)[0].qty += parseInt(item.qty);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    if (OUTSOURCE.length != 0) {
+        for (let outsource of OUTSOURCE) {
+            let workbook = new Excel.Workbook();
+            let sheet = workbook.addWorksheet('sheet1');
+            sheet.columns = [
+                {header: 'Assembly Number:', key: 'assemblyNum', width: 20, style: {font: {name: 'Calibri', size: 11}}},
+                {
+                    header: 'Item & BOM Sequence Number:',
+                    key: 'seqNum',
+                    width: 30,
+                    style: {font: {name: 'Calibri', size: 11}}
+                },
+                {
+                    header: 'Component Part Number:',
+                    key: 'compPartNum',
+                    width: 30,
+                    style: {font: {name: 'Calibri', size: 11}}
+                },
+                {header: 'Description 1:', key: 'desc1', width: 50, style: {font: {name: 'Calibri', size: 11}}},
+                {header: 'Quantity Per:', key: 'qty', width: 15, style: {font: {name: 'Calibri', size: 11}}},
+                {header: 'Unit Of Issue:', key: 'unitOfIssue', width: 10, style: {font: {name: 'Calibri', size: 11}}},
+                {
+                    header: 'Unit Of Purchase:',
+                    key: 'unitOfPurchase',
+                    width: 15,
+                    style: {font: {name: 'Calibri', size: 11}}
+                },
+                {header: 'Category Code:', key: 'categoryCode', width: 10, style: {font: {name: 'Calibri', size: 11}}},
+                {header: 'Make Part:', key: 'makePart', width: 10, style: {font: {name: 'Calibri', size: 11}}},
+                {header: 'Buy Part', key: 'buyPart', width: 10, style: {font: {name: 'Calibri', size: 11}}},
+                {header: 'Stock Part', key: 'stockPart', width: 10, style: {font: {name: 'Calibri', size: 11}}},
+                {header: 'Weight:', key: 'weight', width: 20, style: {font: {name: 'Calibri', size: 11}}}
+            ];
+            sheet.getColumn(2).numFmt = '000';
+            let count = 1;
+            sheet.addRow({
+                assemblyNum: outsource.layout + "-OUTSOURCE",
+                seqNum: count,
+                compPartNum: outsource.layout + "-OUTSOURCE",
+                desc1: outsource.layout + "-OUTSOURCE Bill of Material",
+                qty: 1,
+                unitOfIssue: 'EA',
+                unitOfPurchase: 'EA',
+                categoryCode: '82-BOM',
+                makePart: 1,
+                buyPart: 0,
+                stockPart: 0,
+                manufacturer: 'SAI'
+            });
+
+            for (let outsourceItem of outsource.data) {
+                count += 1;
+                let seqNum = count;
+                sheet.addRow({
+                    assemblyNum: outsource.layout + "-OUTSOURCE",
+                    seqNum: seqNum,
+                    compPartNum: outsourceItem.part,
+                    desc1: outsourceItem.partDesc,
+                    qty: outsourceItem.qty,
+                    unitOfIssue: 'EA',
+                    unitOfPurchase: 'EA',
+                    categoryCode: '91-MFG',
+                    makePart: 1,
+                    buyPart: 0,
+                    stockPart: 0,
+                    weight: outsourceItem.weight
+                });
+            }
+            workbook.xlsx.writeFile(outputDir + '/BIN BOMS/' + outsource.layout + '-OUTSOURCE' + '.xlsx').then(function() {
+                return null
+            });
+        }
+    }
+
+
     //function that takes in a .drw file, opens it, and then generates a PDF
     async function openAndExport_PDF_DXF(sessionId, drawings) {
         const doesSetupExist = await creo(sessionId, {
@@ -2938,6 +3193,9 @@ exports.generateAll = function(req, res) {
             }
             if (drawing.pdf == 0 && drawing.dxf == 1) {
                 await exportSheet1DXF(sessionId, drawing);
+            }
+            if (drawing.step == 1) {
+                await exportPartSTEP(sessionId, drawing);
             }
         }
         return null

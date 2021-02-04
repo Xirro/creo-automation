@@ -188,15 +188,15 @@
                                                         </div>
                                                     </div>
                                                     <div class="row justify-content-center">
-                                                        <div class="col-sm-3">
+                                                        <div class="col-sm-6">
                                                             <input id="genButton" type="button" value="Generate All" class="btn btn-lg btn-outline-success waves-effect waves-light" onclick="document.getElementById('drawingAndBinBomForm').action = '../generateAll';document.getElementById('drawingAndBinBomForm').submit();" style="margin-bottom:1%;" />
                                                         </div>
-                                                        <div class="col-sm-3">
+                                                        <!--<div class="col-sm-3">
                                                             <input id="genButton" type="button" value="Generate BIN BOMs" class="btn btn-lg btn-outline-success waves-effect waves-light" onclick="document.getElementById('drawingAndBinBomForm').action = '../generateBinBoms';document.getElementById('drawingAndBinBomForm').submit();" style="margin-bottom:1%;" />
                                                         </div>
                                                         <div class="col-sm-3">
                                                             <input id="genButton" type="button" value="Generate Drawings" class="btn btn-lg btn-outline-success waves-effect waves-light" onclick="document.getElementById('drawingAndBinBomForm').action = '../generateDrawings';document.getElementById('drawingAndBinBomForm').submit();" style="margin-bottom:1%;" />
-                                                        </div>
+                                                        </div>-->
                                                     </div>
                                                 <% } %>
                                             </div>
@@ -916,15 +916,27 @@
                                                                     <label><input class="form-check-input checkAllNameplate" id="checkAllNameplate" type="checkbox">NP</label>
                                                                 </div>
                                                         </div>
+                                                        <div class="row justify-content-center">
+                                                            <div class="form-check" style="margin-left:5%">
+                                                                <label><input class="form-check-input checkOutsourceAllSteel" id="checkOutsourceAllSteel" type="checkbox">Steel - OUT</label>
+                                                            </div>
+                                                            <div class="form-check" style="margin-left:5%">
+                                                                <label><input class="form-check-input checkOutsourceAllCopper" id="checkOutsourceAllCopper" type="checkbox">Copper - OUT</label>
+                                                            </div>
+                                                            <div class="form-check" style="margin-left:5%">
+                                                                <label><input class="form-check-input checkOutsourceAllGlastic" id="checkOutsourceAllGlastic" type="checkbox">Glastic - OUT</label>
+                                                            </div>
+                                                        </div>
                                                     </div>
                                                     <div class="row justify-content-center">
                                                         <div class="col-sm-12">
                                                             <table id="creoDrawingTable" class="table table-bordered dt-responsive nowrap" style="border-collapse: collapse; border-spacing: 0; width: 100%;">
                                                                 <thead>
                                                                 <tr class="header">
-                                                                    <th style="width:70%;">Drawing</th>
+                                                                    <th style="width:55%;">Drawing</th>
                                                                     <th style="width:15%;">PDF</th>
                                                                     <th style="width:15%;">DXF</th>
+                                                                    <th style="width:15%;">STEP</th>
                                                                 </tr>
                                                                 </thead>
                                                                 <tbody>
@@ -951,6 +963,7 @@
                                                                             </td>
                                                                             <td><input type="hidden" value="0" name="pdfCheck"><input class="form-check-input pdfCheck" type="checkbox" id="PDF_<%=sortedCheckedDwgs[i].drawing%>" onclick="this.previousSibling.value=1-this.previousSibling.value" style="margin-left:5%; margin-top:-1%;"></td>
                                                                             <td><input type="hidden" value="0" name="dxfCheck"><input class="form-check-input dxfCheck" type="checkbox" id="DXF_<%=sortedCheckedDwgs[i].drawing%>" onclick="this.previousSibling.value=1-this.previousSibling.value" style="margin-left:5%; margin-top:-1%;"></td>
+                                                                            <td><input type="hidden" value="0" name="stepCheck"><input class="form-check-input stepCheck" type="checkbox" id="STEP_<%=sortedCheckedDwgs[i].drawing%>" onclick="this.previousSibling.value=1-this.previousSibling.value" style="margin-left:5%; margin-top:-1%;"></td>
                                                                         </tr>
                                                                     <% } %>
                                                                 <% } %>
