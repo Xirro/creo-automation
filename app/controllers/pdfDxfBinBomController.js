@@ -1590,6 +1590,11 @@ exports.generateAll = function(req, res) {
                     "~ Activate `file_saveas` `ph_list.Filelist` 1 `PDF`;\n" +
                     "~ Activate `file_saveas` `OK`;~ Command `ProCmdDwgPubCloseExportPvw`;"
             }
+
+            /*data: {
+                "script": "~ Activate `main_dlg_cur` `switcher_lay_buttons_lay_ph.page_0` 1;~ Trail `UI Desktop` `UI Desktop` `SmartTabs` `selectButton main_dlg_cur@switcher_lay_buttons_lay page_0 0`;~ Close `main_dlg_cur` `appl_casc`;~ Command `ProCmdExportPreview` ;~ Activate `main_dlg_cur` `switcher_lay_buttons_lay_ph.page_0` 1;~ Trail `UI Desktop` `UI Desktop` `SmartTabs` `selectButton main_dlg_cur@switcher_lay_buttons_lay page_0 0`;~ Close `main_dlg_cur` `appl_casc`;~ Command `ProCmdExportPreview` ;~ Command `ProCmdDwgPubSettings` ;~ Open `intf_profile` `opt_profile`;~ Close `intf_profile` `opt_profile`;~ Select `intf_profile` `opt_profile` 1 `drawing_setup`;~ Command `ProCmdDwgPubSettings` ;~ Activate `intf_profile` `OkPshBtn`;~ Command `ProCmdDwgPubExport` ;~ Activate `file_saveas` `Current Dir`;~ Select `file_saveas` `ph_list.Filelist` 1 `_outputDir`;~ Activate `file_saveas` `ph_list.Filelist` 1 `_outputDir`;~ Select `file_saveas` `ph_list.Filelist` 1 `PDF`;~ Activate `file_saveas` `ph_list.Filelist` 1 `PDF`;~ Activate `file_saveas` `OK`;~ Command `ProCmdDwgPubCloseExportPvw`;"
+            }*/
+
         });
     }
 

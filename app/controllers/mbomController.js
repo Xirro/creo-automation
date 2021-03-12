@@ -2016,7 +2016,6 @@ exports.generateMBOM = function (req, res) {
             return null;
         })
         .then(() => {
-            console.log(mbomBrkAccSum);
             mbomSecSumData.sort(function(a,b) {
                 let intA = parseInt(a.sectionNum);
                 let intB = parseInt(b.sectionNum);
@@ -2032,13 +2031,6 @@ exports.generateMBOM = function (req, res) {
                 } else {
                     sectionNumber = '1'+mbomSecSumData[i].sectionNum;
                 }
-
-                /* let pre;
-                 if (i < 9)
-                     pre = '10';
-                 else
-                     pre = '1';
-                     */
 
                 let assemblyNum = mbomData.jobNum + mbomData.releaseNum + '-MBOM-' + sectionNumber;
                 mbomAssemNumArr.push(assemblyNum);
@@ -2139,17 +2131,12 @@ exports.generateMBOM = function (req, res) {
                         let unitOfIssue = row.unitOfIssue;
                         let catCode = row.catCode;
                         let itemMfg = row.itemMfg;
-                        let mfgPartNum = itemPN;
-                        if (itemPN.length > 20) {
-                            itemPN = itemPN.slice(0,21);
-                            partNumCount++;
-                        }
-                        /*let mfgPartNum = null;
+                        let mfgPartNum = null;
                         if (itemPN.length > 20) {
                             mfgPartNum = itemPN;
                             itemPN = mbomData.jobNum + mbomData.releaseNum + '-' + partNumCount + '-ITEM';
                             partNumCount++;
-                        }*/
+                        }
                         sheet.addRow({
                             assemblyNum: assemblyNum,
                             seqNum: seqNum.toString(),
@@ -2176,6 +2163,7 @@ exports.generateMBOM = function (req, res) {
                 //FOR BREAKERS
                 let brkArr = [];
                 let brkAccArr = [];
+
                 for (let row of mbomBrkSum) {
                     if (row.secID == mbomSecSumData[i].secID) {
                         for (let el of mbomBrkAccSum) {
@@ -2184,7 +2172,7 @@ exports.generateMBOM = function (req, res) {
                             }
                         }
                         brkArr.push({
-                            idDev: row.idDev,
+                            idDev: [row.idDev],
                             brkPN: row.brkPN,
                             cradlePN: row.cradlePN,
                             devDesignation: row.devDesignation,
@@ -2192,25 +2180,26 @@ exports.generateMBOM = function (req, res) {
                             unitOfIssue: row.unitOfIssue,
                             catCode: row.catCode,
                             devMfg: row.devMfg
-                        });
+                        })
                     }
                 }
-                let totalQty = [];
-                let obj = null;
-                for (let f = 0; f < brkArr.length; f++) {
-                    obj = brkArr[f];
-                    if (!totalQty[obj.brkPN]) {
-                        totalQty[obj.brkPN] = obj;
-                    } else {
-                        totalQty[obj.brkPN].qty += obj.qty;
-                        totalQty[obj.brkPN].devDesignation += ', ' + obj.devDesignation;
-                    }
-                }
-                let totalQtyResults = [];
-                for (let prop in totalQty)
-                    totalQtyResults.push(totalQty[prop]);
 
-                for (let row of totalQtyResults) {
+                let totalBrkQty = [];
+                let brkObj = null;
+
+                for (let f = 0; f < brkArr.length; f++) {
+                    brkObj = brkArr[f];
+                    if (totalBrkQty.filter(e => e.brkPN == brkObj.brkPN).length == 0) {
+                        totalBrkQty.push(brkObj);
+                    } else {
+                        totalBrkQty.filter(e => e.brkPN == brkObj.brkPN)[0].qty += brkObj.qty;
+                        totalBrkQty.filter(e => e.brkPN == brkObj.brkPN)[0].devDesignation += ", " + brkObj.devDesignation;
+                        totalBrkQty.filter(e => e.brkPN == brkObj.brkPN)[0].idDev.push(brkObj.idDev[0])
+                    }
+                }
+
+
+                for (let row of totalBrkQty) {
                     let seqNum;
                     if (count < 10)
                         seqNum = '00' + count;
@@ -2221,42 +2210,26 @@ exports.generateMBOM = function (req, res) {
                     let brkPN = row.brkPN;
                     let crdPN = row.cradlePN;
                     let devDes = row.devDesignation;
-                    let devDes1 = devDes.substring(0, 24);
-                    let devDes2 = devDes.substring(24, 64);
-                    let devDes3 = devDes.substring(64, 104);
-                    let devDes4 = devDes.substring(104, 144);
                     let qty = row.qty;
                     let unitOfIssue = row.unitOfIssue;
                     let catCode = row.catCode;
                     let devMfg = row.devMfg;
                     let idDev = row.idDev;
 
-                    //CREATE NEW PART NUM IF OVER 20 CHARACTERS
-
-                    let brkMfgPartNum = brkPN;
-                    if (brkPN.length > 20) {
-                        brkPN = brkPN.slice(0,20);
-                        partNumCount++;
-                    }
-                    let crdMfgPartNum = crdPN;
-                    if (crdPN.length > 20) {
-                        crdPN = crdPN.slice(0,20);
-                        partNumCount++;
-                    }
-
-                    /*let brkMfgPartNum = null;
+                    let brkMfgPartNum = null;
                     if (brkPN.length > 20) {
                         brkMfgPartNum = brkPN;
-                        brkPN = mbomData.jobNum + mbomData.releaseNum + '-' + partNumCount + '-BRK';
+                        brkPN =  mbomData.jobNum + mbomData.releaseNum + "-" + partNumCount + "-BRK";
                         partNumCount++;
                     }
                     let crdMfgPartNum = null;
                     if (crdPN.length > 20) {
                         crdMfgPartNum = crdPN;
-                        crdPN = mbomData.jobNum + mbomData.releaseNum + '-' + partNumCount + '-CRA';
+                        crdPN = mbomData.jobNum + mbomData.releaseNum + "-" + partNumCount + "-CRA";
                         partNumCount++;
-                    }*/
-                    if (brkPN != '') {
+                    }
+
+                    if (brkPN != '' && crdPN != '') {
                         sheet.addRow({
                             assemblyNum: assemblyNum,
                             seqNum: seqNum.toString(),
@@ -2276,126 +2249,138 @@ exports.generateMBOM = function (req, res) {
                             manufacturer: devMfg,
                             deviceDes: devDes,
                         });
-                    }
-                    if (crdPN != '') {
-                        if (brkPN == '') {
-                            sheet.addRow({
-                                assemblyNum: assemblyNum,
-                                seqNum: seqNum.toString(),
-                                compPartNum: crdPN,
-                                mfgPartNum: crdMfgPartNum,
-                                desc1: 'CRADLE',
-                                desc2: null,
-                                desc3: null,
-                                desc4: null,
-                                qty: qty,
-                                unitOfIssue: unitOfIssue,
-                                unitOfPurchase: unitOfIssue,
-                                categoryCode: catCode,
-                                makePart: 0,
-                                buyPart: 1,
-                                stockPart: 0,
-                                manufacturer: devMfg,
-                                deviceDes: devDes
-                            });
-                        } else {
-                            count++;
-                            let seqNum;
-                            if (count < 10)
-                                seqNum = '00' + count;
-                            else if (count < 100)
-                                seqNum = '0' + count;
-                            else
-                                seqNum = count;
-
-                            sheet.addRow({
-                                assemblyNum: assemblyNum,
-                                seqNum: seqNum.toString(),
-                                compPartNum: crdPN,
-                                mfgPartNum: crdMfgPartNum,
-                                desc1: 'CRADLE',
-                                desc2: null,
-                                desc3: null,
-                                desc4: null,
-                                qty: qty,
-                                unitOfIssue: unitOfIssue,
-                                unitOfPurchase: unitOfIssue,
-                                categoryCode: catCode,
-                                makePart: 0,
-                                buyPart: 1,
-                                stockPart: 0,
-                                manufacturer: devMfg,
-                                deviceDes: devDes
-                            });
-                        }
+                        count++;
+                        if (count < 10)
+                            seqNum = '00' + count;
+                        else if (count < 100)
+                            seqNum = '0' + count;
+                        else
+                            seqNum = count;
+                        sheet.addRow({
+                            assemblyNum: assemblyNum,
+                            seqNum: seqNum.toString(),
+                            compPartNum: crdPN,
+                            mfgPartNum: crdMfgPartNum,
+                            desc1: 'CRADLE',
+                            desc2: null,
+                            desc3: null,
+                            desc4: null,
+                            qty: qty,
+                            unitOfIssue: unitOfIssue,
+                            unitOfPurchase: unitOfIssue,
+                            categoryCode: catCode,
+                            makePart: 0,
+                            buyPart: 1,
+                            stockPart: 0,
+                            manufacturer: devMfg,
+                            deviceDes: devDes
+                        });
+                    } else if (brkPN != '' && crdPN == '') {
+                        sheet.addRow({
+                            assemblyNum: assemblyNum,
+                            seqNum: seqNum.toString(),
+                            compPartNum: brkPN,
+                            mfgPartNum: brkMfgPartNum,
+                            desc1: 'BREAKER',
+                            desc2: null,
+                            desc3: null,
+                            desc4: null,
+                            qty: qty,
+                            unitOfIssue: unitOfIssue,
+                            unitOfPurchase: unitOfIssue,
+                            categoryCode: catCode,
+                            makePart: 0,
+                            buyPart: 1,
+                            stockPart: 0,
+                            manufacturer: devMfg,
+                            deviceDes: devDes,
+                        });
+                    } else if (brkPN == '' && crdPN != '') {
+                        sheet.addRow({
+                            assemblyNum: assemblyNum,
+                            seqNum: seqNum.toString(),
+                            compPartNum: crdPN,
+                            mfgPartNum: crdMfgPartNum,
+                            desc1: 'CRADLE',
+                            desc2: null,
+                            desc3: null,
+                            desc4: null,
+                            qty: qty,
+                            unitOfIssue: unitOfIssue,
+                            unitOfPurchase: unitOfIssue,
+                            categoryCode: catCode,
+                            makePart: 0,
+                            buyPart: 1,
+                            stockPart: 0,
+                            manufacturer: devMfg,
+                            deviceDes: devDes
+                        });
                     }
 
                     let totalBrkAccQty = [];
-                    let objBrkAcc = null;
-                    for (let f = 0; f < brkAccArr.length; f++) {
-                        objBrkAcc = brkAccArr[f];
-                        if (!totalBrkAccQty[objBrkAcc.brkAccPN]) {
-                            totalBrkAccQty[objBrkAcc.brkAccPN] = objBrkAcc;
-                        } else {
-                            totalBrkAccQty[objBrkAcc.brkAccPN].brkAccQty += objBrkAcc.brkAccQty;
-                            //totalBrkAccQty[objBrkAcc.brkAccPN].idDev += ', ' + objBrkAcc.idDev;
+                    // FOR BRK ACCESSORIES
+                    for (let dev of idDev) {
+                        if (brkAccArr.filter(e => e.idDev == dev).length != 0) {
+                            for (let g = 0; g < brkAccArr.filter(e => e.idDev == dev).length; g++) {
+                                if (totalBrkAccQty.filter(e => e.brkAccPN == brkAccArr.filter(e => e.idDev == dev)[g].brkAccPN).length == 0) {
+                                   totalBrkAccQty.push({
+                                       brkAccID: [brkAccArr.filter(e => e.idDev == dev)[g].brkAccID],
+                                       mbomID: brkAccArr.filter(e => e.idDev == dev)[g].mbomID,
+                                       idDev: [brkAccArr.filter(e => e.idDev == dev)[g].idDev],
+                                       brkAccQty: brkAccArr.filter(e => e.idDev == dev)[g].brkAccQty,
+                                       brkAccType: brkAccArr.filter(e => e.idDev == dev)[g].brkAccType,
+                                       brkAccMfg: brkAccArr.filter(e => e.idDev == dev)[g].brkAccMfg,
+                                       brkAccDesc: brkAccArr.filter(e => e.idDev == dev)[g].brkAccDesc,
+                                       brkAccPN: brkAccArr.filter(e => e.idDev == dev)[g].brkAccPN,
+                                   });
+                                } else {
+                                    totalBrkAccQty.filter(e => e.brkAccPN == brkAccArr.filter(e => e.idDev == dev)[g].brkAccPN)[0].brkAccQty += brkAccArr.filter(e => e.idDev == dev)[g].brkAccQty;
+                                    totalBrkAccQty.filter(e => e.brkAccPN == brkAccArr.filter(e => e.idDev == dev)[g].brkAccPN)[0].brkAccID.push(brkAccArr.filter(e => e.idDev == dev)[g].brkAccID);
+                                    totalBrkAccQty.filter(e => e.brkAccPN == brkAccArr.filter(e => e.idDev == dev)[g].brkAccPN)[0].idDev.push(brkAccArr.filter(e => e.idDev == dev)[g].idDev);
+                                }
+                            }
                         }
                     }
-                    let totalBrkAccQtyResults = [];
-                    for (let prop in totalBrkAccQty)
-                        totalBrkAccQtyResults.push(totalBrkAccQty[prop]);
-
-                    //FOR BRK ACC
-                    for (let el of brkAccArr) {
-                        if(el.idDev == row.idDev){
-                            let itemDesc = el.brkAccDesc;
-                            let itemDesc1 = itemDesc.substring(0, 40);
-                            let itemDesc2 = itemDesc.substring(40, 80);
-                            let itemDesc3 = itemDesc.substring(80, 120);
-                            let itemDesc4 = itemDesc.substring(120, 160);
-
-                            let brkAccPN = el.brkAccPN;
-                            let brkAccMfgPartNum = brkAccPN;
-                            if (brkAccPN.length > 20) {
-                                brkAccPN = brkAccPN.slice(0,20);
-                                partNumCount++;
-                            }
-                            /*let brkAccMfgPartNum = null;
-                            if (brkAccPN.length > 20) {
-                                brkAccMfgPartNum = brkAccPN;
-                                brkAccPN = mbomData.jobNum + mbomData.releaseNum + '-' + partNumCount + '-BRKACC';
-                                partNumCount++;
-                            }*/
-
-                            count++;
-                            let seqNum;
-                            if (count < 10)
-                                seqNum = '00' + count;
-                            else if (count < 100)
-                                seqNum = '0' + count;
-                            else
-                                seqNum = count;
-
-                            sheet.addRow({
-                                assemblyNum: assemblyNum,
-                                seqNum: seqNum.toString(),
-                                compPartNum: brkAccPN,
-                                mfgPartNum: brkAccMfgPartNum,
-                                desc1: itemDesc1,
-                                desc2: itemDesc2,
-                                desc3: itemDesc3,
-                                desc4: itemDesc4,
-                                qty: el.brkAccQty,
-                                unitOfIssue: unitOfIssue,
-                                unitOfPurchase: unitOfIssue,
-                                categoryCode: catCode,
-                                makePart: 0,
-                                buyPart: 1,
-                                stockPart: 0,
-                                manufacturer: el.brkAccMfg,
-                                deviceDes: devDes
-                            });
+                    for (let el of totalBrkAccQty) {
+                        count++;
+                        let brkAccDesc = el.brkAccDesc;
+                        let brkAccDesc1 = brkAccDesc.substring(0, 40);
+                        let brkAccDesc2 = brkAccDesc.substring(40, 80);
+                        let brkAccDesc3 = brkAccDesc.substring(80, 120);
+                        let brkAccDesc4 = brkAccDesc.substring(120, 160);
+                        let brkAccPN = el.brkAccPN;
+                        let brkAccMfgPartNum = null;
+                        if (brkAccPN.length > 20) {
+                            brkAccMfgPartNum = brkAccPN;
+                            brkAccPN = mbomData.jobNum + mbomData.releaseNum + '-' + partNumCount + '-BRKACC';
+                            partNumCount++;
                         }
+                        if (count < 10)
+                            seqNum = '00' + count;
+                        else if (count < 100)
+                            seqNum = '0' + count;
+                        else
+                            seqNum = count;
+
+                        sheet.addRow({
+                            assemblyNum: assemblyNum,
+                            seqNum: seqNum.toString(),
+                            compPartNum: brkAccPN,
+                            mfgPartNum: brkAccMfgPartNum,
+                            desc1: brkAccDesc1,
+                            desc2: brkAccDesc2,
+                            desc3: brkAccDesc3,
+                            desc4: brkAccDesc4,
+                            qty: el.brkAccQty,
+                            unitOfIssue: unitOfIssue,
+                            unitOfPurchase: unitOfIssue,
+                            categoryCode: catCode,
+                            makePart: 0,
+                            buyPart: 1,
+                            stockPart: 0,
+                            manufacturer: el.brkAccMfg,
+                            deviceDes: devDes
+                        });
                     }
                     count++;
                 }
