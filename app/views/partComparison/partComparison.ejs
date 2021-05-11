@@ -132,50 +132,49 @@
                     <div class="col-sm-12">
                         <div class="page-title-box">
                             <h4 class="page-title">Mechanical Engineering</h4>
-                                <div class="row justify-content-center">
-                                    <div class="col-sm-12">
-                                        <div class="card m-b-20">
-                                            <div class="card-body">
-                                                <h4 class="mt-0 header-title">Current Design</h4>
-                                                <% if (message != null) { %>
-                                                <h6 style="color:#ff4444;"><%=message%></h6>
-                                                <% } %>
-                                                    <form id="setWDform" class="setWDform" action="/setWD" method="POST">
-                                                        <div class="form-group">
-                                                            <div class="row">
-                                                                <% if (outputDir == undefined) { %>
-                                                                    <div class="col-sm-9">
-                                                                        <% if (workingDir != undefined) { %>
-                                                                            <label for="example-text-input" class="col-form-label">Working Directory</label>
-                                                                            <input type="text" name="CREO_workingDir" class="form-control" value="<%= workingDir %>" readonly="readonly" placeholder="Choose the location of the PROE Working Directory" required/>
-                                                                        <% } else { %>
-                                                                            <label for="example-text-input" class="col-form-label">Working Directory</label>
-                                                                            <input type="text" name="CREO_workingDir" class="form-control" value="" placeholder="Choose the location of the PROE Working Directory" required/>
-                                                                        <% } %>
-                                                                    </div>
-                                                                    <div class="col-sm-3">
-                                                                        <input id="uploadBtn" type="submit" value="Set Working Directory" class="btn-block btn-lg btn-outline-secondary waves-effect waves-light" style="margin-top:9%;" />
-                                                                    </div>
+                            <div class="row justify-content-center">
+                                <div class="col-sm-12">
+                                    <div class="card m-b-20">
+                                        <div class="card-body">
+                                            <h4 class="mt-0 header-title">Current Design</h4>
+                                            <% if (message != null) { %>
+                                            <h6 style="color:#ff4444;"><%=message%></h6>
+                                            <% } %>
+                                            <form id="setWDform" class="setWDform" action="/compareSetWD" method="POST">
+                                                <div class="form-group">
+                                                    <div class="row">
+                                                        <% if (outputDir == undefined) { %>
+                                                            <div class="col-sm-9">
+                                                                <% if (workingDir != undefined) { %>
+                                                                    <label for="example-text-input" class="col-form-label">Working Directory</label>
+                                                                    <input type="text" name="CREO_workingDir" class="form-control" value="<%= workingDir %>" readonly="readonly" placeholder="Choose the location of the PROE Working Directory" required/>
                                                                 <% } else { %>
-                                                                    <div class="col-sm-12">
-                                                                        <label for="example-text-input" class="col-form-label">Working Directory</label>
-                                                                        <input type="text" name="CREO_workingDir" class="form-control" value="<%= workingDir %>" readonly="readonly" placeholder="Choose the location of the PROE Working Directory" required/>
-                                                                    </div>
+                                                                    <label for="example-text-input" class="col-form-label">Working Directory</label>
+                                                                    <input type="text" name="CREO_workingDir" class="form-control" value="" placeholder="Choose the location of the PROE Working Directory" required/>
                                                                 <% } %>
                                                             </div>
-                                                        </div>
-                                                    </form>
-
-                                            </div>
+                                                            <div class="col-sm-3">
+                                                                <input id="uploadBtn" type="submit" value="Set Working Directory" class="btn-block btn-lg btn-outline-secondary waves-effect waves-light" style="margin-top:9%;" />
+                                                            </div>
+                                                        <% } else { %>
+                                                            <div class="col-sm-12">
+                                                                <label for="example-text-input" class="col-form-label">Working Directory</label>
+                                                                <input type="text" name="CREO_workingDir" class="form-control" value="<%= workingDir %>" readonly="readonly" placeholder="Choose the location of the PROE Working Directory" required/>
+                                                            </div>
+                                                        <% } %>
+                                                    </div>
+                                                </div>
+                                            </form>
                                         </div>
                                     </div>
                                 </div>
-                                <% if (asmList.length != 0) { %>
+                            </div>
+                            <% if (asmList.length != 0) { %>
                                 <div class="row">
                                     <div class="col-sm-12">
                                         <div class="card m-b-20">
                                             <div class="card-body">
-                                                <% if (sortedCheckedDwgs.length != 0) { %>
+                                                <% if (partsList.length != 0) { %>
                                                     <h4 class="mt-0 header-title">Selected Assembly</h4>
                                                     <div class="row justify-content-center">
                                                         <div class="col-sm-12">
@@ -200,13 +199,13 @@
                                                     <form id="asmForm" class="asmForm" action="" method="POST">
                                                         <input type="text" name="CREO_workingDir" class="form-control" value="<%= workingDir %>" hidden="hidden" required/>
                                                         <input type="text" name="CREO_outputDir" class="form-control" value="<%= outputDir %>" hidden="hidden" required/>
-                                                        <input id="loadBtn" type="submit" value="Load" class="btn btn-lg btn-outline-success waves-effect waves-light" onclick="this.form.action='./loadDesign'" style="margin-bottom:1%;" />
+                                                        <input id="loadBtn" type="submit" value="Load" class="btn btn-lg btn-outline-success waves-effect waves-light" onclick="this.form.action='./compareParts'" style="margin-bottom:1%;" />
                                                         <div class="row justify-content-center">
                                                             <div class="col-sm-12">
                                                                 <table id="creoAsmTable" class="table table-bordered dt-responsive nowrap" style="border-collapse: collapse; border-spacing: 0; width: 100%;">
                                                                     <thead>
                                                                     <tr class="header">
-                                                                        <th style="width:8%;">Include In Export</th>
+                                                                        <th style="width:8%;">Include In Comparison</th>
                                                                         <th style="width:92%;">Assembly</th>
                                                                     </tr>
                                                                     </thead>
@@ -230,18 +229,18 @@
                                         </div>
                                     </div>
                                 </div>
-                                <% } %>
-                            </div>
+                            <% } %>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
+    </div>
 
-    </div> <!-- content-page -->
-    <footer class="footer">
-        © 2019 SAI, Advanced Power Solutions Inc.
-    </footer>
+</div> <!-- content-page -->
+<footer class="footer">
+    © 2019 SAI, Advanced Power Solutions Inc.
+</footer>
 </div> <!-- wrapper -->
 
 

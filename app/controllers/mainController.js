@@ -22,6 +22,19 @@ reqPromise(connectOptions)
     .then(reqConnectBody => {
         // get the sessionId
         sessionId = reqConnectBody.sessionId;
+        reqPromise({
+            method: 'POST',
+            uri: creoHttp,
+            body: {
+                "sessionId": reqConnectBody.sessionId,
+                "command": "creo",
+                "function": "set_creo_version",
+                "data": {
+                    "version": "3"
+                }
+            },
+            json: true
+        });
     })
     .catch(err => {
         console.log('there was an error:' + err)

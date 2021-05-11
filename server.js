@@ -68,6 +68,7 @@ require('./app/routes/pdfDxfBinBom.js')(app); //PDF DXF BIN BOM Router
 require('./app/routes/submittal.js')(app); //Submittal Router
 require('./app/routes/mbom.js')(app); //MBOM router
 require('./app/routes/slimVAC.js')(app); //SlimVAC Router
+require('./app/routes/partComparison.js')(app); //partComparison Router
 
 
 

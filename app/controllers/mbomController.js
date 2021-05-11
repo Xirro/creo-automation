@@ -19,6 +19,7 @@ const dbConfig = require('../config/database.js');
 const database = dbConfig.database;
 
 exports.MBOM = function(req, res) {
+    req.setTimeout(0); //no timeout
     let mbomData = [];
     let comItemData = [];
     let message;
@@ -50,6 +51,7 @@ exports.MBOM = function(req, res) {
 };
 
 exports.createMBOM = function(req, res) {
+    req.setTimeout(0); //no timeout
     let data = {
         jobNum: req.body.jobNum,
         releaseNum: req.body.releaseNum,
@@ -95,6 +97,7 @@ exports.createMBOM = function(req, res) {
 };
 
 exports.copyMBOM = function(req, res) {
+    req.setTimeout(0); //no timeout
     let copyMbomID, copyNumSections;
     let copyMbomData = {
         jobNum: req.body.copyJobNum,
@@ -326,6 +329,7 @@ exports.copyMBOM = function(req, res) {
 };
 
 exports.editMBOM = function(req, res) {
+    req.setTimeout(0); //no timeout
     let urlObj = url.parse(req.originalUrl);
     urlObj.protocol = req.protocol;
     urlObj.host = req.get('host');
@@ -359,6 +363,7 @@ let brkAccArr = [];
 let currentMbomID = '';
 
 exports.addBreakerAcc = function(req, res) {
+    req.setTimeout(0); //no timeout
     let mbomID = req.body.mbomID;
 
     let mbomData = {
@@ -414,6 +419,7 @@ exports.addBreakerAcc = function(req, res) {
 let editBrkDataObj;
 
 exports.editBreakerAcc = function(req, res){
+    req.setTimeout(0); //no timeout
     let jobNum = req.body.jobNum;
     let releaseNum = req.body.releaseNum;
     let mbomID = req.body.mbomID;
@@ -444,6 +450,7 @@ exports.editBreakerAcc = function(req, res){
 };
 
 exports.deleteBreakerAcc = function(req, res){
+    req.setTimeout(0); //no timeout
     let mbomID = req.body.mbomID;
     let mbomData = {
         jobNum: req.body.jobNum,
@@ -474,6 +481,7 @@ exports.deleteBreakerAcc = function(req, res){
  BRK ACC FROM EDIT
  ***********************************************/
 exports.addBrkAccFromEdit = function(req, res) {
+    req.setTimeout(0); //no timeout
     let mbomID = req.body.mbomID;
 
     let breakerData = [];
@@ -541,6 +549,7 @@ exports.addBrkAccFromEdit = function(req, res) {
 };
 
 exports.editBrkAccFromEdit = function(req, res) {
+    req.setTimeout(0); //no timeout
     let breakerData = [];
     let accData = [];
 
@@ -603,6 +612,7 @@ exports.editBrkAccFromEdit = function(req, res) {
 };
 
 exports.deleteBrkAccFromEdit = function(req, res) {
+    req.setTimeout(0); //no timeout
     let idDev = req.body.idDev;
     let pn = req.body.pn;
 
@@ -660,6 +670,7 @@ exports.deleteBrkAccFromEdit = function(req, res) {
  MAIN MBOM VIEW
  ***********************************************/
 exports.searchMBOMGet = function(req, res) {
+    req.setTimeout(0); //no timeout
     let urlObj = url.parse(req.originalUrl);
     urlObj.protocol = req.protocol;
     urlObj.host = req.get('host');
@@ -753,6 +764,7 @@ exports.searchMBOMGet = function(req, res) {
  ***********************************************/
 //CREATE COM ITEMS TABLE GET
 exports.createComItemTableGET = function(req, res) {
+    req.setTimeout(0); //no timeout
     let comItemData = [];
     let catCodeData = [];
 
@@ -786,6 +798,7 @@ exports.createComItemTableGET = function(req, res) {
 
 //CREATE COM ITEMS TABLE POST
 exports.createComItemTablePOST = function(req, res) {
+    req.setTimeout(0); //no timeout
     //let exists;
     let itemType = req.body.itemSelect2;
     if (itemType == 'OTHER')
@@ -836,6 +849,7 @@ exports.createComItemTablePOST = function(req, res) {
 
 //EDIT COM ITEM TABLE GET
 exports.editComItemTableGET = function(req, res) {
+    req.setTimeout(0); //no timeout
     let urlObj = url.parse(req.originalUrl);
     urlObj.protocol = req.protocol;
     urlObj.host = req.get('host');
@@ -891,6 +905,7 @@ exports.editComItemTableGET = function(req, res) {
 
 //EDIT COM ITEM TABLE POST
 exports.editComItemTablePOST = function(req, res) {
+    req.setTimeout(0); //no timeout
     let urlObj = url.parse(req.originalUrl);
     urlObj.protocol = req.protocol;
     urlObj.host = req.get('host');
@@ -935,6 +950,7 @@ exports.editComItemTablePOST = function(req, res) {
  ***********************************************/
 //ADD COM ITEM IN MBOM
 exports.addComItem = function(req, res) {
+    req.setTimeout(0); //no timeout
     let comItemID, itemSumID;
     let itemMfg = req.body.itemMfg.split('|')[1];
     let itemDesc = req.body.itemDesc.split('|')[2];
@@ -985,6 +1001,7 @@ exports.addComItem = function(req, res) {
 
 //EDIT COM ITEM IN MBOM
 exports.editComItem = function(req, res) {
+    req.setTimeout(0); //no timeout
     let urlObj = url.parse(req.originalUrl);
     urlObj.protocol = req.protocol;
     urlObj.host = req.get('host');
@@ -1048,6 +1065,7 @@ exports.editComItem = function(req, res) {
 
 //SAVE EDIT COM ITEM IN MBOM POST
 exports.editComItemSave = function(req, res) {
+    req.setTimeout(0); //no timeout
     let urlObj = url.parse(req.originalUrl);
     urlObj.protocol = req.protocol;
     urlObj.host = req.get('host');
@@ -1099,6 +1117,7 @@ exports.editComItemSave = function(req, res) {
  ***********************************************/
 //CREATE USER ITEM IN MBOM
 exports.createUserItem = function(req, res) {
+    req.setTimeout(0); //no timeout
     let exists, userItemID, itemSumID, shipLooseCheck;
     let mbomData = {
         mbomID: req.body.mbomID,
@@ -1197,6 +1216,7 @@ exports.createUserItem = function(req, res) {
 
 //EDIT USER ITEM IN MBOM
 exports.editUserItem = function(req, res) {
+    req.setTimeout(0); //no timeout
     let urlObj = url.parse(req.originalUrl);
     urlObj.protocol = req.protocol;
     urlObj.host = req.get('host');
@@ -1266,6 +1286,7 @@ exports.editUserItem = function(req, res) {
 
 //SAVE EDIT USER ITEM IN MBOM
 exports.editUserItemSave = function(req, res) {
+    req.setTimeout(0); //no timeout
     let mbomData = {
         mbomID: req.body.mbomID,
         jobNum: req.body.jobNum,
@@ -1366,6 +1387,7 @@ exports.editUserItemSave = function(req, res) {
  ***********************************************/
 //COPY COM AND USER ITEM IN MBOM
 exports.copyItem = function(req, res) {
+    req.setTimeout(0); //no timeout
     let urlObj = url.parse(req.originalUrl);
     urlObj.protocol = req.protocol;
     urlObj.host = req.get('host');
@@ -1402,6 +1424,7 @@ exports.copyItem = function(req, res) {
 
 //DELETE USER AND COM ITEMS IN MBOM
 exports.deleteItem = function(req, res) {
+    req.setTimeout(0); //no timeout
     let urlObj = url.parse(req.originalUrl);
     urlObj.protocol = req.protocol;
     urlObj.host = req.get('host');
@@ -1448,6 +1471,7 @@ exports.deleteItem = function(req, res) {
  ***********************************************/
 //CREATE BREAKER IN MBOM
 exports.addBrk = function(req, res) {
+    req.setTimeout(0); //no timeout
     let data1 = {
         jobNum: req.body.jobNum,
         releaseNum: req.body.releaseNum,
@@ -1542,6 +1566,7 @@ exports.addBrk = function(req, res) {
 
 //COPY BREAKER IN MBOM
 exports.copyBreaker = function(req, res) {
+    req.setTimeout(0); //no timeout
     let urlObj = url.parse(req.originalUrl);
     urlObj.protocol = req.protocol;
     urlObj.host = req.get('host');
@@ -1615,6 +1640,7 @@ exports.copyBreaker = function(req, res) {
 
 //EDIT BREAKER IN MBOM
 exports.editBreaker = function(req, res) {
+    req.setTimeout(0); //no timeout
     let urlObj = url.parse(req.originalUrl);
     urlObj.protocol = req.protocol;
     urlObj.host = req.get('host');
@@ -1661,6 +1687,7 @@ exports.editBreaker = function(req, res) {
 
 //SAVE EDIT BREAKER IN MBOM
 exports.editBreakerSave = function(req, res) {
+    req.setTimeout(0); //no timeout
     let mbomData = {
         mbomID: req.body.mbomID,
         jobNum: req.body.jobNum,
@@ -1692,6 +1719,7 @@ exports.editBreakerSave = function(req, res) {
 
 //DELETE BREAKER IN MBOM
 exports.deleteBreaker = function(req, res) {
+    req.setTimeout(0); //no timeout
     let urlObj = url.parse(req.originalUrl);
     urlObj.protocol = req.protocol;
     urlObj.host = req.get('host');
@@ -1725,6 +1753,7 @@ exports.deleteBreaker = function(req, res) {
  ***********************************************/
 //ADD SECTION
 exports.mbomAddSection = function(req, res) {
+    req.setTimeout(0); //no timeout
     let data = {
         jobNum: req.body.jobNum,
         releaseNum: req.body.releaseNum,
@@ -1751,6 +1780,7 @@ exports.mbomAddSection = function(req, res) {
 
 //RESET SECTIONS
 exports.mbomResetSection = function(req, res) {
+    req.setTimeout(0); //no timeout
     let data = {
         jobNum: req.body.jobNum,
         releaseNum: req.body.releaseNum,
@@ -1780,6 +1810,7 @@ exports.mbomResetSection = function(req, res) {
 
 //DELETE A SECTION
 exports.mbomDeleteSection = function(req, res) {
+    req.setTimeout(0); //no timeout
     let urlObj = url.parse(req.originalUrl);
     urlObj.protocol = req.protocol;
     urlObj.host = req.get('host');
@@ -1848,6 +1879,7 @@ exports.mbomDeleteSection = function(req, res) {
 
 //SAVE CHANGES TO SECTION CONFIGURE
 exports.sectionConfigure = function(req, res) {
+    req.setTimeout(0); //no timeout
     let data = [];
     if(req.body.sectionNum == 0){
         data[0] = {
@@ -1913,6 +1945,7 @@ exports.sectionConfigure = function(req, res) {
 
 //GENERATE MBOM
 exports.generateMBOM = function (req, res) {
+    req.setTimeout(0); //no timeout
     let mbomData = {
         mbomID: req.body.mbomID,
         jobNum: req.body.jobNum,

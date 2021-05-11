@@ -1,13 +1,15 @@
 
 const path = require('path');
 
+const math = require('mathjs');
+
 //Excel Connection
 const Excel = require('exceljs');
 
 //Creoson Connection
 const reqPromise = require('request-promise');
 let creoHttp = 'http://localhost:9056/creoson';
-let sessionId;
+let sessionId = '';
 let connectOptions = {
     method: 'POST',
     uri: creoHttp,
@@ -22,11 +24,23 @@ reqPromise(connectOptions)
     .then(reqConnectBody => {
         // get the sessionId
         sessionId = reqConnectBody.sessionId;
+        reqPromise({
+            method: 'POST',
+            uri: creoHttp,
+            body: {
+                "sessionId": reqConnectBody.sessionId,
+                "command": "creo",
+                "function": "set_creo_version",
+                "data": {
+                    "version": "3"
+                }
+            },
+            json: true
+        });
     })
     .catch(err => {
         console.log('there was an error:' + err)
     });
-
 
 function creo(sessionId, functionData) {
     if (functionData.data.length != 0) {
@@ -55,6 +69,14 @@ function creo(sessionId, functionData) {
     }
 }
 
+creo(sessionId, {
+    command: "creo",
+    function: "set_creo_version",
+    data: {
+        "version": "3"
+    }
+});
+
 
 
 //*********************************MECHANICAL ENG. PORTAL*************************************//
@@ -64,6 +86,253 @@ module.exports = exports;
 
 //Initial PDF-DXF-BIN BOM GET request
 exports.pdfDxfBinBom = function(req, res) {
+    /*
+
+        //SIMILAR PART SCRIPT
+        async function getPartSurfaces() {
+
+            const massProps1 = await creo(sessionId, {
+                command: "file",
+                function: "massprops",
+                data: {
+                    file: "220797-3327-000.prt"
+                }
+            });
+            console.log(massProps1);
+            console.log(massProps1.data.ctr_grav_inertia_tensor);
+
+            const boundBox1 = await creo(sessionId, {
+                command: "geometry",
+                function: "bound_box",
+                data: {
+                    file: "220797-3327-000.prt"
+                }
+            });
+            //console.log(boundBox1);
+
+            const massProps2 = await creo(sessionId, {
+                command: "file",
+                function: "massprops",
+                data: {
+                    file: "220797-3326-000.prt"
+                }
+            });
+            console.log(massProps2);
+            console.log(massProps2.data.ctr_grav_inertia_tensor);
+
+
+            const boundBox2 = await creo(sessionId, {
+                command: "geometry",
+                function: "bound_box",
+                data: {
+                    file: "220797-3326-000.prt"
+                }
+            });
+
+            //console.log(boundBox2);
+
+            //USE THIS AREA FOR CREOSON FILE.ASSEMBLE TAKING ADVANTAGE OF THE TRANSFORM PROPERTY IN THE REQUEST
+            //TRANSFORM VALUES WILL BE CALCULATED VIA THE BOUNDBOX RESULTS
+            //ONLY CHECK PARTS THAT HAVE EQUAL VOLUME/SURFACE AREA TO A SPECIFIED TOLERANCE
+
+            await creo(sessionId, {
+               command: "file",
+               function: "open",
+               data: {
+                   file: "ASM0003.asm",
+                   display: true,
+                   activate: true
+               }
+            });
+
+            await creo(sessionId, {
+                command: "file",
+                function: "assemble",
+                data: {
+                    file: "220797-3327-000.prt",
+                    into_asm: "ASM0003.asm",
+                    constraints: [{
+                        "asmref": "ASM_FRONT",
+                        "compref": "FRONT",
+                        "type": "align"
+                    }],
+                    transform: {
+                        "origin": {
+                            "x": 0.75,
+                            "y": -2.5,
+                            "z": -0.125
+                        }
+                    }
+                }
+            });
+
+            await creo(sessionId, {
+                command: "file",
+                function: "assemble",
+                data: {
+                    file: "220797-3326-000.prt",
+                    into_asm: "ASM0003.asm",
+                    constraints: [{
+                        "asmref": "ASM_FRONT",
+                        "compref": "FRONT",
+                        "type": "align"
+                    }],
+                    transform: {
+                        "origin": {
+                            "x": 0,
+                            "y": 0,
+                            "z": 1
+                        }
+                    }
+                }
+            });
+
+            const asmBoundBox = await creo(sessionId, {
+                command: "geometry",
+                function: "bound_box",
+                data: {
+                    file: "ASM0003.asm"
+                }
+            });
+
+            const asmMassProps1 = await creo(sessionId, {
+                command: "file",
+                function: "massprops",
+                data: {
+                    file: "ASM0003.asm"
+                }
+            });
+
+            //console.log(asmMassProps1);
+
+
+            await creo(sessionId, {
+                command: "file",
+                function: "open",
+                data: {
+                    file: "ASM0004.asm",
+                    display: true,
+                    activate: true
+                }
+            });
+
+            await creo(sessionId, {
+                command: "file",
+                function: "assemble",
+                data: {
+                    file: "220797-3327-000.prt",
+                    into_asm: "ASM0004.asm",
+                    constraints: [{
+                        "asmref": "ASM_FRONT",
+                        "compref": "FRONT",
+                        "type": "align"
+                    }]
+                }
+            });
+
+            await creo(sessionId, {
+                command: "file",
+                function: "assemble",
+                data: {
+                    file: "220797-3326-000.prt",
+                    into_asm: "ASM0004.asm",
+                    constraints: [{
+                        "asmref": "ASM_FRONT",
+                        "compref": "FRONT",
+                        "type": "align"
+                    }],
+                    transform: {
+                        "origin": {
+                            "x": 0.25,
+                            "y": 2.5,
+                            "z": 0.125
+                        },
+                        "x_rot": 270,
+                        "y_rot": 180,
+                        "z_rot": 270
+                    }
+                }
+            });
+
+            const asmMassProps2 = await creo(sessionId, {
+                command: "file",
+                function: "massprops",
+                data: {
+                    file: "ASM0004.asm"
+                }
+            });
+
+            //console.log(asmMassProps2);
+
+
+            let rotationOpts = [0,90,180,270];
+
+            function calculateRotation(xRot, yRot, zRot, max2Vector, min2Vector, max1Vector, min1Vector) {
+                let pi = Math.PI;
+                let xRad = xRot * (pi/180);
+                let yRad = yRot * (pi/180);
+                let zRad = zRot * (pi/180);
+
+                let rm11 = Math.round(Math.cos(zRad) * Math.cos(yRad));
+                let rm12 = Math.round((Math.cos(zRad) * Math.sin(yRad) * Math.sin(xRad)) - (Math.sin(zRad) * Math.cos(xRad)));
+                let rm13 = Math.round((Math.cos(zRad) * Math.sin(yRad) * Math.cos(xRad)) + (Math.sin(zRad) * Math.sin(xRad)));
+                let rm21 = Math.round(Math.sin(zRad) * Math.cos(yRad));
+                let rm22 = Math.round((Math.sin(zRad) * Math.sin(yRad) * Math.sin(xRad)) + (Math.cos(zRad) * Math.cos(xRad)));
+                let rm23 = Math.round((Math.sin(zRad) * Math.sin(yRad) * Math.cos(xRad)) - (Math.cos(zRad) * Math.sin(xRad)));
+                let rm31 = Math.round(- Math.sin(yRad));
+                let rm32 = Math.round(Math.cos(yRad) * Math.sin(xRad));
+                let rm33 = Math.round(Math.cos(yRad) * Math.cos(xRad));
+
+                let rotationMatrix = math.matrix([[rm11, rm12, rm13], [rm21, rm22, rm23], [rm31, rm32, rm33]]);
+
+                let rotatedVector = math.multiply(rotationMatrix, math.matrix(max2Vector));
+                let offsetVector = math.subtract(math.matrix(max1Vector), rotatedVector);
+
+                let rotatedVectorMin = math.multiply(rotationMatrix, math.matrix(min2Vector));
+
+                let result = math.subtract(math.add(rotatedVectorMin, offsetVector), math.matrix(min1Vector));
+                let goal = math.matrix([[0], [0], [0]]);
+
+                if (math.deepEqual(result, goal) == true) {
+                    console.log('true');
+                    console.log('xRot: ' + xRot);
+                    console.log('yRot: ' + yRot);
+                    console.log('zRot: ' + zRot);
+                    console.log(offsetVector);
+                }
+            }
+
+            for (let option1 of rotationOpts) {
+                let xRot = option1;
+                for (let option2 of rotationOpts) {
+                    let yRot = option2;
+                    for (let option3 of rotationOpts) {
+                        let zRot = option3;
+                        calculateRotation(xRot, yRot, zRot, [[2.5], [5.5], [0]], [[-2.5], [-5.5], [-2]], [[0.25], [5], [5.625]], [[-1.75], [0], [-5.375]]);
+                    }
+                }
+            }
+            return null
+        }
+        getPartSurfaces()
+            .then(() => {
+                let workingDir;
+                let outputDir;
+                res.locals = {title: 'PDF-DXF-BIN BOM'};
+                res.render('MechEng/pdfDxfBinBom', {
+                    message: null,
+                    asmList: [],
+                    workingDir: workingDir,
+                    outputDir: outputDir,
+                    sortedCheckedDwgs: []
+                });
+            })
+            .catch(err => {
+                console.log(err);
+            });*/
+
+
+
     let workingDir;
     let outputDir;
     res.locals = {title: 'PDF-DXF-BIN BOM'};
@@ -91,127 +360,127 @@ exports.setWD = function(req, res) {
         });
 
         if (dir.data != undefined) {
-        if (dir.data.dirname != workingDir) {
-            await creo(sessionId, {
-                command: "creo",
-                function: "cd",
-                data: {
-                    "dirname": workingDir
-                }
-            });
-
-            const innerDirs = await creo(sessionId, {
-                command: "creo",
-                function: "list_dirs",
-                data: {
-                    "dirname": "_outputDir"
-                }
-            });
-            if (!innerDirs.data) {
+            if (dir.data.dirname != workingDir) {
                 await creo(sessionId, {
                     command: "creo",
-                    function: "mkdir",
+                    function: "cd",
+                    data: {
+                        "dirname": workingDir
+                    }
+                });
+
+                const innerDirs = await creo(sessionId, {
+                    command: "creo",
+                    function: "list_dirs",
                     data: {
                         "dirname": "_outputDir"
                     }
                 });
-                await creo(sessionId, {
-                    command: "creo",
-                    function: "mkdir",
-                    data: {
-                        "dirname": "_outputDir\\PDF"
-                    }
-                });
-                await creo(sessionId, {
-                    command: "creo",
-                    function: "mkdir",
-                    data: {
-                        "dirname": "_outputDir\\DXF"
-                    }
-                });
-                await creo(sessionId, {
-                    command: "creo",
-                    function: "mkdir",
-                    data: {
-                        "dirname": "_outputDir\\BIN BOMS"
-                    }
-                });
-                await creo(sessionId, {
-                    command: "creo",
-                    function: "mkdir",
-                    data: {
-                        "dirname": "_outputDir\\NAMEPLATES"
-                    }
-                });
-                await creo(sessionId, {
-                    command: "creo",
-                    function: "mkdir",
-                    data: {
-                        "dirname": "_outputDir\\STEP"
-                    }
-                });
-            } else {
-                message = "_outputDir already exists within the working directory. Please remove before continuing.";
-            }
-
-        } else {
-            const innerDirs = await creo(sessionId, {
-                command: "creo",
-                function: "list_dirs",
-                data: {
-                    "dirname": "_outputDir"
+                if (innerDirs.data.dirlist.length == 0) {
+                    await creo(sessionId, {
+                        command: "creo",
+                        function: "mkdir",
+                        data: {
+                            "dirname": "_outputDir"
+                        }
+                    });
+                    await creo(sessionId, {
+                        command: "creo",
+                        function: "mkdir",
+                        data: {
+                            "dirname": "_outputDir\\PDF"
+                        }
+                    });
+                    await creo(sessionId, {
+                        command: "creo",
+                        function: "mkdir",
+                        data: {
+                            "dirname": "_outputDir\\DXF"
+                        }
+                    });
+                    await creo(sessionId, {
+                        command: "creo",
+                        function: "mkdir",
+                        data: {
+                            "dirname": "_outputDir\\BIN BOMS"
+                        }
+                    });
+                    await creo(sessionId, {
+                        command: "creo",
+                        function: "mkdir",
+                        data: {
+                            "dirname": "_outputDir\\NAMEPLATES"
+                        }
+                    });
+                    await creo(sessionId, {
+                        command: "creo",
+                        function: "mkdir",
+                        data: {
+                            "dirname": "_outputDir\\STEP"
+                        }
+                    });
+                } else {
+                    message = "_outputDir already exists within the working directory. Please remove before continuing.";
                 }
-            });
 
-            if (!innerDirs.data) {
-                await creo(sessionId, {
+            } else {
+                const innerDirs = await creo(sessionId, {
                     command: "creo",
-                    function: "mkdir",
+                    function: "list_dirs",
                     data: {
                         "dirname": "_outputDir"
                     }
                 });
-                await creo(sessionId, {
-                    command: "creo",
-                    function: "mkdir",
-                    data: {
-                        "dirname": "_outputDir\\PDF"
-                    }
-                });
-                await creo(sessionId, {
-                    command: "creo",
-                    function: "mkdir",
-                    data: {
-                        "dirname": "_outputDir\\DXF"
-                    }
-                });
-                await creo(sessionId, {
-                    command: "creo",
-                    function: "mkdir",
-                    data: {
-                        "dirname": "_outputDir\\BIN BOMS"
-                    }
-                });
-                await creo(sessionId, {
-                    command: "creo",
-                    function: "mkdir",
-                    data: {
-                        "dirname": "_outputDir\\NAMEPLATES"
-                    }
-                });
-                await creo(sessionId, {
-                    command: "creo",
-                    function: "mkdir",
-                    data: {
-                        "dirname": "_outputDir\\STEP"
-                    }
-                });
-            } else {
-                message = "_outputDir already exists within the working directory. Please remove before continuing."
-            }
 
+                if (innerDirs.data.dirlist.length == 0) {
+                    await creo(sessionId, {
+                        command: "creo",
+                        function: "mkdir",
+                        data: {
+                            "dirname": "_outputDir"
+                        }
+                    });
+                    await creo(sessionId, {
+                        command: "creo",
+                        function: "mkdir",
+                        data: {
+                            "dirname": "_outputDir\\PDF"
+                        }
+                    });
+                    await creo(sessionId, {
+                        command: "creo",
+                        function: "mkdir",
+                        data: {
+                            "dirname": "_outputDir\\DXF"
+                        }
+                    });
+                    await creo(sessionId, {
+                        command: "creo",
+                        function: "mkdir",
+                        data: {
+                            "dirname": "_outputDir\\BIN BOMS"
+                        }
+                    });
+                    await creo(sessionId, {
+                        command: "creo",
+                        function: "mkdir",
+                        data: {
+                            "dirname": "_outputDir\\NAMEPLATES"
+                        }
+                    });
+                    await creo(sessionId, {
+                        command: "creo",
+                        function: "mkdir",
+                        data: {
+                            "dirname": "_outputDir\\STEP"
+                        }
+                    });
+                } else {
+                    message = "_outputDir already exists within the working directory. Please remove before continuing."
+                }
+
+            }
         }
-    }
         return null
     }
 
@@ -242,7 +511,7 @@ exports.setWD = function(req, res) {
                             "file": asmList[i]
                         }
                     });
-                    if (famTabExists.data != undefined) {
+                    if (famTabExists.data.instances.length != 0) {
                         topLevelAsmList.push(asmList[i]);
                         for (let j = 0; j < famTabExists.data.instances.length; j++) {
                             topLevelAsmList.push(famTabExists.data.instances[j]+'<'+asmList[i].slice(0,15) +'>'+'.asm')
@@ -552,6 +821,7 @@ exports.loadDesign = function(req, res) {
     }
     async function listParameters(sessionId, parts, partBinInfo) {
         for (let part of parts) {
+            //console.log(part);
 
             //get BIN parameter
             let BIN = 'NULL';
@@ -641,7 +911,6 @@ exports.loadDesign = function(req, res) {
                         "name": "WEIGHT"
                     }
                 });
-                //console.log(part);
                 if (weightParam.data.paramlist[0].value.length != 0) {
                     WEIGHT = weightParam.data.paramlist[0].value.toFixed(2);
                 }
@@ -734,6 +1003,17 @@ exports.loadDesign = function(req, res) {
                 });
                 CUT_LENGTH = cutLengthParam.data.paramlist[0].value;
             }
+
+            /*console.log({
+                part: part,
+                partNum: PART_NO,
+                partDesc: TITLE,
+                bin: BIN,
+                material: MATERIAL,
+                gauge: GAUGE,
+                cutLength: CUT_LENGTH,
+                weight: WEIGHT
+            });*/
 
             partBinInfo.push({
                 part: part,
@@ -925,7 +1205,7 @@ exports.loadDesign = function(req, res) {
 
             console.log('Completed: Standalone Panel Check');
 
-            console.log(partBinInfo);
+            //console.log(partBinInfo);
 
             let sectionMatBoms = [];
             for (let m = 0; m < secPartData.length; m++) {
@@ -2220,55 +2500,55 @@ exports.generateAll = function(req, res) {
     for (let layout of layouts) {
         let secBinTrackingData = [];
         let pur, str, pnl, ctl, int, ext, scl;
-            for (let section of layout.sections.split(',')) {
-                if (req.body['binTracker_PUR_' + layout.layout.slice(0, 7) + section] != undefined) {
-                    pur = req.body['binTracker_PUR_' + layout.layout.slice(0, 7) + section];
-                } else {
-                    pur = 'N/A';
-                }
-                if (req.body['binTracker_STR_' + layout.layout.slice(0, 7) + section] != undefined) {
-                    str = req.body['binTracker_STR_' + layout.layout.slice(0, 7) + section];
-                } else {
-                    str = 'N/A';
-                }
-                if (req.body['binTracker_PNL_' + layout.layout.slice(0, 7) + section] != undefined) {
-                    pnl = req.body['binTracker_PNL_' + layout.layout.slice(0, 7) + section];
-                } else {
-                    pnl = 'N/A';
-                }
-                if (req.body['binTracker_CTL_' + layout.layout.slice(0, 7) + section] != undefined) {
-                    ctl = req.body['binTracker_CTL_' + layout.layout.slice(0, 7) + section];
-                } else {
-                    ctl = 'N/A';
-                }
-                if (req.body['binTracker_INT_' + layout.layout.slice(0, 7) + section] != undefined) {
-                    int = req.body['binTracker_INT_' + layout.layout.slice(0, 7) + section];
-                } else {
-                    int = 'N/A';
-                }
-                if (req.body['binTracker_EXT_' + layout.layout.slice(0, 7) + section] != undefined) {
-                    ext = req.body['binTracker_EXT_' + layout.layout.slice(0, 7) + section];
-                } else {
-                    ext = 'N/A';
-                }
-                if (req.body['binTracker_SCL_' + layout.layout.slice(0, 7) + section] != undefined) {
-                    scl = req.body['binTracker_SCL_' + layout.layout.slice(0, 7) + section];
-                } else {
-                    scl = 'N/A';
-                }
-                secBinTrackingData.push({
-                    section: section,
-                    data: {
-                        PUR: pur,
-                        STR: str,
-                        PNL: pnl,
-                        CTL: ctl,
-                        INT: int,
-                        EXT: ext,
-                        SCL: scl
-                    }
-                });
+        for (let section of layout.sections.split(',')) {
+            if (req.body['binTracker_PUR_' + layout.layout.slice(0, 7) + section] != undefined) {
+                pur = req.body['binTracker_PUR_' + layout.layout.slice(0, 7) + section];
+            } else {
+                pur = 'N/A';
             }
+            if (req.body['binTracker_STR_' + layout.layout.slice(0, 7) + section] != undefined) {
+                str = req.body['binTracker_STR_' + layout.layout.slice(0, 7) + section];
+            } else {
+                str = 'N/A';
+            }
+            if (req.body['binTracker_PNL_' + layout.layout.slice(0, 7) + section] != undefined) {
+                pnl = req.body['binTracker_PNL_' + layout.layout.slice(0, 7) + section];
+            } else {
+                pnl = 'N/A';
+            }
+            if (req.body['binTracker_CTL_' + layout.layout.slice(0, 7) + section] != undefined) {
+                ctl = req.body['binTracker_CTL_' + layout.layout.slice(0, 7) + section];
+            } else {
+                ctl = 'N/A';
+            }
+            if (req.body['binTracker_INT_' + layout.layout.slice(0, 7) + section] != undefined) {
+                int = req.body['binTracker_INT_' + layout.layout.slice(0, 7) + section];
+            } else {
+                int = 'N/A';
+            }
+            if (req.body['binTracker_EXT_' + layout.layout.slice(0, 7) + section] != undefined) {
+                ext = req.body['binTracker_EXT_' + layout.layout.slice(0, 7) + section];
+            } else {
+                ext = 'N/A';
+            }
+            if (req.body['binTracker_SCL_' + layout.layout.slice(0, 7) + section] != undefined) {
+                scl = req.body['binTracker_SCL_' + layout.layout.slice(0, 7) + section];
+            } else {
+                scl = 'N/A';
+            }
+            secBinTrackingData.push({
+                section: section,
+                data: {
+                    PUR: pur,
+                    STR: str,
+                    PNL: pnl,
+                    CTL: ctl,
+                    INT: int,
+                    EXT: ext,
+                    SCL: scl
+                }
+            });
+        }
         BIN_TRACKER.push({
             layout: layout.layout,
             data: secBinTrackingData
@@ -3171,7 +3451,7 @@ exports.generateAll = function(req, res) {
         });
 
 
-        if (doesSetupExist.data == undefined) {
+        if (doesSetupExist.data.filelist.length == 0) {
             await creo(sessionId, {
                 command: "interface",
                 function: "mapkey",
@@ -3218,6 +3498,10 @@ exports.generateAll = function(req, res) {
         });
 };
 
+
+
+
+/*
 //Exports the BIN BOMs only
 exports.generateBinBoms = function(req, res) {
     req.setTimeout(0); //no timeout
@@ -4638,6 +4922,7 @@ exports.generateDrawings = function(req, res) {
             console.log(err);
         });
 };
+*/
 
 
 

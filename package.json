@@ -40,6 +40,8 @@
     "http": "0.0.0",
     "js-datepicker": "^4.6.6",
     "jsonwebtoken": "^8.5.1",
+    "math": "0.0.3",
+    "mathjs": "^9.3.0",
     "moment": "^2.24.0",
     "morgan": "^1.9.1",
     "move-file": "^2.0.0",

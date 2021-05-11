@@ -15,10 +15,12 @@ module.exports = function(app) {
     //Generate BIN BOMs and Drawings POST request
     app.post('/generateAll', pdfDxfBinBomController.generateAll);
 
+    /*
     //Generate Drawings POST request
     app.post('/generateDrawings', pdfDxfBinBomController.generateDrawings);
 
     //Generate BIN BOMS POST request
     app.post('/generateBinBoms', pdfDxfBinBomController.generateBinBoms);
+    */
 
 };
