@@ -1963,12 +1963,23 @@ exports.generateMBOM = function (req, res) {
     let workbook = new Excel.Workbook();
     let sheet = workbook.addWorksheet(mbomData.jobNum + mbomData.releaseNum + ' Jobscope BOM');
 
+    async function getCounter() {
+        let currentCount =  await querySql("SELECT mbomCount FROM " + database + "." + dbConfig.script_counter_table+" WHERE idCounter = ?",1);
+        return currentCount[0].mbomCount;
+    }
+
     //PROTECT THE SHEET
     async function f(){
         await sheet.protect('password', {selectLockedCells: true, formatColumns: true, formatRows: true});
         return null;
     }
-    f().then();
+    f()
+        .then(async function() {
+            let counter = await getCounter();
+            await querySql("UPDATE " + database + "." + dbConfig.script_counter_table + " SET mbomCount = ? WHERE idCounter = ?",[counter+1, 1]);
+            return null
+        })
+        .then();
 
     //FORMAT THE SHEET
     sheet.columns = [

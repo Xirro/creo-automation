@@ -1,11 +1,18 @@
 
 const path = require('path');
 const fs = require('fs').promises;
+const queryString = require('query-string');
 
 const math = require('mathjs');
 
 //Excel Connection
 const Excel = require('exceljs');
+
+
+//DATABASE INFORMATION (TABLE NAMES)
+const dbConfig = require('../config/database.js');
+const database = dbConfig.database;
+const creoDB = database;
 
 //Creoson Connection
 const reqPromise = require('request-promise');
@@ -33,7 +40,7 @@ reqPromise(connectOptions)
                 "command": "creo",
                 "function": "set_creo_version",
                 "data": {
-                    "version": "3"
+                    "version": "7"
                 }
             },
             json: true
@@ -74,11 +81,15 @@ creo(sessionId, {
     command: "creo",
     function: "set_creo_version",
     data: {
-        "version": "3"
+        "version": "7"
     }
 });
 
 //*********************************MECHANICAL ENG. PORTAL*************************************//
+
+const DB = require('../config/db.js');
+const querySql = DB.querySql;
+const Promise = require('bluebird');
 
 exports = {};
 module.exports = exports;
@@ -269,6 +280,11 @@ exports.compareParts = function(req, res) {
     let stdParts = [];
     let possibleMatches = [];
     let partMatchArr = [];
+
+    async function getCounter() {
+        let currentCount =  await querySql("SELECT partComparisonCount FROM " + database + "." + dbConfig.script_counter_table+" WHERE idCounter = ?",1);
+        return currentCount[0].partComparisonCount;
+    }
 
     async function cd1() {
         let dir = await creo(sessionId, {
@@ -512,10 +528,6 @@ exports.compareParts = function(req, res) {
             let volumeIntf = Number(creoIntfData.toString().slice(volumeIndex - 8, volumeIndex));
             if (volumeIntf.toString().split(".")[1] != undefined) {
                 let decimalPlaces = volumeIntf.toString().split(".")[1].length;
-                if (possibleMatch.stdInstance.slice(7,11) == '1006') {
-                    console.log(volumeIntf);
-                    console.log(Number(customPart.volume.toFixed(decimalPlaces)));
-                }
                 let acceptableRange = 0;
                 switch (decimalPlaces) {
                     case 1:
@@ -559,6 +571,11 @@ exports.compareParts = function(req, res) {
         .then(async function() {
             await cd2();
             return null
+        })
+        .then(async function() {
+            let counter = await getCounter();
+            await querySql("UPDATE " + database + "." + dbConfig.script_counter_table + " SET partComparisonCount = ? WHERE idCounter = ?",[counter+1, 1]);
+            return null;
         })
         .then(() => {
             //create the drawings JSON array from the .drw files in the working directory

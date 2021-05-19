@@ -52,6 +52,7 @@ module.exports = {
     'control_assemblies_table': 'controlAsmSum',
     'control_items_table': 'controlItemSum',
     'breakerDropdown_options_table': 'breakerDropdownOptions',
+    'script_counter_table': 'scriptCounter',
 
     //Standard Design Tables (Shared b/w apps)
     'panelboard_amp_type': 'panelboardAmpType',

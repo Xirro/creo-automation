@@ -36,7 +36,7 @@ reqPromise(connectOptions)
                 "command": "creo",
                 "function": "set_creo_version",
                 "data": {
-                    "version": "3"
+                    "version": "7"
                 }
             },
             json: true
@@ -591,6 +591,11 @@ exports.createSubmittal = function(req, res) {
         checkedDate: req.body.checkedDate
     };
 
+    async function getCounter() {
+        let currentCount =  await querySql("SELECT submittalCount FROM " + database + "." + dbConfig.script_counter_table+" WHERE idCounter = ?",1);
+        return currentCount[0].mbomCount;
+    }
+
     async function createSubmittal(subData) {
         return await querySql("INSERT INTO " + database + "." + dbConfig.submittal_summary_table + " SET ?", subData);
     }
@@ -599,6 +604,11 @@ exports.createSubmittal = function(req, res) {
     }
 
     submittalLookup(subData,[])
+        .then(async function() {
+            let counter = await getCounter();
+            await querySql("UPDATE " + database + "." + dbConfig.script_counter_table + " SET submittalCount = ? WHERE idCounter = ?",[counter+1, 1]);
+            return null
+        })
         .then(async function() {
             let existingSubID = null;
             for (let submittal of subData) {

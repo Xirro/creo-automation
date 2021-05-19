@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=0, minimal-ui">
+    <title><%= title %></title>
+    <meta content="Quote Detail" name="SAI-APS-Portal" />
+    <link rel="shortcut icon" href="/public/assets/images/SAI-Logo.JPG">
+    <link rel="stylesheet" href="/public/plugins/morris/morris.css">
+
+    <link href="/public/plugins/RWD-Table-Patterns/dist/css/rwd-table.min.css" rel="stylesheet" type="text/css" media="screen" />
+    <link href="/public/plugins/bootstrap-colorpicker/css/bootstrap-colorpicker.min.css" rel="stylesheet" />
+    <link href="/public/plugins/bootstrap-datepicker/dist/css/bootstrap-datepicker.min.css" rel="stylesheet" />
+    <link href="/public/plugins/select2/css/select2.min.css" rel="stylesheet" type="text/css" />
+    <link href="/public/plugins/bootstrap-touchspin/css/jquery.bootstrap-touchspin.min.css" rel="stylesheet" />
+
+    <link href="/public/assets/css/breakerDragDrop.css" rel="stylesheet" type="text/css" />
+
+    <!-- ION Slider -->
+    <link href="/public/plugins/ion-rangeslider/ion.rangeSlider.css" rel="stylesheet" type="text/css"/>
+    <link href="/public/plugins/ion-rangeslider/ion.rangeSlider.skinModern.css" rel="stylesheet" type="text/css"/>
+
+    <link href="/public/assets/css/bootstrap.min.css" rel="stylesheet" type="text/css">
+    <link href="/public/assets/css/metismenu.min.css" rel="stylesheet" type="text/css">
+    <link href="/public/assets/css/icons.css" rel="stylesheet" type="text/css">
+    <link href="/public/assets/css/style.css" rel="stylesheet" type="text/css">
+    <link href="/public/assets/css/mbomBrkTable.css" rel="stylesheet" type="text/css">
+    <style>
+        .icon-success {
+            color: #00C851;
+        }
+        .icon-danger {
+            color: #ff4444;
+        }
+    </style>
+</head>
+
+<body>
+<div id="wrapper">
+    <!-- Top Bar Start -->
+    <div class="topbar">
+
+        <!-- LOGO -->
+        <div class="topbar-left" style="background-color: white;">
+            <a href="../" class="logo">
+                        <span>
+                            <img src="/public/assets/images/SAI-Logo.JPG" alt="" height="67">
+                        </span>
+                <i>
+                    <img src="/public/assets/images/SAI-Logo.JPG" alt="" height="22">
+                </i>
+            </a>
+        </div>
+
+        <nav class="navbar-custom">
+            <ul class="navbar-right d-flex list-inline float-right mb-0">
+                <li class="dropdown notification-list d-none d-sm-block">
+                    <form role="search" class="app-search">
+                        <div class="form-group mb-0">
+                            <input type="text" class="form-control" placeholder="Search..">
+                            <button type="submit"><i class="fa fa-search"></i></button>
+                        </div>
+                    </form>
+                </li>
+            </ul>
+
+            <ul class="list-inline menu-left mb-0">
+                <li class="float-left">
+                    <button class="button-menu-mobile open-left waves-effect">
+                        <i class="mdi mdi-menu"></i>
+                    </button>
+                </li>
+            </ul>
+
+        </nav>
+
+    </div>
+    <!-- Top Bar End -->
+
+    <!-- ========== Left Sidebar Start ========== -->
+    <div class="left side-menu">
+        <div class="slimscroll-menu" id="remove-scroll">
+
+            <!--- Sidemenu -->
+            <div id="sidebar-menu">
+                <!-- Left Menu Start -->
+                <ul class="metismenu" id="side-menu">
+                    <li class="menu-title">CREO Automation</li>
+                    <li>
+                        <a href="../MBOM" class="waves-effect">
+                            <i class="mdi mdi-file-pdf"></i> <span> MBOM </span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="../PDF-DXF-BIN_BOM" class="waves-effect">
+                            <i class="mdi mdi-content-duplicate"></i> <span> PDF / DXF / BIN BOM </span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="../submittal" class="waves-effect">
+                            <i class="mdi mdi-file-pdf"></i> <span> Submittal </span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="../slimVAC_NAR" class="waves-effect">
+                            <i class="mdi mdi-content-duplicate"></i> <span> SlimVAC NAR </span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="../partComparison" class="waves-effect">
+                            <i class="mdi mdi-content-duplicate"></i> <span> Std. Part Comparison </span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="../renameMain" class="waves-effect">
+                            <i class="mdi mdi-content-duplicate"></i> <span> Rename </span>
+                        </a>
+                    </li>
+                </ul>
+
+            </div>
+            <!-- Sidebar -->
+            <div class="clearfix"></div>
+
+        </div>
+        <!-- Sidebar -left -->
+
+    </div>
+    <!-- Left Sidebar End -->
+
+    <div class="content-page">
+        <!-- Content Start -->
+        <div class="content">
+            <div class="container-fluid">
+                <div class="row">
+                    <div class="col-sm-12">
+                        <div class="page-title-box">
+                            <h4 class="page-title">Mechanical Engineering</h4>
+                            <div class="row justify-content-center">
+                                <div class="col-sm-12">
+                                    <div class="card m-b-20">
+                                        <div class="card-body">
+                                            <h4 class="mt-0 header-title">Current Design</h4>
+                                            <form id="setWDform" class="setWDform" action="/setWD" method="POST">
+                                                <div class="form-group">
+                                                    <div class="row">
+                                                        <div class="col-sm-12">
+                                                            <label for="example-text-input" class="col-form-label">Working Directory</label>
+                                                            <input type="text" name="CREO_workingDir" class="form-control" value="<%= workingDir %>" readonly="readonly" placeholder="Choose the location of the PROE Working Directory" required/>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <% if (asmList.length != 0) { %>
+                                <div class="row" style="margin-top:2.5%;">
+                                    <div class="col-sm-12">
+                                        <div class="card m-b-20">
+                                            <div class="card-body">
+                                                <% if (partsList.length != 0) { %>
+                                                    <h4 class="mt-0 header-title">Selected Assemblies</h4>
+                                                    <div class="row justify-content-center">
+                                                        <div class="col-sm-12">
+                                                            <table id="creoAsmTable" class="table table-bordered dt-responsive nowrap" style="border-collapse: collapse; border-spacing: 0; width: 100%;">
+                                                                <thead>
+                                                                <tr class="header">
+                                                                    <th style="width:100%;">Assembly</th>
+                                                                </tr>
+                                                                </thead>
+                                                                <tbody>
+                                                                <% for (var i = 0; i < asmList.length; i++) { %>
+                                                                <tr>
+                                                                    <td><input type="text" name="asmName" value="<%=asmList[i]%>" hidden="hidden" /><%=asmList[i]%></td>
+                                                                </tr>
+                                                                <% } %>
+                                                                </tbody>
+                                                            </table>
+                                                        </div>
+                                                    </div>
+                                                    <div class="row justify-content-center">
+                                                        <div class="col-sm-4">
+                                                            <input id="renameButton" type="button" value="Rename" class="btn btn-lg btn-outline-success waves-effect waves-light" onclick="document.getElementById('drawingForm').action = '../rename';document.getElementById('drawingForm').submit();" style="margin-bottom:1%;" />
+                                                        </div>
+                                                    </div>
+                                                <% } %>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            <% } %>
+                            <% if (partsList.length != 0) { %>
+                                <form id="drawingForm" class="drawingForm" action="" method="POST">
+                                    <div class="row" style="margin-top:2.5%">
+                                        <div class="col-sm-12">
+                                            <div class="card m-b-20">
+                                                <div class="card-body">
+                                                    <h4 class="mt-0 header-title">Parameters</h4>
+                                                    <div class="row justify-content-center">
+                                                        <div class="col-sm-9">
+                                                            <label for="example-text-input" class="col-form-label">Customer Name</label>
+                                                            <input type="text" class="form-control" name="CUSTOMER_NAME" value="">
+                                                        </div>
+                                                        <div class="col-sm-3">
+                                                            <label for="example-text-input" class="col-form-label">Project Number</label>
+                                                            <input type="text" class="form-control" name="PROJECT_NUMBER" value="">
+                                                        </div>
+                                                    </div>
+                                                    <div class="row justify-content-center">
+                                                        <div class="col-sm-6">
+                                                            <label for="example-text-input" class="col-form-label">Project Description 1</label>
+                                                            <input type="text" class="form-control" name="PROJECT_DESC_1" value="">
+                                                        </div>
+                                                        <div class="col-sm-6">
+                                                            <label for="example-text-input" class="col-form-label">Project Description 2</label>
+                                                            <input type="text" class="form-control" name="PROJECT_DESC_2">
+                                                        </div>
+                                                    </div>
+                                                    <div class="row justify-content-center">
+                                                        <div class="col-sm-2">
+                                                            <label for="example-text-input" class="col-form-label">Designed By</label>
+                                                            <input type="text" class="form-control" name="DESIGNED_BY">
+                                                        </div>
+                                                        <div class="col-sm-2">
+                                                            <label for="example-text-input" class="col-form-label">Designed Date</label>
+                                                            <input type="text" class="form-control" name="DESIGNED_DATE">
+                                                        </div>
+                                                        <div class="col-sm-2">
+                                                            <label for="example-text-input" class="col-form-label">Drawn By</label>
+                                                            <input type="text" class="form-control" name="DRAWN_BY">
+                                                        </div>
+                                                        <div class="col-sm-2">
+                                                            <label for="example-text-input" class="col-form-label">Drawn Date</label>
+                                                            <input type="text" class="form-control" name="DRAWN_DATE">
+                                                        </div>
+                                                        <div class="col-sm-2">
+                                                            <label for="example-text-input" class="col-form-label">Checked By</label>
+                                                            <input type="text" class="form-control" name="CHECKED_BY">
+                                                        </div>
+                                                        <div class="col-sm-2">
+                                                            <label for="example-text-input" class="col-form-label">Checked Date</label>
+                                                            <input type="text" class="form-control" name="CHECKED_DATE">
+                                                        </div>
+                                                    </div>
+                                                    <div class="row justify-content-center">
+                                                        <div class="col-sm-3">
+                                                            <label for="example-text-input" class="col-form-label">Approved Number</label>
+                                                            <input type="text" class="form-control" name="APPROVED_NO">
+                                                        </div>
+                                                        <div class="col-sm-3">
+                                                            <label for="example-text-input" class="col-form-label">Approved By</label>
+                                                            <input type="text" class="form-control" name="APPROVED_BY">
+                                                        </div>
+                                                        <div class="col-sm-3">
+                                                            <label for="example-text-input" class="col-form-label">Approved Description</label>
+                                                            <input type="text" class="form-control" name="APPROVED_DESC">
+                                                        </div>
+                                                        <div class="col-sm-3">
+                                                            <label for="example-text-input" class="col-form-label">Approved Date</label>
+                                                            <input type="text" class="form-control" name="APPROVED_DATE">
+                                                        </div>
+                                                    </div>
+                                                    <div class="row justify-content-center">
+                                                        <div class="col-sm-3">
+                                                            <label for="example-text-input" class="col-form-label">Rev 1 Number</label>
+                                                            <input type="text" class="form-control" name="REV_1_NO">
+                                                        </div>
+                                                        <div class="col-sm-3">
+                                                            <label for="example-text-input" class="col-form-label">Rev 1 By</label>
+                                                            <input type="text" class="form-control" name="REV_1_BY">
+                                                        </div>
+                                                        <div class="col-sm-3">
+                                                            <label for="example-text-input" class="col-form-label">Rev 1 Description</label>
+                                                            <input type="text" class="form-control" name="REV_1_DESC">
+                                                        </div>
+                                                        <div class="col-sm-3">
+                                                            <label for="example-text-input" class="col-form-label">Rev 1 Date</label>
+                                                            <input type="text" class="form-control" name="REV_1_DATE">
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="row" style="margin-top:2.5%">
+                                        <div class="col-sm-12">
+                                            <div class="card m-b-20">
+                                                <div class="card-body">
+                                                    <h4 class="mt-0 header-title">Parts</h4>
+                                                    <div class="row justify-content-center">
+                                                        <div class="col-sm-12">
+                                                            <table id="creoDrawingTable" class="table table-bordered dt-responsive nowrap" style="border-collapse: collapse; border-spacing: 0; width: 100%;">
+                                                                <thead>
+                                                                <tr class="header">
+                                                                    <th style="width:15%;">Current Part Name</th>
+                                                                    <th style="width:20%;">Current Flat Name</th>
+                                                                    <th style="width:5%">Drawings</th>
+                                                                    <th style="width:10%;">Category</th>
+                                                                    <th style="width:10%;">Group</th>
+                                                                    <th style="width:5%;">Offset</th>
+                                                                    <th style="width:15%;">New Part Name</th>
+                                                                    <th style="width:20%;">New Flat Name</th>
+                                                                </tr>
+                                                                </thead>
+                                                                <tbody>
+                                                                <% for (let i = 0; i < partsList.length; i++) { %>
+                                                                    <% let part = partsList[i].part.slice(0,15); %>
+                                                                    <tr>
+                                                                        <td>
+                                                                            <input type="text" name="currentPartName" value="<%= part %>" hidden="hidden" />
+                                                                            <% if (partsList[i].message == 'OK') { %>
+                                                                            <span class="dripicons-checkmark icon-success" data-toggle="tooltip" data-placement="bottom" title="<%=partsList[i].message%>"></span> <%= part %>
+                                                                            <% } else { %>
+                                                                            <span class="dripicons-warning icon-danger" data-toggle="tooltip" data-placement="bottom" title="<%=partsList[i].message%>"></span> <%= part %>
+                                                                            <% } %>
+                                                                        </td>
+                                                                        <td><%=partsList[i].flat%></td>
+                                                                        <td><%=partsList[i].drawings%></td>
+                                                                        <td><input type="text" value="<%=partsList[i].category%>" name="category"></td>
+                                                                        <td><input type="text" value="<%=partsList[i].group%>" name="group"></td>
+                                                                        <td><input type="text" value="<%=partsList[i].offset%>" name="offset"></td>
+                                                                        <td><input type="text" value="" name="newPartName" readonly="readonly"></td>
+                                                                        <td><input type="text" value="" name="newFlatName" readonly="readonly"></td>
+                                                                    </tr>
+                                                                <% } %>
+                                                                </tbody>
+                                                            </table>
+                                                        </div>
+                                                    </div>
+                                                    <input type="text" value="<%=partsList.length%>" name="drawingCount" hidden="hidden" />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </form>
+                            <% } %>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+</div> <!-- content-page -->
+<footer class="footer">
+    © 2019 SAI, Advanced Power Solutions Inc.
+</footer>
+</div> <!-- wrapper -->
+
+
+<!-- Responsive-table-->
+<script src="/public/plugins/RWD-Table-Patterns/dist/js/rwd-table.min.js"></script>
+<script>
+    $(function() {
+        $('.table-responsive').responsiveTable({
+            addDisplayAllBtn: 'btn btn-secondary'
+        });
+    });
+</script>
+
+<!-- Plugins js -->
+<script src="/public/plugins/morris/morris.min.js"></script>
+<script src="/public/plugins/raphael/raphael-min.js"></script>
+<script src="/public/plugins/bootstrap-colorpicker/js/bootstrap-colorpicker.min.js"></script>
+<script src="/public/plugins/bootstrap-datepicker/js/bootstrap-datepicker.js"></script>
+<script src="/public/plugins/select2/js/select2.min.js"></script>
+<script src="/public/plugins/bootstrap-maxlength/bootstrap-maxlength.min.js"></script>
+<script src="/public/plugins/bootstrap-filestyle/js/bootstrap-filestyle.min.js"></script>
+<script src="/public/plugins/bootstrap-touchspin/js/jquery.bootstrap-touchspin.min.js"></script>
+<script src="/public/plugins/ion-rangeslider/ion.rangeSlider.min.js"></script>
+<script src="/public/plugins/jquery-sparkline/jquery.sparkline.min.js"></script>
+
+<!-- Assets js -->
+<script src="/public/assets/js/jquery.min.js"></script>
+<script src="/public/assets/js/bootstrap.bundle.min.js"></script>
+<script src="/public/assets/js/metisMenu.min.js"></script>
+<script src="/public/assets/js/jquery.slimscroll.js"></script>
+<script src="/public/assets/js/waves.min.js"></script>
+<script src="/public/assets/pages/dashboard.js"></script>
+<script src="/public/assets/pages/rangeslider-init.js"></script>
+<script src="/public/assets/pages/form-advanced.js"></script>
+<script src="/public/assets/js/breakerDragDrop.js"></script>
+<script src="/public/assets/js/app.js"></script>
+<script src="/public/assets/js/pdfDxfBinBomCheck.js"></script>
+
+
+</body>
+</html>
