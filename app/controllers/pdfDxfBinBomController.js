@@ -38,7 +38,7 @@ reqPromise(connectOptions)
                 "command": "creo",
                 "function": "set_creo_version",
                 "data": {
-                    "version": "7"
+                    "version": "3"
                 }
             },
             json: true
@@ -79,7 +79,7 @@ creo(sessionId, {
     command: "creo",
     function: "set_creo_version",
     data: {
-        "version": "7"
+        "version": "3"
     }
 });
 

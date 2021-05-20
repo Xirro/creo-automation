@@ -40,7 +40,7 @@ reqPromise(connectOptions)
                 "command": "creo",
                 "function": "set_creo_version",
                 "data": {
-                    "version": "7"
+                    "version": "3"
                 }
             },
             json: true
@@ -81,7 +81,7 @@ creo(sessionId, {
     command: "creo",
     function: "set_creo_version",
     data: {
-        "version": "7"
+        "version": "3"
     }
 });
 
@@ -271,7 +271,8 @@ exports.compareParts = function(req, res) {
     let message = null;
     let workingDir = req.body.CREO_workingDir;
     let compareDir = workingDir + '\\_compareDir';
-    let stdDir = 'G:\\STANDARD DESIGN LIBRARY\\SAI-STANDARD\\000000_STANDARD\\000000 - CREO';
+    let stdDir = 'C:\\Users\\james.africh\\Desktop\\standardPartsTest';
+    //let stdDir = 'G:\\STANDARD DESIGN LIBRARY\\SAI-STANDARD\\000000_STANDARD\\000000 - CREO';
     let asmCount = req.body.asmCount;
     let asmNames = req.body.asmName;
     let includeArray = req.body.includeInExportCheck;
@@ -280,6 +281,7 @@ exports.compareParts = function(req, res) {
     let stdParts = [];
     let possibleMatches = [];
     let partMatchArr = [];
+    let partSimilarityArr = [];
 
     async function getCounter() {
         let currentCount =  await querySql("SELECT partComparisonCount FROM " + database + "." + dbConfig.script_counter_table+" WHERE idCounter = ?",1);
@@ -354,46 +356,6 @@ exports.compareParts = function(req, res) {
         }
         return parts
     }
-
-    /*async function applyAllOrthoRotations(xRot, yRot, zRot, dCustom, maxCustom, minCustom, offsetCustom, dStd, maxStd, minStd, offsetStd, customPart, stdPartInstance, massPropsCustomPart, massPropsStdInstance, partMatchArr) {
-        let pi = Math.PI;
-        let xRad = xRot * (pi/180);
-        let yRad = yRot * (pi/180);
-        let zRad = zRot * (pi/180);
-
-        let rm11 = Math.round(Math.cos(zRad) * Math.cos(yRad));
-        let rm12 = Math.round((Math.cos(zRad) * Math.sin(yRad) * Math.sin(xRad)) - (Math.sin(zRad) * Math.cos(xRad)));
-        let rm13 = Math.round((Math.cos(zRad) * Math.sin(yRad) * Math.cos(xRad)) + (Math.sin(zRad) * Math.sin(xRad)));
-        let rm21 = Math.round(Math.sin(zRad) * Math.cos(yRad));
-        let rm22 = Math.round((Math.sin(zRad) * Math.sin(yRad) * Math.sin(xRad)) + (Math.cos(zRad) * Math.cos(xRad)));
-        let rm23 = Math.round((Math.sin(zRad) * Math.sin(yRad) * Math.cos(xRad)) - (Math.cos(zRad) * Math.sin(xRad)));
-        let rm31 = Math.round(- Math.sin(yRad));
-        let rm32 = Math.round(Math.cos(yRad) * Math.sin(xRad));
-        let rm33 = Math.round(Math.cos(yRad) * Math.cos(xRad));
-
-        let rotationMatrix = math.matrix([[rm11, rm12, rm13], [rm21, rm22, rm23], [rm31, rm32, rm33]]);
-
-        if (math.deepEqual(math.multiply(rotationMatrix, dCustom), dStd) == true) {
-            let rotatedMaxCustom = math.multiply(rotationMatrix, math.add(maxCustom, offsetCustom));
-            let rotatedMinCustom = math.multiply(rotationMatrix, math.add(minCustom, offsetCustom));
-            if (math.deepEqual(rotatedMaxCustom, math.add(maxStd, offsetStd)) == true && math.deepEqual(rotatedMinCustom, math.add(minStd, offsetStd)) == true) {
-                console.log(dCustom);
-                console.log(dStd);
-                console.log({
-                    customPart: customPart,
-                    stdEquivalent: stdPartInstance,
-                    xRot: xRot,
-                    yRot: yRot,
-                    zRot: zRot,
-                    offsetCustom: offsetCustom,
-                    offsetStd: offsetStd
-                });
-            }
-        }
-
-        return null
-    }
-*/
 
     async function checkInterference(customPart, possibleMatch, xRot, yRot, zRot, count) {
         let pi = Math.PI;
@@ -552,6 +514,19 @@ exports.compareParts = function(req, res) {
 
                 if (Math.abs(volumeIntf - Number(customPart.volume.toFixed(decimalPlaces))) <= acceptableRange) {
                     return {
+                        matchType: "IDENTICAL",
+                        customPart: customPart.customPart,
+                        stdInstance: possibleMatch.stdInstance,
+                        stdGeneric: possibleMatch.stdGeneric,
+                        offsetCustom: customPart.offsetCustom,
+                        offsetStd: possibleMatch.offsetStd,
+                        xRot: xRot,
+                        yRot: yRot,
+                        zRot: zRot
+                    }
+                } else if (Math.abs(volumeIntf - ((0.99)*Number(customPart.volume.toFixed(decimalPlaces)))) <= acceptableRange || Math.abs(volumeIntf - ((1.01)*Number(customPart.volume.toFixed(decimalPlaces)))) <= acceptableRange) {
+                    return {
+                        matchType: "SIMILAR",
                         customPart: customPart.customPart,
                         stdInstance: possibleMatch.stdInstance,
                         stdGeneric: possibleMatch.stdGeneric,
@@ -828,6 +803,9 @@ exports.compareParts = function(req, res) {
                 for (let possibleMatch of customPart.possibleMatches) {
                     if (math.deepEqual(customPart.dCustom, possibleMatch.dStd) == true) {
                         const matchData = await checkInterference(customPart, possibleMatch, 0, 0, 0, count);
+
+                        console.log(matchData);
+
                         if (typeof matchData === 'object' && matchData !== null) {
                             partMatchArr.push(matchData);
                         }

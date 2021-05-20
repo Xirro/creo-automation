@@ -41,7 +41,7 @@ reqPromise(connectOptions)
                 "command": "creo",
                 "function": "set_creo_version",
                 "data": {
-                    "version": "7"
+                    "version": "3"
                 }
             },
             json: true
@@ -501,6 +501,195 @@ exports.loadParts = function(req, res) {
         });
 
 };
+
+exports.loadPartsNew = function(req, res) {
+    req.setTimeout(0); //no timeout
+    //initialize variables
+    let workingDir = req.body.CREO_workingDir;
+    let asmCount = req.body.asmCount;
+    let asmNames = req.body.asmName;
+    let includeArray = req.body.includeInExportCheck;
+    let asms = [];
+    let lineups = [];
+    let partsList = [];
+    let sortedCheckedDwgs = [];
+    let globallyCommonParts = [];
+    let partList = [];
+    let asmList = [];
+    let drwList = [];
+
+    async function getCounter() {
+        let currentCount =  await querySql("SELECT renameCount FROM " + database + "." + dbConfig.script_counter_table+" WHERE idCounter = ?",1);
+        return currentCount[0].renameCount;
+    }
+
+    async function cd() {
+        let dir = await creo(sessionId, {
+            command: "creo",
+            function: "pwd",
+            data: {}
+        });
+
+        if (dir.data.dirname != workingDir) {
+            await creo(sessionId, {
+                command: "creo",
+                function: "cd",
+                data: {
+                    "dirname": workingDir
+                }
+            })
+        }
+        return null
+    }
+
+    function asmToPart(arr, parts) {
+        for (let item of arr) {
+            if (!item.children) {
+                if (parts.filter(e => e.part === item.file).length > 0) {
+                    parts.filter(e => e.part === item.file)[0].qty += 1;
+                } else {
+                    parts.push({
+                        part: item.file,
+                        qty: 1
+                    })
+                }
+            } else {
+                asmToPart(item.children, parts)
+            }
+        }
+        return parts
+    }
+
+    cd()
+        .then(async function() {
+            let counter = await getCounter();
+            await querySql("UPDATE " + database + "." + dbConfig.script_counter_table + " SET renameCount = ? WHERE idCounter = ?",[counter+1, 1]);
+            return null
+        })
+        .then(() => {
+            //create the drawings JSON array from the .drw files in the working directory
+            if (asmCount == 1) {
+                if (includeArray == 1) {
+                    asms.push(asmNames);
+                }
+            } else {
+                for (let i = 0; i < asmCount; i++) {
+                    if (includeArray[i] == 1) {
+                        asms.push(asmNames[i]);
+                    }
+                }
+            }
+        })
+        .then(async function() {
+            const parts = await creo(sessionId, {
+                command: "creo",
+                function: "list_files",
+                data: {
+                    filename: "*.prt"
+                }
+            });
+            for (let part of parts.data.filelist) {
+                if (part.slice(0,6) != "999999" && part.slice(0,6) != "777777" && part.slice(0,6) != "777999") {
+                    partList.push(part);
+                }
+            }
+            const assemblies = await creo(sessionId, {
+                command: "creo",
+                function: "list_files",
+                data: {
+                    filename: "*.asm"
+                }
+            });
+            for (let asm of assemblies.data.filelist) {
+                if (asm.slice(0,6) != "999999" && asm.slice(0,6) != "777777" && asm.slice(0,6) != "777999") {
+                    asmList.push(asm);
+                }
+            }
+            const drws = await creo(sessionId, {
+                command: "creo",
+                function: "list_files",
+                data: {
+                    filename: "*.drw"
+                }
+            });
+            for (let drw of drws.data.filelist) {
+                if (drw.slice(0,6) != "999999" && drw.slice(0,6) != "777777" && drw.slice(0,6) != "777999") {
+                    drwList.push(drw);
+                }
+            }
+            console.log(partList);
+            console.log(asmList);
+            console.log(drwList);
+        })
+        .then(async function() {
+            for (let asm of asmList) {
+                if (asm.slice(7,11) == '0100') {
+                    let bomPaths = await creo(sessionId, {
+                        command: "bom",
+                        function: "get_paths",
+                        data: {
+                            file: asm
+                        }
+                    });
+                    console.log(bomPaths);
+                    console.log(bomPaths.data.children.children);
+                }
+            }
+        })
+        .then(async function () {
+            let asmHierarchy = [];
+            for (let asm of asms) {
+                const isAsmOpen = await creo(sessionId, {
+                    command: "file",
+                    function: "is_active",
+                    data: {
+                        "file": asm
+                    }
+                });
+                if (isAsmOpen.data.active != true) {
+                    await creo(sessionId, {
+                        command: "file",
+                        function: "open",
+                        data: {
+                            "file": asm,
+                            "display": true,
+                            "activate": true
+                        }
+                    });
+                    await creo(sessionId, {
+                        command: "file",
+                        function: "regenerate",
+                        data: {
+                            "file": asm
+                        }
+                    })
+                } else {
+                    await creo(sessionId, {
+                        command: "file",
+                        function: "regenerate",
+                        data: {
+                            "file": asm
+                        }
+                    })
+                }
+                const hierarchy = await creo(sessionId, {
+                    command: "bom",
+                    function: "get_paths",
+                    data: {
+                        file: asm
+                    }
+                });
+                asmHierarchy.push(hierarchy);
+            }
+            return asmHierarchy
+        })
+        .then(async function(asmHierarchy) {
+          console.log(asmHierarchy);
+          for (let  hierarchy of asmHierarchy) {
+          }
+        })
+};
+
 
 exports.rename = function(req, res) {
 
