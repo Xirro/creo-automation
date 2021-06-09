@@ -77,13 +77,6 @@ function creo(sessionId, functionData) {
     }
 }
 
-creo(sessionId, {
-    command: "creo",
-    function: "set_creo_version",
-    data: {
-        "version": "3"
-    }
-});
 
 //*********************************MECHANICAL ENG. PORTAL*************************************//
 
@@ -98,12 +91,14 @@ module.exports = exports;
 exports.partComparison = function(req, res) {
     let workingDir;
     let outputDir;
+    let compareToDir;
     res.locals = {title: 'Part Comparison'};
     res.render('partComparison/partComparison', {
         message: null,
         asmList: [],
         workingDir: workingDir,
         outputDir: outputDir,
+        compareToDir: compareToDir,
         partsList: []
     });
 };
@@ -113,6 +108,7 @@ exports.setWD = function(req, res) {
     let message = null;
     let workingDir = req.body.CREO_workingDir;
     let compareDir = workingDir + '/_compareDir';
+    let compareToDir = req.body.CREO_compareToDir;
     let topLevelAsmList = [];
 
     async function cdAndCreateOutputDir() {
@@ -246,6 +242,7 @@ exports.setWD = function(req, res) {
                     message: null,
                     workingDir: workingDir,
                     outputDir: compareDir,
+                    compareToDir: compareToDir,
                     asmList: topLevelAsmList,
                     partsList: []
                 });
@@ -255,6 +252,7 @@ exports.setWD = function(req, res) {
                     message: message,
                     workingDir: workingDir,
                     outputDir: undefined,
+                    compareToDir: compareToDir,
                     asmList: [],
                     partsList: []
                 });
@@ -271,8 +269,8 @@ exports.compareParts = function(req, res) {
     let message = null;
     let workingDir = req.body.CREO_workingDir;
     let compareDir = workingDir + '\\_compareDir';
-    //let stdDir = 'C:\\Users\\james.africh\\Desktop\\standardPartsTest';
-    let stdDir = 'G:\\STANDARD DESIGN LIBRARY\\SAI-STANDARD\\000000_STANDARD\\000000 - CREO';
+    let stdDir = req.body.CREO_compareToDir;
+    //let stdDir = 'G:\\STANDARD DESIGN LIBRARY\\SAI-STANDARD\\000000_STANDARD\\000000 - CREO';
     let asmCount = req.body.asmCount;
     let asmNames = req.body.asmName;
     let includeArray = req.body.includeInExportCheck;
@@ -524,7 +522,7 @@ exports.compareParts = function(req, res) {
                         yRot: yRot,
                         zRot: zRot
                     }
-                } else if (Math.abs(volumeIntf - ((0.99)*Number(customPart.volume.toFixed(decimalPlaces)))) <= acceptableRange || Math.abs(volumeIntf - ((1.01)*Number(customPart.volume.toFixed(decimalPlaces)))) <= acceptableRange) {
+                } else if (Math.abs(volumeIntf - ((0.9)*Number(customPart.volume.toFixed(decimalPlaces)))) <= acceptableRange || Math.abs(volumeIntf - ((1.1)*Number(customPart.volume.toFixed(decimalPlaces)))) <= acceptableRange) {
                     return {
                         matchType: "SIMILAR",
                         customPart: customPart.customPart,
@@ -670,7 +668,7 @@ exports.compareParts = function(req, res) {
                 let offsetCustom = math.subtract(midDistCustom, maxCustom).map(a => +a.toFixed(4));
 
                 for (let stdPart of stdParts) {
-                    if (stdPart.slice(7, 11) == customPart.slice(7, 11)) {
+                    if (stdPart.slice(7, 11) == customPart.slice(7, 11) && customPart.slice(7,11) != '4105') {
                         await creo(sessionId, {
                             command: "file",
                             function: "open",
@@ -806,8 +804,12 @@ exports.compareParts = function(req, res) {
 
                         console.log(matchData);
 
-                        if (typeof matchData === 'object' && matchData !== null) {
-                            partMatchArr.push(matchData);
+                        if (matchData !== null) {
+                            if (matchData.matchType == 'IDENTICAL') {
+                                partMatchArr.push(matchData);
+                            } else if (matchData.matchType == 'SIMILAR') {
+                                partSimilarityArr.push(matchData);
+                            }
                         }
                         count++
                     }
@@ -834,8 +836,20 @@ exports.compareParts = function(req, res) {
         })
         .then(async function() {
             let workbook = new Excel.Workbook();
-            let sheet = workbook.addWorksheet('sheet1');
-            sheet.columns = [
+            let sheet1 = workbook.addWorksheet('IDENTICAL MATCHES');
+            let sheet2 = workbook.addWorksheet('SIMILAR MATCHES');
+            sheet1.columns = [
+                {header: 'Custom Instance', key: 'customInstance', width: 20, style: {font: {name: 'Calibri', size: 11}}},
+                {header: 'Custom Generic', key: 'customGeneric', width: 20, style: {font: {name: 'Calibri', size: 11}}},
+                {header: 'Standard Instance', key: 'stdInstance', width: 20, style: {font: {name: 'Calibri', size: 11}}},
+                {header: 'Standard Generic', key: 'stdGeneric', width: 20, style: {font: {name: 'Calibri', size: 11}}},
+                {header: 'Offset Custom', key: 'offsetCustom', width: 40, style: {font: {name: 'Calibri', size: 11}}},
+                {header: 'Offset Standard', key: 'offsetStd', width: 40, style: {font: {name: 'Calibri', size: 11}}},
+                {header: 'X Axis Rotation', key: 'xRot', width: 20, style: {font: {name: 'Calibri', size: 11}}},
+                {header: 'Y Axis Rotation', key: 'yRot', width: 20, style: {font: {name: 'Calibri', size: 11}}},
+                {header: 'Z Axis Rotation', key: 'zRot', width: 20, style: {font: {name: 'Calibri', size: 11}}}
+            ];
+            sheet2.columns = [
                 {header: 'Custom Instance', key: 'customInstance', width: 20, style: {font: {name: 'Calibri', size: 11}}},
                 {header: 'Custom Generic', key: 'customGeneric', width: 20, style: {font: {name: 'Calibri', size: 11}}},
                 {header: 'Standard Instance', key: 'stdInstance', width: 20, style: {font: {name: 'Calibri', size: 11}}},
@@ -847,7 +861,20 @@ exports.compareParts = function(req, res) {
                 {header: 'Z Axis Rotation', key: 'zRot', width: 20, style: {font: {name: 'Calibri', size: 11}}}
             ];
             for (let part of partMatchArr) {
-                sheet.addRow({
+                sheet1.addRow({
+                    customInstance: part.customPart.slice(0,15),
+                    customGeneric: part.customPart.slice(16,31),
+                    stdInstance: part.stdInstance,
+                    stdGeneric: part.stdGeneric.slice(0,15),
+                    offsetCustom: part.offsetCustom._data,
+                    offsetStd: part.offsetStd._data,
+                    xRot: part.xRot,
+                    yRot: part.yRot,
+                    zRot: part.zRot
+                });
+            }
+            for (let part of partSimilarityArr) {
+                sheet2.addRow({
                     customInstance: part.customPart.slice(0,15),
                     customGeneric: part.customPart.slice(16,31),
                     stdInstance: part.stdInstance,
@@ -867,8 +894,9 @@ exports.compareParts = function(req, res) {
             res.locals = {title: 'Part Comparison'};
             res.render('partComparison/partComparison', {
                 message: message,
-                workingDir: [],
-                outputDir: undefined,
+                workingDir: workingDir,
+                outputDir: compareDir,
+                compareToDir: stdDir,
                 asmList: [],
                 partsList: []
             })

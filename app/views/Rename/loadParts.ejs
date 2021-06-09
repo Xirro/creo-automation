@@ -162,182 +162,199 @@
                                     <div class="col-sm-12">
                                         <div class="card m-b-20">
                                             <div class="card-body">
-                                                <% if (partsList.length != 0) { %>
-                                                    <h4 class="mt-0 header-title">Selected Assemblies</h4>
-                                                    <div class="row justify-content-center">
-                                                        <div class="col-sm-12">
-                                                            <table id="creoAsmTable" class="table table-bordered dt-responsive nowrap" style="border-collapse: collapse; border-spacing: 0; width: 100%;">
-                                                                <thead>
-                                                                <tr class="header">
-                                                                    <th style="width:100%;">Assembly</th>
-                                                                </tr>
-                                                                </thead>
-                                                                <tbody>
-                                                                <% for (var i = 0; i < asmList.length; i++) { %>
-                                                                <tr>
-                                                                    <td><input type="text" name="asmName" value="<%=asmList[i]%>" hidden="hidden" /><%=asmList[i]%></td>
-                                                                </tr>
-                                                                <% } %>
-                                                                </tbody>
-                                                            </table>
-                                                        </div>
+                                                <h4 class="mt-0 header-title">Selected Assemblies</h4>
+                                                <div class="row justify-content-center">
+                                                    <div class="col-sm-12">
+                                                        <table id="creoAsmTable" class="table table-bordered dt-responsive nowrap" style="border-collapse: collapse; border-spacing: 0; width: 100%;">
+                                                            <thead>
+                                                            <tr class="header">
+                                                                <th style="width:100%;">Assembly</th>
+                                                            </tr>
+                                                            </thead>
+                                                            <tbody>
+                                                            <% for (var i = 0; i < asmList.length; i++) { %>
+                                                            <tr>
+                                                                <td><input type="text" name="asmName" value="<%=asmList[i]%>" hidden="hidden" /><%=asmList[i]%></td>
+                                                            </tr>
+                                                            <% } %>
+                                                            </tbody>
+                                                        </table>
                                                     </div>
-                                                    <div class="row justify-content-center">
-                                                        <div class="col-sm-4">
-                                                            <input id="renameButton" type="button" value="Rename" class="btn btn-lg btn-outline-success waves-effect waves-light" onclick="document.getElementById('drawingForm').action = '../rename';document.getElementById('drawingForm').submit();" style="margin-bottom:1%;" />
-                                                        </div>
+                                                </div>
+                                                <div class="row justify-content-center">
+                                                    <div class="col-sm-4">
+                                                        <input id="renameButton" type="button" value="Rename" class="btn btn-lg btn-outline-success waves-effect waves-light" onclick="document.getElementById('drawingForm').action = '../rename';document.getElementById('drawingForm').submit();" style="margin-bottom:1%;" />
                                                     </div>
-                                                <% } %>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
                             <% } %>
-                            <% if (partsList.length != 0) { %>
-                                <form id="drawingForm" class="drawingForm" action="" method="POST">
-                                    <div class="row" style="margin-top:2.5%">
-                                        <div class="col-sm-12">
-                                            <div class="card m-b-20">
-                                                <div class="card-body">
-                                                    <h4 class="mt-0 header-title">Parameters</h4>
-                                                    <div class="row justify-content-center">
-                                                        <div class="col-sm-9">
-                                                            <label for="example-text-input" class="col-form-label">Customer Name</label>
-                                                            <input type="text" class="form-control" name="CUSTOMER_NAME" value="">
-                                                        </div>
-                                                        <div class="col-sm-3">
-                                                            <label for="example-text-input" class="col-form-label">Project Number</label>
-                                                            <input type="text" class="form-control" name="PROJECT_NUMBER" value="">
-                                                        </div>
+                            <form id="renameForm" class="renameForm" action="" method="POST">
+                                <div class="row" style="margin-top:2.5%">
+                                    <div class="col-sm-12">
+                                        <div class="card m-b-20">
+                                            <div class="card-body">
+                                                <h4 class="mt-0 header-title">Parameters</h4>
+                                                <div class="row justify-content-center">
+                                                    <div class="col-sm-9">
+                                                        <label for="example-text-input" class="col-form-label">Customer Name</label>
+                                                        <input type="text" class="form-control" id="CUSTOMER_NAME" name="CUSTOMER_NAME" value="">
                                                     </div>
-                                                    <div class="row justify-content-center">
-                                                        <div class="col-sm-6">
-                                                            <label for="example-text-input" class="col-form-label">Project Description 1</label>
-                                                            <input type="text" class="form-control" name="PROJECT_DESC_1" value="">
-                                                        </div>
-                                                        <div class="col-sm-6">
-                                                            <label for="example-text-input" class="col-form-label">Project Description 2</label>
-                                                            <input type="text" class="form-control" name="PROJECT_DESC_2">
-                                                        </div>
+                                                    <div class="col-sm-3">
+                                                        <label for="example-text-input" class="col-form-label">Project Number</label>
+                                                        <input type="text" class="form-control" id="PROJECT_NUMBER" name="PROJECT_NUMBER" value="">
                                                     </div>
-                                                    <div class="row justify-content-center">
-                                                        <div class="col-sm-2">
-                                                            <label for="example-text-input" class="col-form-label">Designed By</label>
-                                                            <input type="text" class="form-control" name="DESIGNED_BY">
-                                                        </div>
-                                                        <div class="col-sm-2">
-                                                            <label for="example-text-input" class="col-form-label">Designed Date</label>
-                                                            <input type="text" class="form-control" name="DESIGNED_DATE">
-                                                        </div>
-                                                        <div class="col-sm-2">
-                                                            <label for="example-text-input" class="col-form-label">Drawn By</label>
-                                                            <input type="text" class="form-control" name="DRAWN_BY">
-                                                        </div>
-                                                        <div class="col-sm-2">
-                                                            <label for="example-text-input" class="col-form-label">Drawn Date</label>
-                                                            <input type="text" class="form-control" name="DRAWN_DATE">
-                                                        </div>
-                                                        <div class="col-sm-2">
-                                                            <label for="example-text-input" class="col-form-label">Checked By</label>
-                                                            <input type="text" class="form-control" name="CHECKED_BY">
-                                                        </div>
-                                                        <div class="col-sm-2">
-                                                            <label for="example-text-input" class="col-form-label">Checked Date</label>
-                                                            <input type="text" class="form-control" name="CHECKED_DATE">
-                                                        </div>
+                                                </div>
+                                                <div class="row justify-content-center">
+                                                    <div class="col-sm-6">
+                                                        <label for="example-text-input" class="col-form-label">Project Description 1</label>
+                                                        <input type="text" class="form-control" id="PROJECT_DESC_1" name="PROJECT_DESC_1" value="">
                                                     </div>
-                                                    <div class="row justify-content-center">
-                                                        <div class="col-sm-3">
-                                                            <label for="example-text-input" class="col-form-label">Approved Number</label>
-                                                            <input type="text" class="form-control" name="APPROVED_NO">
-                                                        </div>
-                                                        <div class="col-sm-3">
-                                                            <label for="example-text-input" class="col-form-label">Approved By</label>
-                                                            <input type="text" class="form-control" name="APPROVED_BY">
-                                                        </div>
-                                                        <div class="col-sm-3">
-                                                            <label for="example-text-input" class="col-form-label">Approved Description</label>
-                                                            <input type="text" class="form-control" name="APPROVED_DESC">
-                                                        </div>
-                                                        <div class="col-sm-3">
-                                                            <label for="example-text-input" class="col-form-label">Approved Date</label>
-                                                            <input type="text" class="form-control" name="APPROVED_DATE">
-                                                        </div>
+                                                    <div class="col-sm-6">
+                                                        <label for="example-text-input" class="col-form-label">Project Description 2</label>
+                                                        <input type="text" class="form-control" id="PROJECT_DESC_2" name="PROJECT_DESC_2" value="">
                                                     </div>
-                                                    <div class="row justify-content-center">
-                                                        <div class="col-sm-3">
-                                                            <label for="example-text-input" class="col-form-label">Rev 1 Number</label>
-                                                            <input type="text" class="form-control" name="REV_1_NO">
-                                                        </div>
-                                                        <div class="col-sm-3">
-                                                            <label for="example-text-input" class="col-form-label">Rev 1 By</label>
-                                                            <input type="text" class="form-control" name="REV_1_BY">
-                                                        </div>
-                                                        <div class="col-sm-3">
-                                                            <label for="example-text-input" class="col-form-label">Rev 1 Description</label>
-                                                            <input type="text" class="form-control" name="REV_1_DESC">
-                                                        </div>
-                                                        <div class="col-sm-3">
-                                                            <label for="example-text-input" class="col-form-label">Rev 1 Date</label>
-                                                            <input type="text" class="form-control" name="REV_1_DATE">
-                                                        </div>
+                                                </div>
+                                                <div class="row justify-content-center">
+                                                    <div class="col-sm-2">
+                                                        <label for="example-text-input" class="col-form-label">Designed By</label>
+                                                        <input type="text" class="form-control" id="DESIGNED_BY" name="DESIGNED_BY" value="">
+                                                    </div>
+                                                    <div class="col-sm-2">
+                                                        <label for="example-text-input" class="col-form-label">Designed Date</label>
+                                                        <input type="text" class="form-control" id="DESIGNED_DATE" name="DESIGNED_DATE" value="">
+                                                    </div>
+                                                    <div class="col-sm-2">
+                                                        <label for="example-text-input" class="col-form-label">Drawn By</label>
+                                                        <input type="text" class="form-control" id="DRAWN_BY" name="DRAWN_BY" value="">
+                                                    </div>
+                                                    <div class="col-sm-2">
+                                                        <label for="example-text-input" class="col-form-label">Drawn Date</label>
+                                                        <input type="text" class="form-control" id="DRAWN_DATE" name="DRAWN_DATE" value="">
+                                                    </div>
+                                                    <div class="col-sm-2">
+                                                        <label for="example-text-input" class="col-form-label">Checked By</label>
+                                                        <input type="text" class="form-control" id="CHECKED_BY" name="CHECKED_BY" value="">
+                                                    </div>
+                                                    <div class="col-sm-2">
+                                                        <label for="example-text-input" class="col-form-label">Checked Date</label>
+                                                        <input type="text" class="form-control" id="CHECKED_DATE" name="CHECKED_DATE" value="">
+                                                    </div>
+                                                </div>
+                                                <div class="row justify-content-center">
+                                                    <div class="col-sm-3">
+                                                        <label for="example-text-input" class="col-form-label">Approved Number</label>
+                                                        <input type="text" class="form-control" id="APPROVED_NO" name="APPROVED_NO" value="">
+                                                    </div>
+                                                    <div class="col-sm-3">
+                                                        <label for="example-text-input" class="col-form-label">Approved By</label>
+                                                        <input type="text" class="form-control" id="APPROVED_BY" name="APPROVED_BY" value="">
+                                                    </div>
+                                                    <div class="col-sm-3">
+                                                        <label for="example-text-input" class="col-form-label">Approved Description</label>
+                                                        <input type="text" class="form-control" id="APPROVED_DESC" name="APPROVED_DESC" value="">
+                                                    </div>
+                                                    <div class="col-sm-3">
+                                                        <label for="example-text-input" class="col-form-label">Approved Date</label>
+                                                        <input type="text" class="form-control" id="APPROVED_DATE" name="APPROVED_DATE" value="">
+                                                    </div>
+                                                </div>
+                                                <div class="row justify-content-center">
+                                                    <div class="col-sm-3">
+                                                        <label for="example-text-input" class="col-form-label">Rev 1 Number</label>
+                                                        <input type="text" class="form-control" id="REV_1_NO" name="REV_1_NO" value="">
+                                                    </div>
+                                                    <div class="col-sm-3">
+                                                        <label for="example-text-input" class="col-form-label">Rev 1 By</label>
+                                                        <input type="text" class="form-control" id="REV_1_BY" name="REV_1_BY" value="">
+                                                    </div>
+                                                    <div class="col-sm-3">
+                                                        <label for="example-text-input" class="col-form-label">Rev 1 Description</label>
+                                                        <input type="text" class="form-control" id="REV_1_DESC" name="REV_1_DESC" value="">
+                                                    </div>
+                                                    <div class="col-sm-3">
+                                                        <label for="example-text-input" class="col-form-label">Rev 1 Date</label>
+                                                        <input type="text" class="form-control" id="REV_1_DATE" name="REV_1_DATE" value="">
                                                     </div>
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
-                                    <div class="row" style="margin-top:2.5%">
-                                        <div class="col-sm-12">
-                                            <div class="card m-b-20">
-                                                <div class="card-body">
-                                                    <h4 class="mt-0 header-title">Parts</h4>
-                                                    <div class="row justify-content-center">
-                                                        <div class="col-sm-12">
-                                                            <table id="creoDrawingTable" class="table table-bordered dt-responsive nowrap" style="border-collapse: collapse; border-spacing: 0; width: 100%;">
-                                                                <thead>
-                                                                <tr class="header">
-                                                                    <th style="width:15%;">Current Part Name</th>
-                                                                    <th style="width:20%;">Current Flat Name</th>
-                                                                    <th style="width:5%">Drawings</th>
-                                                                    <th style="width:10%;">Category</th>
-                                                                    <th style="width:10%;">Group</th>
-                                                                    <th style="width:5%;">Offset</th>
-                                                                    <th style="width:15%;">New Part Name</th>
-                                                                    <th style="width:20%;">New Flat Name</th>
+                                </div>
+                                <div class="row" style="margin-top:2.5%">
+                                    <div class="col-sm-12">
+                                        <div class="card m-b-20">
+                                            <div class="card-body">
+                                                <h4 class="mt-0 header-title">Rename Data</h4>
+                                                <div class="row justify-content-center">
+                                                    <div class="col-sm-12">
+                                                        <table id="creoRenameTable" class="table table-bordered dt-responsive nowrap" style="border-collapse: collapse; border-spacing: 0; width: 100%;">
+                                                            <thead>
+                                                            <tr class="header">
+                                                                <th style="width:15%;">Current Name</th>
+                                                                <th style="width:20%;">Current Flat Name</th>
+                                                                <th style="width:5%">Drawings</th>
+                                                                <th style="width:10%;">Category</th>
+                                                                <th style="width:10%;">Group</th>
+                                                                <th style="width:5%;">Offset</th>
+                                                                <th style="width:15%;">New Name</th>
+                                                                <th style="width:20%;">New Flat Name</th>
+                                                            </tr>
+                                                            </thead>
+                                                            <tbody>
+                                                            <% for (let i = 0; i < asmData.length; i++) { %>
+                                                                <% let asm = asmData[i].currentName; %>
+                                                                <tr>
+                                                                    <td>
+                                                                        <input type="text" id="currentNameAsm_<%=i+1%>" name="currentNameAsm_<%=i+1%>" value="<%= asm %>" hidden="hidden" />
+                                                                        <% if (asmData[i].message == 'OK') { %>
+                                                                        <span class="dripicons-checkmark icon-success" data-toggle="tooltip" data-placement="bottom" title="<%=asmData[i].message%>"></span> <%= asm %>
+                                                                        <% } else { %>
+                                                                        <span class="dripicons-warning icon-danger" data-toggle="tooltip" data-placement="bottom" title="<%=asmData[i].message%>"></span> <%= asm %>
+                                                                        <% } %>
+                                                                    </td>
+                                                                    <td><input type="text" value="<%=asmData[i].currentFlatName%>" id="currentFlatNameAsm_<%=i+1%>" name="currentFlatNameAsm_<%=i+1%>" hidden="hidden"><%=asmData[i].currentFlatName%></td>
+                                                                    <td><input type="text" value="<%=asmData[i].drawing%>" id="drawingAsm_<%=i+1%>" name="drawingAsm_<%=i+1%>" hidden="hidden"><%=asmData[i].drawing%></td>
+                                                                    <td><input type="text" value="<%=asmData[i].category%>" id="categoryAsm_<%=i+1%>" name="categoryAsm_<%=i+1%>"></td>
+                                                                    <td><input type="text" value="<%=asmData[i].group%>" id="groupAsm_<%=i+1%>" name="groupAsm_<%=i+1%>"></td>
+                                                                    <td><input type="text" value="<%=asmData[i].offset%>" id="offsetAsm_<%=i+1%>" name="offsetAsm_<%=i+1%>"></td>
+                                                                    <td><input type="text" value="" id="newNameAsm_<%=i+1%>" name="newNameAsm_<%=i+1%>" readonly="readonly"></td>
+                                                                    <td><input type="text" value="" id="newFlatNameAsm_<%=i+1%>" name="newFlatNameAsm_<%=i+1%>" readonly="readonly"></td>
                                                                 </tr>
-                                                                </thead>
-                                                                <tbody>
-                                                                <% for (let i = 0; i < partsList.length; i++) { %>
-                                                                    <% let part = partsList[i].part.slice(0,15); %>
-                                                                    <tr>
-                                                                        <td>
-                                                                            <input type="text" name="currentPartName" value="<%= part %>" hidden="hidden" />
-                                                                            <% if (partsList[i].message == 'OK') { %>
-                                                                            <span class="dripicons-checkmark icon-success" data-toggle="tooltip" data-placement="bottom" title="<%=partsList[i].message%>"></span> <%= part %>
-                                                                            <% } else { %>
-                                                                            <span class="dripicons-warning icon-danger" data-toggle="tooltip" data-placement="bottom" title="<%=partsList[i].message%>"></span> <%= part %>
-                                                                            <% } %>
-                                                                        </td>
-                                                                        <td><%=partsList[i].flat%></td>
-                                                                        <td><%=partsList[i].drawings%></td>
-                                                                        <td><input type="text" value="<%=partsList[i].category%>" name="category"></td>
-                                                                        <td><input type="text" value="<%=partsList[i].group%>" name="group"></td>
-                                                                        <td><input type="text" value="<%=partsList[i].offset%>" name="offset"></td>
-                                                                        <td><input type="text" value="" name="newPartName" readonly="readonly"></td>
-                                                                        <td><input type="text" value="" name="newFlatName" readonly="readonly"></td>
-                                                                    </tr>
-                                                                <% } %>
-                                                                </tbody>
-                                                            </table>
-                                                        </div>
+                                                            <% } %>
+                                                            <% for (let i = 0; i < partData.length; i++) { %>
+                                                                <% let part = partData[i].currentName; %>
+                                                                <tr>
+                                                                    <td>
+                                                                        <input type="text" id="currentNamePart_<%=i+1%>" name="currentNamePart_<%=i+1%>" value="<%= part %>" hidden="hidden" />
+                                                                        <% if (partData[i].message == 'OK') { %>
+                                                                        <span class="dripicons-checkmark icon-success" data-toggle="tooltip" data-placement="bottom" title="<%=partData[i].message%>"></span> <%= part %>
+                                                                        <% } else { %>
+                                                                        <span class="dripicons-warning icon-danger" data-toggle="tooltip" data-placement="bottom" title="<%=partData[i].message%>"></span> <%= part %>
+                                                                        <% } %>
+                                                                    </td>
+                                                                    <td><input type="text" value="<%=partData[i].currentFlatName%>" id="currentFlatNamePart_<%=i+1%>" name="currentFlatNamePart_<%=i+1%>" hidden="hidden"><%=partData[i].currentFlatName%></td>
+                                                                    <td><input type="text" value="<%=partData[i].drawing%>" id="drawingPart_<%=i+1%>" name="drawingPart_<%=i+1%>" hidden="hidden"><%=partData[i].drawing%></td>
+                                                                    <td><input type="text" value="<%=partData[i].category%>" id="categoryPart_<%=i+1%>" name="categoryPart_<%=i+1%>"></td>
+                                                                    <td><input type="text" value="<%=partData[i].group%>" id="groupPart_<%=i+1%>" name="groupPart_<%=i+1%>"></td>
+                                                                    <td><input type="text" value="<%=partData[i].offset%>" id="offsetPart_<%=i+1%>" name="offsetPart_<%=i+1%>"></td>
+                                                                    <td><input type="text" value="" id="newNamePart_<%=i+1%>" name="newNamePart_<%=i+1%>" readonly="readonly"></td>
+                                                                    <td><input type="text" value="" id="newFlatNamePart_<%=i+1%>" name="newFlatNamePart_<%=i+1%>" readonly="readonly"></td>
+                                                                </tr>
+                                                            <% } %>
+                                                            </tbody>
+                                                        </table>
                                                     </div>
-                                                    <input type="text" value="<%=partsList.length%>" name="drawingCount" hidden="hidden" />
                                                 </div>
+                                                <input type="text" value="<%= partData.length%>" id="renamePartCount" name="renamePartCount" hidden="hidden" />
+                                                <input type="text" value="<%= asmData.length%>" id="renameAsmCount" name="renameAsmCount" hidden="hidden" />
                                             </div>
                                         </div>
                                     </div>
-                                </form>
-                            <% } %>
+                                </div>
+                            </form>
                         </div>
                     </div>
                 </div>

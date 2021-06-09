@@ -75,13 +75,6 @@ function creo(sessionId, functionData) {
     }
 }
 
-creo(sessionId, {
-    command: "creo",
-    function: "set_creo_version",
-    data: {
-        "version": "3"
-    }
-});
 
 
 

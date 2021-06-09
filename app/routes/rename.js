@@ -10,7 +10,7 @@ module.exports = function(app) {
     app.post('/renameSetWD', renameController.renameSetWD);
 
     //Load Parts GET request
-    app.post('/loadParts', renameController.loadPartsNew);
+    app.post('/loadParts', renameController.loadParts);
 
     //Rename POST request
     app.post('/rename', renameController.rename);

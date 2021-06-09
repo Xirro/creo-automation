@@ -149,15 +149,25 @@
                                                 <div class="form-group">
                                                     <div class="row">
                                                         <% if (outputDir == undefined) { %>
-                                                            <div class="col-sm-9">
                                                                 <% if (workingDir != undefined) { %>
+                                                                <div class="col-sm-9">
                                                                     <label for="example-text-input" class="col-form-label">Working Directory</label>
                                                                     <input type="text" name="CREO_workingDir" class="form-control" value="<%= workingDir %>" readonly="readonly" placeholder="Choose the location of the PROE Working Directory" required/>
+                                                                </div>
+                                                                <div class="col-sm-9">
+                                                                    <label for="example-text-input" class="col-form-label">Compare To Directory</label>
+                                                                    <input type="text" name="CREO_compareToDir" class="form-control" value="<%= compareToDir %>" readonly="readonly" placeholder="Choose the location of the Directory to compare to" required/>
+                                                                </div>
                                                                 <% } else { %>
+                                                                <div class="col-sm-9">
                                                                     <label for="example-text-input" class="col-form-label">Working Directory</label>
                                                                     <input type="text" name="CREO_workingDir" class="form-control" value="" placeholder="Choose the location of the PROE Working Directory" required/>
+                                                                </div>
+                                                                <div class="col-sm-9">
+                                                                    <label for="example-text-input" class="col-form-label">Compare To Directory</label>
+                                                                    <input type="text" name="CREO_compareToDir" class="form-control" value="" placeholder="Choose the location of the Directory to compare to" required/>
+                                                                </div>
                                                                 <% } %>
-                                                            </div>
                                                             <div class="col-sm-3">
                                                                 <input id="uploadBtn" type="submit" value="Set Working Directory" class="btn-block btn-lg btn-outline-secondary waves-effect waves-light" style="margin-top:9%;" />
                                                             </div>
@@ -166,6 +176,10 @@
                                                                 <label for="example-text-input" class="col-form-label">Working Directory</label>
                                                                 <input type="text" name="CREO_workingDir" class="form-control" value="<%= workingDir %>" readonly="readonly" placeholder="Choose the location of the PROE Working Directory" required/>
                                                             </div>
+                                                                <div class="col-sm-12">
+                                                                    <label for="example-text-input" class="col-form-label">Compare To Directory</label>
+                                                                    <input type="text" name="CREO_compareToDir" class="form-control" value="<%= compareToDir %>" readonly="readonly" placeholder="Choose the location of the Directory to compare to" required/>
+                                                                </div>
                                                         <% } %>
                                                     </div>
                                                 </div>
@@ -204,6 +218,7 @@
                                                     <form id="asmForm" class="asmForm" action="" method="POST">
                                                         <input type="text" name="CREO_workingDir" class="form-control" value="<%= workingDir %>" hidden="hidden" required/>
                                                         <input type="text" name="CREO_outputDir" class="form-control" value="<%= outputDir %>" hidden="hidden" required/>
+                                                        <input type="text" name="CREO_compareToDir" class="form-control" value="<%= compareToDir %>" hidden="hidden" required/>
                                                         <input id="loadBtn" type="submit" value="Load" class="btn btn-lg btn-outline-success waves-effect waves-light" onclick="this.form.action='./compareParts'" style="margin-bottom:1%;" />
                                                         <div class="row justify-content-center">
                                                             <div class="col-sm-12">
