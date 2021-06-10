@@ -539,32 +539,6 @@ exports.compareParts = function(req, res) {
                         zRot: zRot
                     }
                 }
-
-                /*if (Math.abs(volumeIntf - Number(customPart.volume.toFixed(decimalPlaces))) <= acceptableRange) {
-                    return {
-                        matchType: "IDENTICAL",
-                        customPart: customPart.customPart,
-                        stdInstance: possibleMatch.stdInstance,
-                        stdGeneric: possibleMatch.stdGeneric,
-                        offsetCustom: customPart.offsetCustom,
-                        offsetStd: possibleMatch.offsetStd,
-                        xRot: xRot,
-                        yRot: yRot,
-                        zRot: zRot
-                    }
-                } else if (Math.abs(volumeIntf - ((0.5)*Number(customPart.volume.toFixed(decimalPlaces)))) <= acceptableRange || Math.abs(volumeIntf - ((1.5)*Number(customPart.volume.toFixed(decimalPlaces)))) <= acceptableRange) {
-                    return {
-                        matchType: "SIMILAR",
-                        customPart: customPart.customPart,
-                        stdInstance: possibleMatch.stdInstance,
-                        stdGeneric: possibleMatch.stdGeneric,
-                        offsetCustom: customPart.offsetCustom,
-                        offsetStd: possibleMatch.offsetStd,
-                        xRot: xRot,
-                        yRot: yRot,
-                        zRot: zRot
-                    }
-                }*/
             }
         }
         return null
@@ -672,7 +646,169 @@ exports.compareParts = function(req, res) {
             return filteredParts;
         })
         .then(async function(filteredParts) {
+            let customPartData = [];
+            let stdPartData = [];
+
             for (let customPart of filteredParts) {
+                if (customPart.slice(7,11) != '4105') {
+                    const massPropsCustomPart = await creo(sessionId, {
+                        command: "file",
+                        function: "massprops",
+                        data: {
+                            file: customPart
+                        }
+                    });
+
+                    const boundBoxCustomPart = await creo(sessionId, {
+                        command: "geometry",
+                        function: "bound_box",
+                        data: {
+                            file: customPart
+                        }
+                    });
+
+                    let dxCustom = Number((boundBoxCustomPart.data.xmax - boundBoxCustomPart.data.xmin).toFixed(4));
+                    let dyCustom = Number((boundBoxCustomPart.data.ymax - boundBoxCustomPart.data.ymin).toFixed(4));
+                    let dzCustom = Number((boundBoxCustomPart.data.zmax - boundBoxCustomPart.data.zmin).toFixed(4));
+                    let dCustom = math.matrix([[dxCustom], [dyCustom], [dzCustom]]);
+                    let maxCustom = math.matrix([[Number(boundBoxCustomPart.data.xmax.toFixed(4))], [Number(boundBoxCustomPart.data.ymax.toFixed(4))], [Number(boundBoxCustomPart.data.zmax.toFixed(4))]]);
+                    let minCustom = math.matrix([[Number(boundBoxCustomPart.data.xmin.toFixed(4))], [Number(boundBoxCustomPart.data.ymin.toFixed(4))], [Number(boundBoxCustomPart.data.zmin.toFixed(4))]]);
+                    let midDistCustom = math.multiply(0.5, dCustom);
+                    let offsetCustom = math.subtract(midDistCustom, maxCustom).map(a => +a.toFixed(4));
+
+                    customPartData.push({
+                        customPart: customPart,
+                        massPropsCustomPart: massPropsCustomPart,
+                        boundBoxCustomPart: boundBoxCustomPart,
+                        dCustom: dCustom,
+                        maxCustom: maxCustom,
+                        minCustom: minCustom,
+                        midDistCustom: midDistCustom,
+                        offsetCustom: offsetCustom
+                    });
+                }
+            }
+
+            for (let stdPart of stdParts) {
+                if (stdPart.slice(7,11) != '4105') {
+                    await creo(sessionId, {
+                        command: "file",
+                        function: "open",
+                        data: {
+                            file: stdPart,
+                            dirname: stdDir,
+                            display: true,
+                            activate: true
+                        }
+                    });
+
+                    const stdPartFamTable = await creo(sessionId, {
+                        command: "familytable",
+                        function: "list",
+                        data: {
+                            file: stdPart
+                        }
+                    });
+
+                    if (stdPartFamTable.data.instances.length != 0) {
+                        for (let stdPartInstance of stdPartFamTable.data.instances) {
+                            await creo(sessionId, {
+                                command: "file",
+                                function: "open",
+                                data: {
+                                    file: stdPartInstance + '.prt',
+                                    generic: stdPart.slice(0, stdPart.length - 4),
+                                    dirname: stdDir,
+                                    display: true,
+                                    activate: true
+                                }
+                            });
+
+                            const massPropsStdInstance = await creo(sessionId, {
+                                command: "file",
+                                function: "massprops",
+                                data: {
+                                    file: stdPartInstance + '.prt'
+                                }
+                            });
+
+                            const boundBoxStdInstance = await creo(sessionId, {
+                                command: "geometry",
+                                function: "bound_box",
+                                data: {
+                                    file: stdPartInstance + '.prt'
+                                }
+                            });
+
+                            let dxStd = Number((boundBoxStdInstance.data.xmax - boundBoxStdInstance.data.xmin).toFixed(4));
+                            let dyStd = Number((boundBoxStdInstance.data.ymax - boundBoxStdInstance.data.ymin).toFixed(4));
+                            let dzStd = Number((boundBoxStdInstance.data.zmax - boundBoxStdInstance.data.zmin).toFixed(4));
+                            let dStd = math.matrix([[dxStd], [dyStd], [dzStd]]);
+                            let maxStd = math.matrix([[Number(boundBoxStdInstance.data.xmax.toFixed(4))], [Number(boundBoxStdInstance.data.ymax.toFixed(4))], [Number(boundBoxStdInstance.data.zmax.toFixed(4))]]);
+                            let minStd = math.matrix([[Number(boundBoxStdInstance.data.xmin.toFixed(4))], [Number(boundBoxStdInstance.data.ymin.toFixed(4))], [Number(boundBoxStdInstance.data.zmin.toFixed(4))]]);
+                            let midDistStd = math.multiply(0.5, dStd);
+                            let offsetStd = math.subtract(midDistStd, maxStd).map(a => +a.toFixed(4));
+
+                            stdPartData.push({
+                                stdPart: stdPart,
+                                stdPartInstance: stdPartInstance,
+                                massPropsStdInstance: massPropsStdInstance,
+                                boundBoxStdInstance: boundBoxStdInstance,
+                                dStd: dStd,
+                                maxStd: maxStd,
+                                minStd: minStd,
+                                midDistStd: midDistStd,
+                                offsetStd: offsetStd
+                            });
+                        }
+                    }
+                }
+            }
+
+            for (let customPart of customPartData) {
+                for (let stdPart of stdPartData) {
+                    if (stdPart.stdPartInstance.slice(7,11) == customPart.customPart.slice(7,11) != '4105') {
+                        if (Number(stdPart.massPropsStdInstance.data.density.toFixed(5)) == Number(customPart.massPropsCustomPart.data.density.toFixed(5)) && Number(stdPart.massPropsStdInstance.data.surface_area.toFixed(5)) == Number(customPart.massPropsCustomPart.data.surface_area.toFixed(5)) && Number(stdPart.massPropsStdInstance.data.mass.toFixed(5)) == Number(customPart.massPropsCustomPart.data.mass.toFixed(5)) && Number(stdPart.massPropsStdInstance.data.volume.toFixed(5)) == Number(customPart.massPropsCustomPart.data.volume.toFixed(5))) {
+                            if (possibleMatches.filter(e => e.customPart == customPart.customPart).length == 0) {
+                                possibleMatches.push({
+                                    customPart: customPart.customPart,
+                                    surface_area: Number(stdPart.massPropsStdInstance.data.surface_area.toFixed(5)),
+                                    density: Number(stdPart.massPropsStdInstance.data.density.toFixed(5)),
+                                    mass: Number(stdPart.massPropsStdInstance.data.mass.toFixed(5)),
+                                    volume: Number(stdPart.massPropsStdInstance.data.volume.toFixed(5)),
+                                    //customCOG: customCOG,
+                                    dCustom: customPart.dCustom,
+                                    maxCustom: customPart.maxCustom,
+                                    minCustom: customPart.minCustom,
+                                    offsetCustom: customPart.offsetCustom,
+                                    possibleMatches: [{
+                                        stdInstance: stdPart.stdPartInstance,
+                                        stdGeneric: stdPart.stdPart,
+                                        //stdCOG: stdCOG,
+                                        dStd: stdPart.dStd,
+                                        maxStd: stdPart.maxStd,
+                                        minStd: stdPart.minStd,
+                                        offsetStd: stdPart.offsetStd
+                                    }]
+                                })
+                            } else {
+                                possibleMatches.filter(e => e.customPart == customPart.customPart)[0].possibleMatches.push({
+                                    stdInstance: stdPart.stdPartInstance,
+                                    stdGeneric: stdPart.stdPart,
+                                    //stdCOG: stdCOG,
+                                    dStd: stdPart.dStd,
+                                    maxStd: stdPart.maxStd,
+                                    minStd: stdPart.minStd,
+                                    offsetStd: stdPart.offsetStd
+                                })
+
+                            }
+                        }
+                    }
+                }
+            }
+
+            /*for (let customPart of filteredParts) {
                 const massPropsCustomPart = await creo(sessionId, {
                     command: "file",
                     function: "massprops",
@@ -822,7 +958,9 @@ exports.compareParts = function(req, res) {
                         }
                     }
                 }
-            }
+            }*/
+
+
             return null
         })
         .then(async function() {
