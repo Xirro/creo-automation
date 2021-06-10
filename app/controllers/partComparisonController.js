@@ -510,7 +510,11 @@ exports.compareParts = function(req, res) {
                         break;
                 }
 
-                if (Math.abs(volumeIntf - Number(customPart.volume.toFixed(decimalPlaces))) <= acceptableRange) {
+                function between(x, min, max) {
+                    return x >= min && x <= max;
+                }
+
+                if (between(Number(customPart.volume.toFixed(decimalPlaces)), volumeIntf - acceptableRange, volumeIntf + acceptableRange)) {
                     return {
                         matchType: "IDENTICAL",
                         customPart: customPart.customPart,
@@ -522,7 +526,7 @@ exports.compareParts = function(req, res) {
                         yRot: yRot,
                         zRot: zRot
                     }
-                } else if (Math.abs(volumeIntf - ((0.9)*Number(customPart.volume.toFixed(decimalPlaces)))) <= acceptableRange || Math.abs(volumeIntf - ((1.1)*Number(customPart.volume.toFixed(decimalPlaces)))) <= acceptableRange) {
+                } else if (between(Number(customPart.volume.toFixed(decimalPlaces)), (0.95 * volumeIntf) + acceptableRange, (1.05 * volumeIntf) + acceptableRange)) {
                     return {
                         matchType: "SIMILAR",
                         customPart: customPart.customPart,
@@ -535,6 +539,32 @@ exports.compareParts = function(req, res) {
                         zRot: zRot
                     }
                 }
+
+                /*if (Math.abs(volumeIntf - Number(customPart.volume.toFixed(decimalPlaces))) <= acceptableRange) {
+                    return {
+                        matchType: "IDENTICAL",
+                        customPart: customPart.customPart,
+                        stdInstance: possibleMatch.stdInstance,
+                        stdGeneric: possibleMatch.stdGeneric,
+                        offsetCustom: customPart.offsetCustom,
+                        offsetStd: possibleMatch.offsetStd,
+                        xRot: xRot,
+                        yRot: yRot,
+                        zRot: zRot
+                    }
+                } else if (Math.abs(volumeIntf - ((0.5)*Number(customPart.volume.toFixed(decimalPlaces)))) <= acceptableRange || Math.abs(volumeIntf - ((1.5)*Number(customPart.volume.toFixed(decimalPlaces)))) <= acceptableRange) {
+                    return {
+                        matchType: "SIMILAR",
+                        customPart: customPart.customPart,
+                        stdInstance: possibleMatch.stdInstance,
+                        stdGeneric: possibleMatch.stdGeneric,
+                        offsetCustom: customPart.offsetCustom,
+                        offsetStd: possibleMatch.offsetStd,
+                        xRot: xRot,
+                        yRot: yRot,
+                        zRot: zRot
+                    }
+                }*/
             }
         }
         return null
@@ -841,8 +871,8 @@ exports.compareParts = function(req, res) {
             sheet1.columns = [
                 {header: 'Custom Instance', key: 'customInstance', width: 20, style: {font: {name: 'Calibri', size: 11}}},
                 {header: 'Custom Generic', key: 'customGeneric', width: 20, style: {font: {name: 'Calibri', size: 11}}},
-                {header: 'Standard Instance', key: 'stdInstance', width: 20, style: {font: {name: 'Calibri', size: 11}}},
-                {header: 'Standard Generic', key: 'stdGeneric', width: 20, style: {font: {name: 'Calibri', size: 11}}},
+                {header: 'Equivalent Instance', key: 'equivInstance', width: 20, style: {font: {name: 'Calibri', size: 11}}},
+                {header: 'Equivalent Generic', key: 'equivGeneric', width: 20, style: {font: {name: 'Calibri', size: 11}}},
                 {header: 'Offset Custom', key: 'offsetCustom', width: 40, style: {font: {name: 'Calibri', size: 11}}},
                 {header: 'Offset Standard', key: 'offsetStd', width: 40, style: {font: {name: 'Calibri', size: 11}}},
                 {header: 'X Axis Rotation', key: 'xRot', width: 20, style: {font: {name: 'Calibri', size: 11}}},
@@ -852,8 +882,8 @@ exports.compareParts = function(req, res) {
             sheet2.columns = [
                 {header: 'Custom Instance', key: 'customInstance', width: 20, style: {font: {name: 'Calibri', size: 11}}},
                 {header: 'Custom Generic', key: 'customGeneric', width: 20, style: {font: {name: 'Calibri', size: 11}}},
-                {header: 'Standard Instance', key: 'stdInstance', width: 20, style: {font: {name: 'Calibri', size: 11}}},
-                {header: 'Standard Generic', key: 'stdGeneric', width: 20, style: {font: {name: 'Calibri', size: 11}}},
+                {header: 'Similar Instance', key: 'simInstance', width: 20, style: {font: {name: 'Calibri', size: 11}}},
+                {header: 'Similar Generic', key: 'simGeneric', width: 20, style: {font: {name: 'Calibri', size: 11}}},
                 {header: 'Offset Custom', key: 'offsetCustom', width: 40, style: {font: {name: 'Calibri', size: 11}}},
                 {header: 'Offset Standard', key: 'offsetStd', width: 40, style: {font: {name: 'Calibri', size: 11}}},
                 {header: 'X Axis Rotation', key: 'xRot', width: 20, style: {font: {name: 'Calibri', size: 11}}},
@@ -864,8 +894,8 @@ exports.compareParts = function(req, res) {
                 sheet1.addRow({
                     customInstance: part.customPart.slice(0,15),
                     customGeneric: part.customPart.slice(16,31),
-                    stdInstance: part.stdInstance,
-                    stdGeneric: part.stdGeneric.slice(0,15),
+                    equivInstance: part.stdInstance,
+                    equivGeneric: part.stdGeneric.slice(0,15),
                     offsetCustom: part.offsetCustom._data,
                     offsetStd: part.offsetStd._data,
                     xRot: part.xRot,
@@ -877,8 +907,8 @@ exports.compareParts = function(req, res) {
                 sheet2.addRow({
                     customInstance: part.customPart.slice(0,15),
                     customGeneric: part.customPart.slice(16,31),
-                    stdInstance: part.stdInstance,
-                    stdGeneric: part.stdGeneric.slice(0,15),
+                    simInstance: part.stdInstance,
+                    simGeneric: part.stdGeneric.slice(0,15),
                     offsetCustom: part.offsetCustom._data,
                     offsetStd: part.offsetStd._data,
                     xRot: part.xRot,
