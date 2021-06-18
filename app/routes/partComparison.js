@@ -9,7 +9,13 @@ module.exports = function(app) {
     //Set Working Directory POST request
     app.post('/compareSetWD', partComparisonController.setWD);
 
+    //Set Part and Working Directory POST request
+    app.post('/compareSetPart', partComparisonController.setPart);
+
     //Part Comparison POST request
     app.post('/compareParts', partComparisonController.compareParts);
+
+    //Part Comparison POST request
+    app.post('/compareSinglePart', partComparisonController.compareSinglePart);
 
 };

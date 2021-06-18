@@ -507,11 +507,33 @@ exports.loadParts = function(req, res) {
                 return intA - intB
             });
 
-            console.log(partData);
-            console.log(asmData);
+            let count = 0;
+
+            for (let i = 0; i < asmData.length; i++) {
+                if (asmData[i].category == null && asmData[i].group == null) {
+                    let foundParent = false;
+                    for (let j = i; j >= 0 && j < count; j--) {
+                        if (foundParent == false) {
+                            if (asmData[j].category != null) {
+                                console.log(asmData[j].category);
+                                console.log(asmData[j].group);
+                                asmData[i].category = asmData[j].category;
+                                asmData[i].group = asmData[j].group;
+                                foundParent = true;
+                            }
+                        }
+
+                    }
+
+                }
+                count++
+            }
+
+            //console.log(partData);
+            //console.log(asmData);
             return null
         })
-        /*.then(async function() {
+        .then(async function() {
             for (let asm of asms) {
                 await creo(sessionId, {
                     command: "file",
@@ -539,8 +561,8 @@ exports.loadParts = function(req, res) {
                 masterFilteredAsmBom.push(filteredAsmBom);
             }
             return null
-        }) */
-        /*.then(async function() {
+        })
+        .then(async function() {
 
             async function asmToPartWithParents(arr, parts, parent) {
                 for (let i = 0; i < arr.length; i++) {
@@ -570,7 +592,7 @@ exports.loadParts = function(req, res) {
             }
             await fs.writeFile('asmBom.txt', util.inspect(masterFilteredAsmBom, {showHidden: false, depth: null, maxArrayLength: null}));
             return null
-        })*/
+        })
         .then(() => {
             res.locals = {title: 'Rename Script'};
             res.render('Rename/loadParts', {

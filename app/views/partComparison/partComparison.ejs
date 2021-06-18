@@ -141,7 +141,7 @@
                                 <div class="col-sm-12">
                                     <div class="card m-b-20">
                                         <div class="card-body">
-                                            <h4 class="mt-0 header-title">Current Design</h4>
+                                            <h4 class="mt-0 header-title">Lineup Comparison</h4>
                                             <% if (message != null) { %>
                                             <h6 style="color:#ff4444;"><%=message%></h6>
                                             <% } %>
@@ -250,6 +250,78 @@
                                     </div>
                                 </div>
                             <% } %>
+                            <div class="row justify-content-center">
+                                <div class="col-sm-12">
+                                    <div class="card m-b-20">
+                                        <div class="card-body">
+                                            <h4 class="mt-0 header-title">Part Comparison</h4>
+                                            <% if (message != null) { %>
+                                            <h6 style="color:#ff4444;"><%=message%></h6>
+                                            <% } %>
+                                            <form id="setPartform" class="setPartform" action="/compareSetPart" method="POST">
+                                                <div class="form-group">
+                                                    <div class="row justify-content-center">
+                                                        <% if (outputDir == undefined) { %>
+                                                            <% if (workingDir != undefined) { %>
+                                                                <div class="col-sm-3">
+                                                                    <label for="example-text-input" class="col-form-label">Part Instance</label>
+                                                                    <input type="text" name="CREO_partInstance" class="form-control" value="<%= comparePartInstance %>" placeholder="Part Number Here" required/>
+                                                                </div>
+                                                                <div class="col-sm-3">
+                                                                    <label for="example-text-input" class="col-form-label">Part Generic</label>
+                                                                    <input type="text" name="CREO_partGeneric" class="form-control" value="<%= comparePartGeneric %>" placeholder="Part Number Here" required/>
+                                                                </div>
+                                                                <div class="col-sm-6">
+                                                                    <label for="example-text-input" class="col-form-label">Working Directory</label>
+                                                                    <input type="text" name="CREO_workingDir" class="form-control" value="<%= workingDir %>" placeholder="Choose the location of the PROE Working Directory" required/>
+                                                                </div>
+                                                            <% } else { %>
+                                                                <div class="col-sm-3">
+                                                                    <label for="example-text-input" class="col-form-label">Part Instance</label>
+                                                                    <input type="text" name="CREO_partInstance" class="form-control" value="" placeholder="Part Number Here" required/>
+                                                                </div>
+                                                                <div class="col-sm-3">
+                                                                    <label for="example-text-input" class="col-form-label">Part Generic</label>
+                                                                    <input type="text" name="CREO_partGeneric" class="form-control" value="" placeholder="Part Number Here" required/>
+                                                                </div>
+                                                                <div class="col-sm-6">
+                                                                    <label for="example-text-input" class="col-form-label">Working Directory</label>
+                                                                    <input type="text" name="CREO_workingDir" class="form-control" value="" placeholder="Choose the location of the PROE Working Directory" required/>
+                                                                </div>
+                                                                <div class="col-sm-3">
+                                                                    <input id="uploadBtn" type="submit" value="Set Working Directory" class="btn-block btn-lg btn-outline-secondary waves-effect waves-light" style="margin-top:9%;" />
+                                                                </div>
+                                                            <% } %>
+                                                        <% } else { %>
+                                                                <div class="col-sm-3">
+                                                                    <label for="example-text-input" class="col-form-label">Part Instance</label>
+                                                                    <input type="text" name="CREO_partInstance" class="form-control" value="<%= comparePartInstance %>" placeholder="Part Number Here" readonly="readonly" required/>
+                                                                </div>
+                                                                <div class="col-sm-3">
+                                                                    <label for="example-text-input" class="col-form-label">Part Generic</label>
+                                                                    <input type="text" name="CREO_partGeneric" class="form-control" value="<%= comparePartGeneric %>" placeholder="Part Number Here" readonly="readonly" required/>
+                                                                </div>
+                                                                <div class="col-sm-9">
+                                                                    <label for="example-text-input" class="col-form-label">Working Directory</label>
+                                                                    <input type="text" name="CREO_workingDir" class="form-control" value="<%= workingDir %>"  placeholder="Choose the location of the PROE Working Directory" readonly="readonly" required/>
+                                                                </div>
+                                                        <% } %>
+                                                    </div>
+                                                </div>
+                                            </form>
+                                            <div class="row justify-content-center">
+                                                <form id="partForm" class="partForm" action="" method="POST">
+                                                    <input type="text" name="CREO_workingDir" class="form-control" value="<%= workingDir %>" hidden="hidden" required/>
+                                                    <input type="text" name="CREO_partInstance" class="form-control" value="<%= comparePartInstance %>" hidden="hidden" required/>
+                                                    <input type="text" name="CREO_partGeneric" class="form-control" value="<%= comparePartGeneric %>" hidden="hidden" required/>
+                                                    <input type="text" name="CREO_outputDir" class="form-control" value="<%= outputDir %>" hidden="hidden" required/>
+                                                    <input id="loadPartBtn" type="submit" value="Load" class="btn btn-lg btn-outline-success waves-effect waves-light" onclick="this.form.action='./compareSinglePart'" style="margin-bottom:1%;" />
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
