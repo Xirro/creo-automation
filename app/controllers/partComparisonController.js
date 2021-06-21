@@ -1263,7 +1263,7 @@ exports.compareSinglePart = function(req, res) {
 
         console.log(dirList);
 
-        for (let i = 0; i < 150; i++) {
+        for (let i = 0; i < dirList.length; i++) {
             await creo(sessionId, {
                 command: "creo",
                 function: "cd",
@@ -1308,6 +1308,54 @@ exports.compareSinglePart = function(req, res) {
                 comparisonDirs.push(comparisonTarget);
             }
         }
+
+        /*for (let i = 0; i < dirList.length; i++) {
+            await creo(sessionId, {
+                command: "creo",
+                function: "cd",
+                data: {
+                    dirname: 'K:\\' + dirList[i] + '\\2. PROJECT FILES\\ENGINEERING WIP\\MECHANICAL ENGINEERING\\PROE'
+                }
+            });
+
+            let innerDirs = await creo(sessionId, {
+                command: "creo",
+                function: "list_dirs",
+                data: {}
+            });
+
+            if (innerDirs.data.dirlist.length > 0) {
+                let innerDirList = innerDirs.data.dirlist.sort(function(a,b) {
+                    let intA;
+                    let intB;
+
+                    if (a.includes('_') == true) {
+                        if (a.split('_')[0].slice(0, 2) == '21' || a.split('_')[0].slice(0, 2) == '20' || a.split('_')[0].slice(0, 2) == '19') {
+                            intA = a.split('_')[0];
+                        } else if (a.split('_')[1].slice(0, 2) == '21' || a.split('_')[1].slice(0, 2) == '20' || a.split('_')[1].slice(0, 2) == '19') {
+                            intA = a.split('_')[1];
+                        }
+                    } else {
+                        intA = a;
+                    }
+
+                    if (b.includes('_') == true) {
+                        if (b.split('_')[0].slice(0, 2) == '21' || b.split('_')[0].slice(0, 2) == '20' || b.split('_')[0].slice(0, 2) == '19') {
+                            intB = b.split('_')[0];
+                        } else if (b.split('_')[1].slice(0, 2) == '21' || b.split('_')[1].slice(0, 2) == '20' || b.split('_')[1].slice(0, 2) == '19') {
+                            intB = b.split('_')[1];
+                        }
+                    } else {
+                        intB = b;
+                    }
+                    return intB - intA
+                });
+                let comparisonTarget = 'K:\\' + dirList[i] + '\\2. PROJECT FILES\\ENGINEERING WIP\\MECHANICAL ENGINEERING\\PROE' + "\\" + innerDirList[0];
+                comparisonDirs.push(comparisonTarget);
+            }
+        }*/
+
+
 
         console.log(comparisonDirs);
 
@@ -1762,7 +1810,6 @@ exports.compareSinglePart = function(req, res) {
             });
 
             for (let part of stdPartInstances) {
-                //console.log(part);
                 let partDir = part.compareToDir;
                 for (let partGroup of part.parts) {
                     let partGeneric = partGroup.generic.slice(0,15);
@@ -1832,7 +1879,6 @@ exports.compareSinglePart = function(req, res) {
                                     density: Number(stdPart.massPropsStdInstance.data.density.toFixed(5)),
                                     mass: Number(stdPart.massPropsStdInstance.data.mass.toFixed(5)),
                                     volume: Number(stdPart.massPropsStdInstance.data.volume.toFixed(5)),
-                                    //customCOG: customCOG,
                                     dCustom: customPart.dCustom,
                                     maxCustom: customPart.maxCustom,
                                     minCustom: customPart.minCustom,
@@ -1841,7 +1887,6 @@ exports.compareSinglePart = function(req, res) {
                                         stdInstance: stdPart.stdPartInstance,
                                         stdGeneric: stdPart.stdPart,
                                         compareToDir: stdPart.compareToDir,
-                                        //stdCOG: stdCOG,
                                         dStd: stdPart.dStd,
                                         maxStd: stdPart.maxStd,
                                         minStd: stdPart.minStd,
@@ -1854,7 +1899,6 @@ exports.compareSinglePart = function(req, res) {
                                     stdInstance: stdPart.stdPartInstance,
                                     stdGeneric: stdPart.stdPart,
                                     compareToDir: stdPart.compareToDir,
-                                    //stdCOG: stdCOG,
                                     dStd: stdPart.dStd,
                                     maxStd: stdPart.maxStd,
                                     minStd: stdPart.minStd,
@@ -1875,20 +1919,21 @@ exports.compareSinglePart = function(req, res) {
             if (possibleMatches.length > 0) {
                 for (let customPart of possibleMatches) {
                     for (let possibleMatch of customPart.possibleMatches) {
-                        if (math.deepEqual(customPart.dCustom, possibleMatch.dStd) == true) {
-                            const matchData = await checkInterference(customPart, possibleMatch, 0, 0, 0, count);
+                        if (possibleMatch.compareToDir != workingDir) {
+                            if (math.deepEqual(customPart.dCustom, possibleMatch.dStd) == true) {
+                                const matchData = await checkInterference(customPart, possibleMatch, 0, 0, 0, count);
 
-                            console.log(matchData);
+                                console.log(matchData);
 
-                            if (matchData !== null) {
-                                if (matchData.matchType == 'IDENTICAL') {
-                                    partMatchArr.push(matchData);
-                                } else if (matchData.matchType == 'SIMILAR') {
-                                    partSimilarityArr.push(matchData);
+                                if (matchData !== null) {
+                                    if (matchData.matchType == 'IDENTICAL') {
+                                        partMatchArr.push(matchData);
+                                    } else if (matchData.matchType == 'SIMILAR') {
+                                        partSimilarityArr.push(matchData);
+                                    }
                                 }
-                            }
-                            count++
-                        } /*else {
+                                count++
+                            } /*else {
                         let dCustomClone = [customPart.dCustom.get([0,0]), customPart.dCustom.get([1,0]), customPart.dCustom.get([2,0])];
                         let dStdClone = [possibleMatch.dStd.get([0,0]), possibleMatch.dStd.get([1,0]), possibleMatch.dStd.get([2,0])];
 
@@ -1909,6 +1954,7 @@ exports.compareSinglePart = function(req, res) {
                             }
                         }
                     }*/
+                        }
                     }
                 }
             }

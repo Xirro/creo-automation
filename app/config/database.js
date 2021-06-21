@@ -254,5 +254,13 @@ module.exports = {
     'layout_summary_table': 'layoutSum',
     'layout_rev_table': 'layoutRevSum',
     'layout_detail_table': 'layoutDetail',
-    'section_detail_table': 'sectionDetail'
+    'section_detail_table': 'sectionDetail',
+
+    //Salesforce Tables
+    'salesforce_quote_table': 'SF_quotes',
+    'salesforce_product_table': 'SF_products',
+    'salesforce_section_table': 'SF_sections',
+    'salesforce_breaker_table': 'SF_breakers',
+    'salesforce_control_table': 'SF_controls'
+
 };
