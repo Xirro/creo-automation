@@ -583,8 +583,6 @@ exports.loadDesign = function(req, res) {
     }
     async function listParameters(sessionId, parts, partBinInfo) {
         for (let part of parts) {
-            //console.log(part);
-
             //get BIN parameter
             let BIN = 'NULL';
             let binExists = await creo(sessionId, {
@@ -595,6 +593,7 @@ exports.loadDesign = function(req, res) {
                     "name": "BIN"
                 }
             });
+
             if (binExists.data.exists == true) {
                 const binParam = await creo(sessionId, {
                     command: "parameter",

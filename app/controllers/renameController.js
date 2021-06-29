@@ -198,12 +198,12 @@ exports.loadParts = function(req, res) {
     let asmNames = req.body.asmName;
     let includeArray = req.body.includeInExportCheck;
     let asms = [];
-    let parts = [];
-    let sortedCheckedDwgs = [];
-    let globallyCommonParts = [];
+    //let parts = [];
+    //let sortedCheckedDwgs = [];
+    //let globallyCommonParts = [];
     let partList = [];
     let asmList = [];
-    let masterFilteredAsmBom = [];
+    //let masterFilteredAsmBom = [];
     let partData = [];
     let asmData = [];
 
@@ -255,35 +255,92 @@ exports.loadParts = function(req, res) {
         })
         .then(async function () {
             const parts = await creo(sessionId, {
-                command: "file",
-                function: "list",
+                command: "creo",
+                function: "list_files",
                 data: {
-                    file: "*.prt"
+                    filename: "*prt"
                 }
-            });
 
-            for (let part of parts.data.files) {
-                let partText = part.toString();
-                if (partText.slice(0,6) != '999999' && partText.slice(0,6) != '777777' && partText.slice(0,6) != '777999') {
-                    partList.push(partText);
-                }
-            }
+            });
 
             const assemblies = await creo(sessionId, {
-                command: "file",
-                function: "list",
+                command: "creo",
+                function: "list_files",
                 data: {
-                    file: "*.asm"
+                    filename: "*.asm"
                 }
             });
+            let partsData = parts.data.filelist;
+            let assembliesData = assemblies.data.filelist;
 
-            for (let assembly of assemblies.data.files) {
-                let assemblyText = assembly.toString();
-                if (assemblyText.slice(0,6) != '999999' && assemblyText.slice(0,6) != '777777' && assemblyText.slice(0,6) != '777999') {
-                    asmList.push(assemblyText);
+            for (let part of partsData) {
+                if (part.includes('<') == false) {
+                    let partText = part.toString();
+                    if (partText.slice(0,6) != '999999' && partText.slice(0,6) != '777777' && partText.slice(0,6) != '777999') {
+                        partList.push(partText)
+                    }
+                    await creo(sessionId, {
+                        command: "file",
+                        function: "open",
+                        data: {
+                            file: part,
+                            display: true,
+                            activate: true
+                        }
+                    });
+                    let instances = await creo(sessionId, {
+                        command: "familytable",
+                        function: "list",
+                        data: {
+                            file: part
+                        }
+                    });
+
+                    if (instances.data.instances.length > 0) {
+                        for (let instance of instances.data.instances) {
+                            let instanceText = instance.toString();
+                            if (instanceText.slice(0,6) != '999999' && instanceText.slice(0,6) != '777777' && instanceText.slice(0,6) != '777999') {
+                                partList.push(instanceText+"<"+partText.slice(0,15)+">.prt");
+                            }
+                        }
+                    }
+
                 }
             }
+            for (let assembly of assembliesData) {
+                if (assembly.includes('<') == false) {
+                    let assemblyText = assembly.toString();
+                    if (assemblyText.slice(0,6) != '999999' && assemblyText.slice(0,6) != '777777' && assemblyText.slice(0,6) != '777999') {
+                        asmList.push(assemblyText);
+                    }
+                    await creo(sessionId, {
+                        command: "file",
+                        function: "open",
+                        data: {
+                            file: assembly,
+                            display: true,
+                            activate: true
+                        }
+                    });
+                    let instances = await creo(sessionId, {
+                        command: "familytable",
+                        function: "list",
+                        data: {
+                            file: assembly
+                        }
+                    });
 
+                    if (instances.data.instances.length > 0) {
+                        for (let instance of instances.data.instances) {
+                            let instanceText = instance.toString();
+                            if (instanceText.slice(0,6) != '999999' && instanceText.slice(0,6) != '777777' && instanceText.slice(0,6) != '777999') {
+                                asmList.push(instanceText+"<"+assemblyText.slice(0,15)+">.asm");
+                            }
+                        }
+                    }
+                }
+            }
+            return null
         })
         .then(async function() {
             for (let asm of asmList) {
@@ -401,7 +458,36 @@ exports.loadParts = function(req, res) {
                 }
             }
 
+            asmData.sort(function(a,b) {
+                let intA = parseInt(a.currentName.slice(7,11) + a.currentName.slice(12,15));
+                let intB = parseInt(b.currentName.slice(7,11) + b.currentName.slice(12,15));
+                return intA - intB
+            });
+
             for (let prt of partList) {
+                if (prt.includes('<') == true) {
+                    await creo(sessionId, {
+                        command: "file",
+                        function: "open",
+                        data: {
+                            file: prt.slice(0,15)+".prt",
+                            generic: prt.slice(16,31),
+                            display: true,
+                            activate: true
+                        }
+                    });
+                } else {
+                    await creo(sessionId, {
+                        command: "file",
+                        function: "open",
+                        data: {
+                            file: prt,
+                            display: true,
+                            activate: true
+                        }
+                    });
+                }
+
                 let doesDwgExist = await creo(sessionId, {
                     command: "creo",
                     function: "list_files",
@@ -409,14 +495,90 @@ exports.loadParts = function(req, res) {
                         filename: prt.slice(0,15)+".drw"
                     }
                 });
+                console.log(prt);
                 //IF PART IS AN INSTANCE
                 if (prt.includes('<') == true) {
 
-                    let partGeneric = prt.split('<')[1].slice(0,15);
-                    let partInstance = prt.split('<')[0];
-                    let partOffset = parseInt(partInstance.slice(12,15)) - parseInt(partGeneric.slice(12,15));
+                    if (prt.includes('FLAT') == true) {
+                        let partGeneric = prt.split('<')[1].slice(0,15);
+                        let partInstance = null;
+                        let partOffset = '0';
+                        let flatInstance = prt.split('<')[0];
 
-                    //THEN CHECK FAMILY TABLE FOR FLAT
+                        partData.push({
+                            currentName: partGeneric,
+                            currentGeneric: null,
+                            currentFlatName: flatInstance,
+                            drawing: null,
+                            category: partGeneric.slice(7,11),
+                            group: partGeneric.slice(12,15),
+                            offset: partOffset,
+                            message: 'OK'
+                        });
+
+                    } else if (prt.includes('INST') == true) {
+
+                    } else {
+                        let partGeneric = prt.split('<')[1].slice(0,15);
+                        let partInstance = prt.split('<')[0];
+                        let partOffset = parseInt(partInstance.slice(12,15)) - parseInt(partGeneric.slice(12,15));
+
+                        //THEN CHECK FAMILY TABLE FOR FLAT
+                        let flatInstance = await creo(sessionId, {
+                            command: "familytable",
+                            function: "list",
+                            data: {
+                                file: prt
+                            }
+                        });
+                        if (doesDwgExist.data.filelist.length > 0 && flatInstance.data.instances.length > 0) {
+                            partData.push({
+                                currentName: partInstance,
+                                currentGeneric: partGeneric,
+                                currentFlatName: flatInstance.data.instances[0],
+                                drawing: '0',
+                                category: null,
+                                group: null,
+                                offset: partOffset,
+                                message: 'OK'
+                            });
+                        } else if (doesDwgExist.data.filelist.length > 0 && flatInstance.data.instances.length == 0) {
+                            partData.push({
+                                currentName: partInstance,
+                                currentGeneric: partGeneric,
+                                currentFlatName: null,
+                                drawing: '0',
+                                category: null,
+                                group: null,
+                                offset: partOffset,
+                                message: 'OK'
+                            });
+                        } else if (doesDwgExist.data.filelist.length == 0 && flatInstance.data.instances.length > 0) {
+                            partData.push({
+                                currentName: partInstance,
+                                currentGeneric: partGeneric,
+                                currentFlatName: flatInstance.data.instances[0],
+                                drawing: null,
+                                category: null,
+                                group: null,
+                                offset: partOffset,
+                                message: 'OK'
+                            });
+                        } else {
+                            partData.push({
+                                currentName: partInstance,
+                                currentGeneric: partGeneric,
+                                currentFlatName: null,
+                                drawing: null,
+                                category: null,
+                                group: null,
+                                offset: partOffset,
+                                message: 'OK'
+                            });
+                        }
+                    }
+                } else {
+
                     let flatInstance = await creo(sessionId, {
                         command: "familytable",
                         function: "list",
@@ -425,58 +587,37 @@ exports.loadParts = function(req, res) {
                         }
                     });
 
+
                     if (doesDwgExist.data.filelist.length > 0 && flatInstance.data.instances.length > 0) {
                         partData.push({
-                            currentName: partInstance,
-                            currentGeneric: partGeneric,
+                            currentName: prt.slice(0,15),
+                            currentGeneric: null,
                             currentFlatName: flatInstance.data.instances[0],
                             drawing: '0',
-                            category: null,
-                            group: null,
-                            offset: partOffset,
+                            category: prt.slice(7,11),
+                            group: prt.slice(12,15),
+                            offset: 0,
                             message: 'OK'
                         });
+
+
                     } else if (doesDwgExist.data.filelist.length > 0 && flatInstance.data.instances.length == 0) {
-                        partData.push({
-                            currentName: partInstance,
-                            currentGeneric: partGeneric,
-                            currentFlatName: null,
-                            drawing: '0',
-                            category: null,
-                            group: null,
-                            offset: partOffset,
-                            message: 'OK'
-                        });
-                    } else if (doesDwgExist.data.filelist.length == 0 && flatInstance.data.instances.length > 0) {
-                        partData.push({
-                            currentName: partInstance,
-                            currentGeneric: partGeneric,
-                            currentFlatName: flatInstance.data.instances[0],
-                            drawing: null,
-                            category: null,
-                            group: null,
-                            offset: partOffset,
-                            message: 'OK'
-                        });
-                    } else {
-                        partData.push({
-                            currentName: partInstance,
-                            currentGeneric: partGeneric,
-                            currentFlatName: null,
-                            drawing: null,
-                            category: null,
-                            group: null,
-                            offset: partOffset,
-                            message: 'OK'
-                        });
-                    }
-                } else {
-                    if (doesDwgExist.data.filelist.length > 0) {
                         partData.push({
                             currentName: prt.slice(0,15),
                             currentGeneric: null,
                             currentFlatName: null,
                             drawing: '0',
+                            category: prt.slice(7,11),
+                            group: prt.slice(12,15),
+                            offset: 0,
+                            message: 'OK'
+                        });
+                    } else if (doesDwgExist.data.filelist.length == 0 && flatInstance.data.instances.length > 0) {
+                        partData.push({
+                            currentName: prt.slice(0,15),
+                            currentGeneric: null,
+                            currentFlatName: flatInstance.data.instances[0],
+                            drawing: null,
                             category: prt.slice(7,11),
                             group: prt.slice(12,15),
                             offset: 0,
@@ -496,11 +637,7 @@ exports.loadParts = function(req, res) {
                     }
                 }
             }
-            asmData.sort(function(a,b) {
-                let intA = parseInt(a.currentName.slice(7,11) + a.currentName.slice(12,15));
-                let intB = parseInt(b.currentName.slice(7,11) + b.currentName.slice(12,15));
-                return intA - intB
-            });
+
             partData.sort(function(a,b) {
                 let intA = parseInt(a.currentName.slice(7,11) + a.currentName.slice(12,15));
                 let intB = parseInt(b.currentName.slice(7,11) + b.currentName.slice(12,15));
@@ -509,14 +646,13 @@ exports.loadParts = function(req, res) {
 
             let count = 0;
 
+            //what is this for
             for (let i = 0; i < asmData.length; i++) {
                 if (asmData[i].category == null && asmData[i].group == null) {
                     let foundParent = false;
                     for (let j = i; j >= 0 && j < count; j--) {
                         if (foundParent == false) {
                             if (asmData[j].category != null) {
-                                console.log(asmData[j].category);
-                                console.log(asmData[j].group);
                                 asmData[i].category = asmData[j].category;
                                 asmData[i].group = asmData[j].group;
                                 foundParent = true;
@@ -529,12 +665,7 @@ exports.loadParts = function(req, res) {
                 count++
             }
 
-            //console.log(partData);
-            //console.log(asmData);
-            return null
-        })
-        .then(async function() {
-            for (let asm of asms) {
+            /*for (let asm of asms) {
                 await creo(sessionId, {
                     command: "file",
                     function: "open",
@@ -559,38 +690,7 @@ exports.loadParts = function(req, res) {
                 });
 
                 masterFilteredAsmBom.push(filteredAsmBom);
-            }
-            return null
-        })
-        .then(async function() {
-
-            async function asmToPartWithParents(arr, parts, parent) {
-                for (let i = 0; i < arr.length; i++) {
-                    if (!arr[i].children) {
-                        if (parts.filter(e => e.part === arr[i].file).length > 0) {
-                            parts.filter(e => e.part === arr[i].file)[0].qty += 1;
-                            if (parts.filter(e => e.part === arr[i].file)[0].parent.includes(parent) == false) {
-                                parts.filter(e => e.part === arr[i].file)[0].parent.push(parent);
-                            }
-                        } else {
-                            parts.push({
-                                part: arr[i].file,
-                                qty: 1,
-                                parent: [parent]
-                            })
-                        }
-                    } else {
-                        await asmToPartWithParents(arr[i].children, parts, arr[i].file);
-                    }
-                }
-                return null
-            }
-
-            for (let bom of masterFilteredAsmBom) {
-                let asmChildren = bom.data.children.children;
-                await asmToPartWithParents(asmChildren, parts, null);
-            }
-            await fs.writeFile('asmBom.txt', util.inspect(masterFilteredAsmBom, {showHidden: false, depth: null, maxArrayLength: null}));
+            }*/
             return null
         })
         .then(() => {
@@ -610,5 +710,799 @@ exports.loadParts = function(req, res) {
 
 
 exports.rename = function(req, res) {
+    req.setTimeout(0); //no timeout
+    //initialize variables
+    let workingDir = req.body.CREO_workingDir;
+    let asmName = req.body.asmName;
+    let asmCount = req.body.renameAsmCount;
+    let partCount = req.body.renamePartCount;
+    let paramList = {
+        CUSTOMER_NAME: req.body.CUSTOMER_NAME,
+        PROJECT_NAME: req.body.PROJECT_NAME,
+        PROJECT_NUMBER: req.body.PROJECT_NUMBER ,
+        PROJECT_DESC_1: req.body.PROJECT_DESC_1 ,
+        PROJECT_DESC_2: req.body.PROJECT_DESC_2 ,
+        DESIGNED_BY: req.body.DESIGNED_BY ,
+        DESIGNED_DATE: req.body.DESIGNED_DATE ,
+        DRAWN_BY: req.body.DRAWN_BY ,
+        DRAWN_DATE: req.body.DRAWN_DATE ,
+        CHECKED_BY: req.body.CHECKED_BY ,
+        CHECKED_DATE: req.body.CHECKED_DATE ,
+        APPROVED_NO: req.body.APPROVED_NO ,
+        APPROVED_BY: req.body.APPROVED_BY ,
+        APPROVED_DESC: req.body.APPROVED_DESC ,
+        APPROVED_DATE: req.body.APPROVED_DATE ,
+        REV_1_NO: req.body.REV_1_NO ,
+        REV_1_BY: req.body.REV_1_BY ,
+        REV_1_DESC: req.body.REV_1_DESC ,
+        REV_1_DATE: req.body.REV_1_DATE ,
+    };
 
+    let renameAsmData = [];
+    let renamePartData = [];
+    let masterFilteredAsmBom = [];
+    let partData = [];
+    let asmData = [];
+    let asms = [];
+    let parts = [];
+
+    for (let i = 0; i < asmCount; i++) {
+        let id = (i+1).toString();
+        renameAsmData.push({
+            currentName: req.body['currentNameAsm_' + id],
+            newName: req.body['newNameAsm_' + id],
+            drawing: req.body['drawingAsm_' + id]
+        });
+    }
+
+    for (let i = 0; i < partCount; i++) {
+        let id = (i+1).toString();
+        renamePartData.push({
+            currentName: req.body['currentNamePart_' + id],
+            currentFlatName: req.body['currentFlatNamePart_' + id],
+            newName: req.body['newNamePart_' + id],
+            newFlatName: req.body['newFlatNamePart_' + id],
+            drawing: req.body['drawingPart_' + id]
+        });
+    }
+
+    async function cd() {
+        let dir = await creo(sessionId, {
+            command: "creo",
+            function: "pwd",
+            data: {}
+        });
+
+        if (dir.data.dirname != workingDir) {
+            await creo(sessionId, {
+                command: "creo",
+                function: "cd",
+                data: {
+                    "dirname": workingDir
+                }
+            })
+        }
+        return null
+    }
+
+    async function getAllCreoData() {
+        let asmList = await creo(sessionId, {
+            command: "creo",
+            function: "list_files",
+            data: {
+                filename: "*asm"
+            }
+        });
+
+        for (let asm of asmList.data.filelist) {
+            asms.push(asm)
+        }
+
+        let partList = await creo(sessionId, {
+            command: "creo",
+            function: "list_files",
+            data: {
+                filename: "*prt"
+            }
+        });
+
+        for (let part of partList.data.filelist) {
+            parts.push(part)
+        }
+
+        return null
+    }
+
+    async function asmToPartWithParents(arr, parts, parent) {
+        for (let i = 0; i < arr.length; i++) {
+            if (!arr[i].children) {
+                if (parts.filter(e => e.part === arr[i].file).length > 0) {
+                    parts.filter(e => e.part === arr[i].file)[0].qty += 1;
+                    if (parts.filter(e => e.part === arr[i].file)[0].parent.includes(parent) == false) {
+                        parts.filter(e => e.part === arr[i].file)[0].parent.push(parent);
+                    }
+                } else {
+                    parts.push({
+                        part: arr[i].file,
+                        qty: 1,
+                        parent: [parent]
+                    })
+                }
+            } else {
+                await asmToPartWithParents(arr[i].children, parts, arr[i].file);
+            }
+        }
+        return null
+    }
+
+
+    cd()
+        /*.then(async function() {
+            if (Array.isArray(asmName) == true) {
+                for (let name of asmName) {
+                    await creo(sessionId, {
+                        command: "file",
+                        function: "open",
+                        data: {
+                            file: name,
+                            display: true,
+                            activate: true,
+                            new_window: true
+                        }
+                    });
+                    let asmBom = await creo(sessionId, {
+                        command: "bom",
+                        function: "get_paths",
+                        data: {
+                            file: name
+                        }
+                    });
+                }
+            } else {
+                await creo(sessionId, {
+                    command: "file",
+                    function: "open",
+                    data: {
+                        file: asmName,
+                        display: true,
+                        activate: true,
+                        new_window: true
+                    }
+                });
+                let asmBom = await creo(sessionId, {
+                    command: "bom",
+                    function: "get_paths",
+                    data: {
+                        file: asmName
+                    }
+                });
+                let filteredAsmBom = _.filterDeep(asmBom, (value, key) => {
+                    if (key == 'file' && value.slice(0,6) != '999999' && value.slice(0,6) != '777777' && value.slice(0,6) != '777999') return true;
+                });
+                masterFilteredAsmBom.push(filteredAsmBom);
+            }
+
+            for (let bom of masterFilteredAsmBom) {
+                let asmChildren = bom.data.children.children;
+                await asmToPartWithParents(asmChildren, [], null);
+            }
+            return null
+        })*/
+        .then(async function() {
+            await getAllCreoData();
+            //FAMILY TABLE CHECK
+            for (let part of parts) {
+                await creo(sessionId, {
+                    command: "file",
+                    function: "open",
+                    data: {
+                        file: part,
+                        display: true,
+                        activate: true
+                    }
+                });
+
+                for (let param in paramList) {
+                    await creo(sessionId, {
+                        command: "parameter",
+                        function: "set",
+                        data: {
+                            file: part,
+                            name: param,
+                            type: "STRING",
+                            value: paramList[param]
+                        }
+                    })
+                }
+
+                await creo(sessionId, {
+                    command: "file",
+                    function: "save",
+                    data: {
+                        file: part
+                    }
+                });
+
+
+                let instances = await creo(sessionId, {
+                    command: "file",
+                    function: "list_instances",
+                    data: {
+                        file: part
+                    }
+                });
+
+                partData.push({
+                    generic: part,
+                    instances:[]
+                });
+
+
+                if (instances.data.files.length > 0) {
+                    for (let instance of instances.data.files) {
+                        partData.filter(e => e.generic == part)[0].instances.push(instance);
+                    }
+                }
+            }
+            for (let asm of asms) {
+                await creo(sessionId, {
+                    command: "file",
+                    function: "open",
+                    data: {
+                        file: asm,
+                        display: true,
+                        activate: true
+                    }
+                });
+
+                for (let param in paramList) {
+                    await creo(sessionId, {
+                        command: "parameter",
+                        function: "set",
+                        data: {
+                            file: asm,
+                            name: param,
+                            type: "STRING",
+                            value: paramList[param]
+                        }
+                    })
+                }
+                await creo(sessionId, {
+                    command: "file",
+                    function: "save",
+                    data: {
+                        file: asm
+                    }
+                });
+
+                let instances = await creo(sessionId, {
+                    command: "file",
+                    function: "list_instances",
+                    data: {
+                        file: asm
+                    }
+                });
+                asmData.push({
+                    generic: asm,
+                    instances:[]
+                });
+
+                if (instances.data.files.length > 0) {
+                    for (let instance of instances.data.files) {
+                        asmData.filter(e => e.generic == asm)[0].instances.push(instance);
+                    }
+                }
+            }
+        })
+        .then(async function () {
+            //MAIN RENAME LOOP
+            /*console.log(renamePartData);
+            console.log(renameAsmData);
+            console.log(partData);*/
+            for (let i = 0; i < asmData.length; i++) {
+
+                if (i == 0) {
+                    await creo(sessionId, {
+                        command: "file",
+                        function: "open",
+                        data: {
+                            file: asmData[i].generic,
+                            display: true,
+                            activate: true,
+                            new_window: true
+                        }
+                    });
+                } else {
+                    await creo(sessionId, {
+                        command: "file",
+                        function: "open",
+                        data: {
+                            file: asmData[i].generic,
+                            display: true,
+                            activate: true
+                        }
+                    });
+                }
+
+                let renameData = renameAsmData.filter(e => e.currentName == asmData[i].generic.slice(0,15))[0];
+                let newName = renameData.newName;
+                if (renameData.drawing == '0') {
+                    await creo(sessionId, {
+                        command: "file",
+                        function: "open",
+                        data: {
+                            file: renameData.currentName+".drw",
+                            display: true,
+                            activate: true,
+                            new_window: true
+                        }
+                    });
+                    await creo(sessionId, {
+                        command: "file",
+                        function: "rename",
+                        data: {
+                            file: renameData.currentName+".drw",
+                            new_name: newName + ".drw",
+                            onlysession: false
+                        }
+                    });
+                    await creo(sessionId, {
+                        command: "file",
+                        function: "save",
+                        data: {
+                            file: newName + ".drw"
+                        }
+                    });
+                    await creo(sessionId, {
+                        command: "file",
+                        function: "close_window",
+                        data: {
+                            file: newName + ".drw"
+                        }
+                    });
+                } else if (renameData.drawing == 'bom,0') {
+                    await creo(sessionId, {
+                        command: "file",
+                        function: "open",
+                        data: {
+                            file: renameData.currentName+"-bom.drw",
+                            display: true,
+                            activate: true,
+                            new_window: true
+                        }
+                    });
+                    await creo(sessionId, {
+                        command: "file",
+                        function: "rename",
+                        data: {
+                            file: renameData.currentName+"-bom.drw",
+                            new_name: newName + "-bom.drw",
+                            onlysession: false
+                        }
+                    });
+                    await creo(sessionId, {
+                        command: "file",
+                        function: "save",
+                        data: {
+                            file: newName + "-bom.drw"
+                        }
+                    });
+                    await creo(sessionId, {
+                        command: "file",
+                        function: "close_window",
+                        data: {
+                            file: newName + "-bom.drw"
+                        }
+                    });
+                    await creo(sessionId, {
+                        command: "file",
+                        function: "open",
+                        data: {
+                            file: renameData.currentName+".drw",
+                            display: true,
+                            activate: true,
+                            new_window: true
+                        }
+                    });
+                    await creo(sessionId, {
+                        command: "file",
+                        function: "rename",
+                        data: {
+                            file: renameData.currentName+".drw",
+                            new_name: newName + ".drw",
+                            onlysession: false
+                        }
+                    });
+                    await creo(sessionId, {
+                        command: "file",
+                        function: "save",
+                        data: {
+                            file: newName + ".drw"
+                        }
+                    });
+                    await creo(sessionId, {
+                        command: "file",
+                        function: "close_window",
+                        data: {
+                            file: newName + ".drw"
+                        }
+                    });
+                }
+
+                await creo(sessionId, {
+                    command: "file",
+                    function: "rename",
+                    data: {
+                        file: asmData[i].generic,
+                        new_name: newName + ".asm",
+                        onlysession: false
+                    }
+                });
+
+                for (let instance of asmData[i].instances) {
+                    await creo(sessionId, {
+                        command: "file",
+                        function: "open",
+                        data: {
+                            file: instance,
+                            display: true,
+                            activate: true
+                            //new_window: true
+                        }
+                    });
+
+                    let renameData = renameAsmData.filter(e => e.currentName == instance.slice(0,15))[0];
+                    let newInstanceName = renameData.newName;
+                    if (renameData.drawing == '0') {
+                        await creo(sessionId, {
+                            command: "file",
+                            function: "open",
+                            data: {
+                                file: renameData.currentName+".drw",
+                                display: true,
+                                activate: true,
+                                new_window: true
+                            }
+                        });
+                        await creo(sessionId, {
+                            command: "file",
+                            function: "rename",
+                            data: {
+                                file: renameData.currentName+".drw",
+                                new_name: newInstanceName + ".drw",
+                                onlysession: false
+                            }
+                        });
+                        await creo(sessionId, {
+                            command: "file",
+                            function: "save",
+                            data: {
+                                file: newInstanceName + ".drw"
+                            }
+                        });
+                        await creo(sessionId, {
+                            command: "file",
+                            function: "close_window",
+                            data: {
+                                file: newInstanceName+".drw"
+                            }
+                        });
+                    } else if (renameData.drawing == 'bom,0') {
+                        await creo(sessionId, {
+                            command: "file",
+                            function: "open",
+                            data: {
+                                file: renameData.currentName+"-bom.drw",
+                                display: true,
+                                activate: true,
+                                new_window: true
+                            }
+                        });
+                        await creo(sessionId, {
+                            command: "file",
+                            function: "rename",
+                            data: {
+                                file: renameData.currentName+"-bom.drw",
+                                new_name: newInstanceName + "-bom.drw",
+                                onlysession: false
+                            }
+                        });
+                        await creo(sessionId, {
+                            command: "file",
+                            function: "save",
+                            data: {
+                                file: newInstanceName + "-bom.drw"
+                            }
+                        });
+
+                        await creo(sessionId, {
+                            command: "file",
+                            function: "close_window",
+                            data: {
+                                file: newInstanceName+"-bom.drw"
+                            }
+                        });
+                        await creo(sessionId, {
+                            command: "file",
+                            function: "open",
+                            data: {
+                                file: renameData.currentName+".drw",
+                                display: true,
+                                activate: true,
+                                new_window: true
+                            }
+                        });
+                        await creo(sessionId, {
+                            command: "file",
+                            function: "rename",
+                            data: {
+                                file: renameData.currentName+".drw",
+                                new_name: newInstanceName + ".drw",
+                                onlysession: false
+                            }
+                        });
+                        await creo(sessionId, {
+                            command: "file",
+                            function: "save",
+                            data: {
+                                file: newInstanceName + ".drw"
+                            }
+                        });
+                        await creo(sessionId, {
+                            command: "file",
+                            function: "close_window",
+                            data: {
+                                file: newInstanceName+".drw"
+                            }
+                        });
+                    }
+
+                    await creo(sessionId, {
+                        command: "file",
+                        function: "rename",
+                        data: {
+                            file: instance,
+                            new_name: newInstanceName + ".asm",
+                            onlysession: false
+                        }
+                    });
+
+                    await creo(sessionId, {
+                        command: "file",
+                        function: "save",
+                        data: {
+                            file: newInstanceName + ".asm"
+                        }
+                    });
+
+                    await creo(sessionId, {
+                        command: "file",
+                        function: "close_window",
+                        data: {
+                            file: newInstanceName + ".asm",
+                        }
+                    });
+                }
+                await creo(sessionId, {
+                    command: "file",
+                    function: "save",
+                    data: {
+                        file: asmData[i].generic
+                    }
+                });
+                await creo(sessionId, {
+                    command: "file",
+                    function: "close_window",
+                    data: {
+                        file: asmData[i].generic,
+                    }
+                });
+            }
+
+            for (let i = 0; i < partData.length; i++) {
+                if (i == 0) {
+                    await creo(sessionId, {
+                        command: "file",
+                        function: "open",
+                        data: {
+                            file: partData[i].generic,
+                            display: true,
+                            activate: true,
+                            new_window:true
+                        }
+                    });
+                } else {
+                    await creo(sessionId, {
+                        command: "file",
+                        function: "open",
+                        data: {
+                            file: partData[i].generic,
+                            display: true,
+                            activate: true
+                        }
+                    });
+                }
+
+                let renameData = renamePartData.filter(e => e.currentName == partData[i].generic.slice(0,15))[0];
+                let newName = renameData.newName;
+
+                if (renameData.drawing == '0') {
+                    await creo(sessionId, {
+                        command: "file",
+                        function: "open",
+                        data: {
+                            file: renameData.currentName+".drw",
+                            display: true,
+                            activate: true
+                            //new_window: true
+                        }
+                    });
+                    await creo(sessionId, {
+                        command: "file",
+                        function: "rename",
+                        data: {
+                            file: renameData.currentName + ".drw",
+                            new_name: newName + ".drw",
+                            onlysession: false
+                        }
+                    });
+                    await creo(sessionId, {
+                        command: "file",
+                        function: "save",
+                        data: {
+                            file: newName + ".drw"
+                        }
+                    });
+                    await creo(sessionId, {
+                        command: "file",
+                        function: "close_window",
+                        data: {
+                            file: newName + ".drw"
+                        }
+                    });
+                }
+
+                for (let instance of partData[i].instances) {
+                    await creo(sessionId, {
+                        command: "file",
+                        function: "open",
+                        data: {
+                            file: instance,
+                            display: true,
+                            activate: true
+                            //new_window: true
+                        }
+                    });
+
+                    let renameData = renamePartData.filter(e => e.currentName == instance.slice(0,15))[0];
+                    let newInstanceName = renameData.newName;
+                    let newFlatName = renameData.newFlatName;
+                    if (renameData.drawing == '0') {
+
+                        await creo(sessionId, {
+                            command: "file",
+                            function: "open",
+                            data: {
+                                file: instance.slice(0,15)+".drw",
+                                display: true,
+                                activate: true,
+                                new_window: true
+                            }
+                        });
+
+                        await creo(sessionId, {
+                            command: "file",
+                            function: "rename",
+                            data: {
+                                file: instance.slice(0,15) + ".drw",
+                                new_name: newInstanceName + ".drw",
+                                onlysession: false
+                            }
+                        });
+
+                        await creo(sessionId, {
+                            command: "file",
+                            function: "save",
+                            data: {
+                                file: newInstanceName + ".drw"
+                            }
+                        });
+                        await creo(sessionId, {
+                            command: "file",
+                            function: "close_window",
+                            data: {
+                                file: newInstanceName+".drw"
+                            }
+                        });
+                    }
+
+                    await creo(sessionId, {
+                        command: "file",
+                        function: "rename",
+                        data: {
+                            file: instance,
+                            new_name: newInstanceName + ".prt"
+                        }
+                    });
+
+                    if (newFlatName != '') {
+                        await creo(sessionId, {
+                            command: "file",
+                            function: "open",
+                            data: {
+                                file: renameData.currentFlatName + ".prt"
+                            }
+                        });
+                        await creo(sessionId, {
+                            command: "file",
+                            function: "rename",
+                            data: {
+                                file: renameData.currentFlatName + ".prt",
+                                new_name: newFlatName + ".prt",
+                                onlysession: false
+                            }
+                        });
+                        await creo(sessionId, {
+                            command: "file",
+                            function: "close_window",
+                            data: {
+                                file: newFlatName + ".prt"
+                            }
+                        });
+                    }
+
+
+                    await creo(sessionId, {
+                        command: "file",
+                        function: "save",
+                        data: {
+                            file: newInstanceName + ".prt"
+                        }
+                    });
+
+                    await creo(sessionId, {
+                        command: "file",
+                        function: "close_window",
+                        data: {
+                            new_name: newInstanceName + ".prt"
+                        }
+                    });
+                }
+
+                await creo(sessionId, {
+                    command: "file",
+                    function: "rename",
+                    data: {
+                        file: partData[i].generic,
+                        new_name: newName + ".prt",
+                        onlysession: false
+                    }
+                });
+
+                await creo(sessionId, {
+                    command: "file",
+                    function: "save",
+                    data: {
+                        file: partData[i].generic
+                    }
+                });
+                await creo(sessionId, {
+                    command: "file",
+                    function: "close_window",
+                    data: {
+                        file: partData[i].generic,
+                    }
+                });
+            }
+        })
+        .then(() => {
+            res.locals = {title: 'Rename Script'};
+            res.render('Rename/loadParts', {
+                message: null,
+                workingDir: workingDir,
+                asmList: [],
+                partData: [],
+                asmData: []
+            });
+        })
 };

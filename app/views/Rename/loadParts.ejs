@@ -181,11 +181,6 @@
                                                         </table>
                                                     </div>
                                                 </div>
-                                                <div class="row justify-content-center">
-                                                    <div class="col-sm-4">
-                                                        <input id="renameButton" type="button" value="Rename" class="btn btn-lg btn-outline-success waves-effect waves-light" onclick="document.getElementById('drawingForm').action = '../rename';document.getElementById('drawingForm').submit();" style="margin-bottom:1%;" />
-                                                    </div>
-                                                </div>
                                             </div>
                                         </div>
                                     </div>
@@ -198,9 +193,13 @@
                                             <div class="card-body">
                                                 <h4 class="mt-0 header-title">Parameters</h4>
                                                 <div class="row justify-content-center">
-                                                    <div class="col-sm-9">
+                                                    <div class="col-sm-4">
                                                         <label for="example-text-input" class="col-form-label">Customer Name</label>
                                                         <input type="text" class="form-control" id="CUSTOMER_NAME" name="CUSTOMER_NAME" value="">
+                                                    </div>
+                                                    <div class="col-sm-5">
+                                                        <label for="example-text-input" class="col-form-label">Project Name</label>
+                                                        <input type="text" class="form-control" id="PROJECT_NAME" name="PROJECT_NAME" value="">
                                                     </div>
                                                     <div class="col-sm-3">
                                                         <label for="example-text-input" class="col-form-label">Project Number</label>
@@ -290,6 +289,12 @@
                                                 <h4 class="mt-0 header-title">Rename Data</h4>
                                                 <div class="row justify-content-center">
                                                     <div class="col-sm-12">
+                                                        <input id="checkNamesBtn" type="button" value="Check Names" class="btn btn-lg btn-outline-secondary waves-effect waves-light" style="margin-bottom:1%;"/>
+                                                        <input id="renameButton" type="button" value="Rename" class="btn btn-lg btn-outline-success waves-effect waves-light" onclick="document.getElementById('renameForm').action = '../rename';document.getElementById('renameForm').submit();" style="margin-bottom:1%;" />
+                                                    </div>
+                                                </div>
+                                                <div class="row justify-content-center">
+                                                    <div class="col-sm-12">
                                                         <table id="creoRenameTable" class="table table-bordered dt-responsive nowrap" style="border-collapse: collapse; border-spacing: 0; width: 100%;">
                                                             <thead>
                                                             <tr class="header">
@@ -308,12 +313,7 @@
                                                                 <% let asm = asmData[i].currentName; %>
                                                                 <tr>
                                                                     <td>
-                                                                        <input type="text" id="currentNameAsm_<%=i+1%>" name="currentNameAsm_<%=i+1%>" value="<%= asm %>" hidden="hidden" />
-                                                                        <% if (asmData[i].message == 'OK') { %>
-                                                                        <span class="dripicons-checkmark icon-success" data-toggle="tooltip" data-placement="bottom" title="<%=asmData[i].message%>"></span> <%= asm %>
-                                                                        <% } else { %>
-                                                                        <span class="dripicons-warning icon-danger" data-toggle="tooltip" data-placement="bottom" title="<%=asmData[i].message%>"></span> <%= asm %>
-                                                                        <% } %>
+                                                                        <input type="text" id="currentNameAsm_<%=i+1%>" name="currentNameAsm_<%=i+1%>" value="<%= asm %>" hidden="hidden" /><%= asm %>
                                                                     </td>
                                                                     <td><input type="text" value="<%=asmData[i].currentFlatName%>" id="currentFlatNameAsm_<%=i+1%>" name="currentFlatNameAsm_<%=i+1%>" hidden="hidden"><%=asmData[i].currentFlatName%></td>
                                                                     <td><input type="text" value="<%=asmData[i].drawing%>" id="drawingAsm_<%=i+1%>" name="drawingAsm_<%=i+1%>" hidden="hidden"><%=asmData[i].drawing%></td>
@@ -328,12 +328,7 @@
                                                                 <% let part = partData[i].currentName; %>
                                                                 <tr>
                                                                     <td>
-                                                                        <input type="text" id="currentNamePart_<%=i+1%>" name="currentNamePart_<%=i+1%>" value="<%= part %>" hidden="hidden" />
-                                                                        <% if (partData[i].message == 'OK') { %>
-                                                                        <span class="dripicons-checkmark icon-success" data-toggle="tooltip" data-placement="bottom" title="<%=partData[i].message%>"></span> <%= part %>
-                                                                        <% } else { %>
-                                                                        <span class="dripicons-warning icon-danger" data-toggle="tooltip" data-placement="bottom" title="<%=partData[i].message%>"></span> <%= part %>
-                                                                        <% } %>
+                                                                        <input type="text" id="currentNamePart_<%=i+1%>" name="currentNamePart_<%=i+1%>" value="<%= part %>" hidden="hidden" /><%= part %>
                                                                     </td>
                                                                     <td><input type="text" value="<%=partData[i].currentFlatName%>" id="currentFlatNamePart_<%=i+1%>" name="currentFlatNamePart_<%=i+1%>" hidden="hidden"><%=partData[i].currentFlatName%></td>
                                                                     <td><input type="text" value="<%=partData[i].drawing%>" id="drawingPart_<%=i+1%>" name="drawingPart_<%=i+1%>" hidden="hidden"><%=partData[i].drawing%></td>
@@ -350,6 +345,10 @@
                                                 </div>
                                                 <input type="text" value="<%= asmData.length%>" id="renameAsmCount" name="renameAsmCount" hidden="hidden" />
                                                 <input type="text" value="<%= partData.length%>" id="renamePartCount" name="renamePartCount" hidden="hidden" />
+                                                <input type="text" value="<%= workingDir %>" id="CREO_workingDir" name="CREO_workingDir" hidden="hidden" />
+                                                <% for (var i = 0; i < asmList.length; i++) { %>
+                                                <input type="text" name="asmName" value="<%=asmList[i]%>" hidden="hidden" />
+                                                <% } %>
                                             </div>
                                         </div>
                                     </div>
