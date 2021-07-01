@@ -1233,19 +1233,31 @@ exports.compareSinglePart = function(req, res) {
     let partSimilarityArr = [];
 
     async function workingDirectorySearch(partCode) {
-        await creo(sessionId, {
+
+        let pwd = await creo(sessionId, {
             command: "creo",
-            function: "cd",
-            data: {
-                dirname: "K:"
-            }
+            function: "pwd",
+            data: {}
         });
+
+        if (pwd.data.dirname != "K:\\") {
+            let cd1 = await creo(sessionId, {
+                command: "creo",
+                function: "cd",
+                data: {
+                    dirname: "K:\\"
+                }
+            });
+            console.log(cd1);
+        }
 
         let listAllDirectories = await creo(sessionId, {
             command: "creo",
             function: "list_dirs",
             data: {}
         });
+
+        console.log(listAllDirectories);
 
         let dirList = listAllDirectories.data.dirlist;
 
@@ -1311,54 +1323,6 @@ exports.compareSinglePart = function(req, res) {
                 comparisonDirs.push(comparisonTarget);
             }
         }
-
-        /*for (let i = 0; i < dirList.length; i++) {
-            await creo(sessionId, {
-                command: "creo",
-                function: "cd",
-                data: {
-                    dirname: 'K:\\' + dirList[i] + '\\2. PROJECT FILES\\ENGINEERING WIP\\MECHANICAL ENGINEERING\\PROE'
-                }
-            });
-
-            let innerDirs = await creo(sessionId, {
-                command: "creo",
-                function: "list_dirs",
-                data: {}
-            });
-
-            if (innerDirs.data.dirlist.length > 0) {
-                let innerDirList = innerDirs.data.dirlist.sort(function(a,b) {
-                    let intA;
-                    let intB;
-
-                    if (a.includes('_') == true) {
-                        if (a.split('_')[0].slice(0, 2) == '21' || a.split('_')[0].slice(0, 2) == '20' || a.split('_')[0].slice(0, 2) == '19') {
-                            intA = a.split('_')[0];
-                        } else if (a.split('_')[1].slice(0, 2) == '21' || a.split('_')[1].slice(0, 2) == '20' || a.split('_')[1].slice(0, 2) == '19') {
-                            intA = a.split('_')[1];
-                        }
-                    } else {
-                        intA = a;
-                    }
-
-                    if (b.includes('_') == true) {
-                        if (b.split('_')[0].slice(0, 2) == '21' || b.split('_')[0].slice(0, 2) == '20' || b.split('_')[0].slice(0, 2) == '19') {
-                            intB = b.split('_')[0];
-                        } else if (b.split('_')[1].slice(0, 2) == '21' || b.split('_')[1].slice(0, 2) == '20' || b.split('_')[1].slice(0, 2) == '19') {
-                            intB = b.split('_')[1];
-                        }
-                    } else {
-                        intB = b;
-                    }
-                    return intB - intA
-                });
-                let comparisonTarget = 'K:\\' + dirList[i] + '\\2. PROJECT FILES\\ENGINEERING WIP\\MECHANICAL ENGINEERING\\PROE' + "\\" + innerDirList[0];
-                comparisonDirs.push(comparisonTarget);
-            }
-        }*/
-
-
 
         console.log(comparisonDirs);
 
