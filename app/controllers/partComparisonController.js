@@ -1263,7 +1263,10 @@ exports.compareSinglePart = function(req, res) {
 
         console.log(dirList);
 
-        for (let i = 0; i < dirList.length; i++) {
+
+        //LOOP FOR K: DRIVE SEARCH. CURRENTLY SET AT 100, USE dirList.length IF YOU WANT THE ENTIRE K: DRIVE
+        for (let i = 0; i < 100; i++) {
+
             await creo(sessionId, {
                 command: "creo",
                 function: "cd",

@@ -254,6 +254,26 @@ exports.loadParts = function(req, res) {
             }
         })
         .then(async function () {
+
+          /*  //LISTS ONLY THE PARTS/ASMS THAT ARE BEING USED
+            for (let asm of asms) {
+                await creo(sessionId, {
+                    command: "file",
+                    function: "open",
+                    data: {
+                        file: asm + ".asm"
+                    }
+                });
+                let bomGetPath = await creo(sessionId, {
+                    command: "bom",
+                    function: "get_paths",
+                    data: {
+                        file: asm + ".asm"
+                    }
+                })
+            }*/
+
+            //LISTS ALL PARTS/ASMS IN THE WORKING DIRECTORY
             const parts = await creo(sessionId, {
                 command: "creo",
                 function: "list_files",
