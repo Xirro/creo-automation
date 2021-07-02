@@ -730,6 +730,7 @@ exports.loadParts = function(req, res) {
 
 
 exports.rename = function(req, res) {
+
     req.setTimeout(0); //no timeout
     //initialize variables
     let workingDir = req.body.CREO_workingDir;
@@ -1514,6 +1515,56 @@ exports.rename = function(req, res) {
                     }
                 });
             }
+
+            for (let asm of asmName) {
+                if (asm.includes('<') == true) {
+                    await creo(sessionId, {
+                        command: "file",
+                        function: "open",
+                        data: {
+                            file: asm.split('<')[0] + ".asm",
+                            generic: asm.split('<')[1].slice(0,15),
+                            display: true,
+                            activate: true,
+                            new_window: true
+                        }
+                    });
+
+                    await creo(sessionId, {
+                        command: "file",
+                        function: "save",
+                        data: {
+                            file: asm
+                        }
+                    });
+
+                } else {
+                    await creo(sessionId, {
+                        command: "file",
+                        function: "open",
+                        data: {
+                            file: asm,
+                            display: true,
+                            activate: true,
+                            new_window: true
+                        }
+                    });
+
+                    await creo(sessionId, {
+                        command: "file",
+                        function: "save",
+                        data: {
+                            file: asm
+                        }
+                    });
+
+                }
+            }
+
+
+
+
+
         })
         .then(() => {
             res.locals = {title: 'Rename Script'};

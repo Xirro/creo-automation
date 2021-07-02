@@ -1277,7 +1277,7 @@ exports.compareSinglePart = function(req, res) {
 
 
         //LOOP FOR K: DRIVE SEARCH. CURRENTLY SET AT 100, USE dirList.length IF YOU WANT THE ENTIRE K: DRIVE
-        for (let i = 0; i < 100; i++) {
+        for (let i = 0; i < dirList.length; i++) {
 
             await creo(sessionId, {
                 command: "creo",
@@ -1882,6 +1882,7 @@ exports.compareSinglePart = function(req, res) {
         })
         .then(async function() {
             let count = 0;
+            console.log(possibleMatches);
 
             if (possibleMatches.length > 0) {
                 for (let customPart of possibleMatches) {
@@ -1901,26 +1902,26 @@ exports.compareSinglePart = function(req, res) {
                                 }
                                 count++
                             } /*else {
-                        let dCustomClone = [customPart.dCustom.get([0,0]), customPart.dCustom.get([1,0]), customPart.dCustom.get([2,0])];
-                        let dStdClone = [possibleMatch.dStd.get([0,0]), possibleMatch.dStd.get([1,0]), possibleMatch.dStd.get([2,0])];
+                                let dCustomClone = [customPart.dCustom.get([0,0]), customPart.dCustom.get([1,0]), customPart.dCustom.get([2,0])];
+                                let dStdClone = [possibleMatch.dStd.get([0,0]), possibleMatch.dStd.get([1,0]), possibleMatch.dStd.get([2,0])];
 
-                        if (dCustomClone.sort((a,b) => a - b) == dStdClone.sort((a,b) => a - b)) {
-                            let rotationOpts = [0, 90, 180, 270];
+                                if (dCustomClone.sort((a,b) => a - b) == dStdClone.sort((a,b) => a - b)) {
+                                    let rotationOpts = [0, 90, 180, 270];
 
-                            let rotationOpts = [0, 90, 180, 270];
-                            for (let xRot of rotationOpts) {
-                                for (let yRot of rotationOpts) {
-                                    for (let zRot of rotationOpts) {
-                                        const matchData = await checkInterference(customPart, possibleMatch, xRot, yRot, zRot, count);
-                                        if (typeof matchData === 'object' && matchData !== null) {
-                                            partMatchArr.push(matchData);
+                                    let rotationOpts = [0, 90, 180, 270];
+                                    for (let xRot of rotationOpts) {
+                                        for (let yRot of rotationOpts) {
+                                            for (let zRot of rotationOpts) {
+                                                const matchData = await checkInterference(customPart, possibleMatch, xRot, yRot, zRot, count);
+                                                if (typeof matchData === 'object' && matchData !== null) {
+                                                    partMatchArr.push(matchData);
+                                                }
+                                                count++
+                                            }
                                         }
-                                        count++
                                     }
                                 }
-                            }
-                        }
-                    }*/
+                            }*/
                         }
                     }
                 }
