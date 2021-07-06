@@ -784,7 +784,8 @@ exports.loadDesign = function(req, res) {
                 material: MATERIAL,
                 gauge: GAUGE,
                 cutLength: CUT_LENGTH,
-                weight: WEIGHT
+                weight: WEIGHT,
+                finish: FINISH
             });
         }
         return null
@@ -987,6 +988,7 @@ exports.loadDesign = function(req, res) {
                 let INT = [];
                 let EXT = [];
                 let SCL = [];
+                let OUT = [];
                 for (let n = 0; n < secPartData[m].parts.length; n++) {
                     let part = secPartData[m].parts[n].part;
                     for (let p = 0; p < partBinInfo.length; p++) {
@@ -1146,6 +1148,25 @@ exports.loadDesign = function(req, res) {
                                 default:
                                     break;
                             }
+
+                            if (part.slice(0,6) != "999999" && part.slice(7,11) != "6000" && part.slice(7,11) != "4100" && part.slice(7,11) != "4105" && part.slice(7,11) != "4110" && part.slice(0,9) != "777777-95") {
+                                if (OUT.filter(e => e.part === part).length > 0) {
+                                    OUT.filter(e => e.part === part)[0].qty += secPartData[m].parts[n].qty;
+                                } else {
+                                    OUT.push({
+                                        qty: secPartData[m].parts[n].qty,
+                                        part: part,
+                                        partNum: partBinInfo[p].partNum,
+                                        partDesc: partBinInfo[p].partDesc,
+                                        material: partBinInfo[p].material,
+                                        gauge: partBinInfo[p].gauge,
+                                        bin: partBinInfo[p].bin.toString(),
+                                        finish: partBinInfo[p].finish,
+                                        weight: partBinInfo[p].weight
+                                    });
+                                }
+                            }
+
                         }
                     }
                 }
@@ -1159,7 +1180,8 @@ exports.loadDesign = function(req, res) {
                         CTL: CTL,
                         INT: INT,
                         EXT: EXT,
-                        SCL: SCL
+                        SCL: SCL,
+                        OUT: OUT
                     });
 
                     sectionMatBoms.push({
@@ -1205,6 +1227,11 @@ exports.loadDesign = function(req, res) {
                     return intA - intB
                 });
                 binBom.SCL.sort(function(a,b) {
+                    let intA = parseInt(a.part.slice(0,6)+a.part.slice(7,11)+a.part.slice(12,15));
+                    let intB = parseInt(b.part.slice(0,6)+b.part.slice(7,11)+b.part.slice(12,15));
+                    return intA - intB
+                });
+                binBom.OUT.sort(function(a,b) {
                     let intA = parseInt(a.part.slice(0,6)+a.part.slice(7,11)+a.part.slice(12,15));
                     let intB = parseInt(b.part.slice(0,6)+b.part.slice(7,11)+b.part.slice(12,15));
                     return intA - intB
@@ -1330,6 +1357,7 @@ exports.loadDesign = function(req, res) {
             let similarINTs = [];
             let similarEXTs = [];
             let similarSCLs = [];
+            let similarOUTs = [];
 
             let sections = [];
             let purBOMS = [];
@@ -1339,6 +1367,7 @@ exports.loadDesign = function(req, res) {
             let intBOMS = [];
             let extBOMS = [];
             let sclBOMS = [];
+            let outBOMS = [];
             function areJSONArraysEqual (jsonArray1, jsonArray2) {
                 if (jsonArray1.length !== jsonArray2.length) return false;
                 const ser = o => JSON.stringify(Object.keys(o).sort().map( k => [k, o[k]] ));
@@ -1356,6 +1385,7 @@ exports.loadDesign = function(req, res) {
                 intBOMS.push(binBom.INT);
                 extBOMS.push(binBom.EXT);
                 sclBOMS.push(binBom.SCL);
+                outBOMS.push(binBom.OUT);
             }
 
 
@@ -1367,6 +1397,7 @@ exports.loadDesign = function(req, res) {
                 let currentIntBom = intBOMS[i];
                 let currentExtBom = extBOMS[i];
                 let currentSclBom = sclBOMS[i];
+                let currentOutBom = outBOMS[i];
                 if (currentPurBom.length != 0) {
                     for (let k = i + 1; k < purBOMS.length; k++) {
                         if (areJSONArraysEqual(currentPurBom, purBOMS[k]) == true ) {
@@ -1479,6 +1510,22 @@ exports.loadDesign = function(req, res) {
                         }
                     }
                 }
+                if (currentOutBom.length != 0) {
+                    for (let k = i + 1; k < outBOMS.length; k++) {
+                        if (areJSONArraysEqual(currentOutBom, outBOMS[k]) == true) {
+                            if (similarOUTs.filter(e => e.children.includes(sections[i]) == true).length == 0) {
+                                if (similarOUTs.filter(e => e.parent === sections[i]).length > 0) {
+                                    similarOUTs.filter(e => e.parent === sections[i])[0].children.push(sections[k]);
+                                } else {
+                                    similarOUTs.push({
+                                        parent: sections[i],
+                                        children: [sections[k]]
+                                    })
+                                }
+                            }
+                        }
+                    }
+                }
             }
 
 
@@ -1522,6 +1569,12 @@ exports.loadDesign = function(req, res) {
                 let parent = similarSCL.parent;
                 for (let child of similarSCL.children) {
                     binBoms.filter(e => e.section === child)[0].SCL = parent
+                }
+            }
+            for (let similarOUT of similarOUTs) {
+                let parent = similarOUT.parent;
+                for (let child of similarOUT.children) {
+                    binBoms.filter(e => e.section === child)[0].OUT = parent
                 }
             }
             return null
@@ -1807,6 +1860,7 @@ exports.generateAll = function(req, res) {
     let INT = [];
     let EXT = [];
     let SCL = [];
+    let OUT = [];
     let BIN_TRACKER = [];
     let OUTSOURCE = [];
 
@@ -1881,6 +1935,9 @@ exports.generateAll = function(req, res) {
         }
         if (req.body['title_' + section + '-SCL'] != undefined) {
             existingSectionBoms.push(section + '-SCL');
+        }
+        if (req.body['title_' + section + '-OUT'] != undefined) {
+            existingSectionBoms.push(section + '-OUT');
         }
     }
 
@@ -2084,6 +2141,38 @@ exports.generateAll = function(req, res) {
     }
 
     for (let existingSectionBom of existingSectionBoms) {
+        if (existingSectionBom.slice(existingSectionBom.length - 3, existingSectionBom.length) == 'OUT') {
+            let out = [];
+            if (Array.isArray(req.body['qty_' + existingSectionBom]) == true) {
+                for (let i = 0; i < req.body['qty_' + existingSectionBom].length; i++) {
+                    out.push({
+                        qty: req.body['qty_' + existingSectionBom][i],
+                        partDesc: req.body['partDesc_' + existingSectionBom][i],
+                        part: req.body['part_' + existingSectionBom][i],
+                        material: req.body['material_' + existingSectionBom][i],
+                        gauge: req.body['gauge_' + existingSectionBom][i],
+                        bin: req.body['bin_' + existingSectionBom][i],
+                        finish: req.body['finish_' + existingSectionBom][i],
+                        weight: req.body['weight_' + existingSectionBom][i],
+                    })
+                }
+            } else {
+                out.push({
+                    qty: req.body['qty_' + existingSectionBom],
+                    partDesc: req.body['partDesc_' + existingSectionBom],
+                    part: req.body['part_' + existingSectionBom],
+                    material: req.body['material_' + existingSectionBom],
+                    gauge: req.body['gauge_' + existingSectionBom],
+                    bin: req.body['bin_' + existingSectionBom],
+                    finish: req.body['finish_' + existingSectionBom],
+                    weight: req.body['weight_' + existingSectionBom],
+                })
+            }
+            OUT.push({
+                bom: existingSectionBom,
+                data: out
+            });
+        }
         if (existingSectionBom.slice(existingSectionBom.length - 3, existingSectionBom.length) == 'PUR') {
             let pur = [];
             if (Array.isArray(req.body['qty_' + existingSectionBom]) == true) {
@@ -2265,8 +2354,13 @@ exports.generateAll = function(req, res) {
 
     for (let layout of layouts) {
         let secBinTrackingData = [];
-        let pur, str, pnl, ctl, int, ext, scl;
+        let pur, str, pnl, ctl, int, ext, scl, out;
         for (let section of layout.sections.split(',')) {
+            if (req.body['binTracker_OUT_' + layout.layout.slice(0,7) + section] != undefined) {
+                out = req.body['binTracker_OUT_' + layout.layout.slice(0,7) + section];
+            } else {
+                out = 'N/A';
+            }
             if (req.body['binTracker_PUR_' + layout.layout.slice(0, 7) + section] != undefined) {
                 pur = req.body['binTracker_PUR_' + layout.layout.slice(0, 7) + section];
             } else {
@@ -2305,6 +2399,7 @@ exports.generateAll = function(req, res) {
             secBinTrackingData.push({
                 section: section,
                 data: {
+                    OUT: out,
                     PUR: pur,
                     STR: str,
                     PNL: pnl,
@@ -2537,6 +2632,37 @@ exports.generateAll = function(req, res) {
                 });
             }
             workbook.xlsx.writeFile(outputDir + '/BIN BOMS/' + pur.bom + '.xlsx').then(function() {
+                return null
+            });
+        }
+    }
+
+    if (OUT.length != 0) {
+        for (let out of OUT) {
+            let workbook = new Excel.Workbook();
+            let sheet = workbook.addWorksheet('sheet1');
+            sheet.columns = [
+                {header: 'Quantity Per:', key: 'qty', width: 15, style: {font: {name: 'Calibri', size: 11}}},
+                {header: 'Part:', key: 'part', width: 50, style: {font: {name: 'Calibri', size: 11}}},
+                {header: 'Description:', key: 'desc', width: 50, style: {font: {name: 'Calibri', size: 11}}},
+                {header: 'Material:', key: 'material', width: 50, style: {font: {name: 'Calibri', size: 11}}},
+                {header: 'Gauge:', key: 'gauge', width: 15, style: {font: {name: 'Calibri', size: 11}}},
+                {header: 'Bin:', key: 'bin', width: 10, style: {font: {name: 'Calibri', size: 11}}},
+                {header: 'Finish:', key: 'finish', width: 15, style: {font: {name: 'Calibri', size: 11}}},
+            ];
+
+            for (let outItem of out.data) {
+                sheet.addRow({
+                    qty: parseInt(outItem.qty),
+                    part: outItem.part,
+                    desc: outItem.partDesc,
+                    material: outItem.material,
+                    gauge: outItem.gauge,
+                    bin: outItem.bin,
+                    finish: outItem.finish
+                });
+            }
+            workbook.xlsx.writeFile(outputDir + '/BIN BOMS/' + out.bom + '.xlsx').then(function() {
                 return null
             });
         }
@@ -2976,7 +3102,8 @@ exports.generateAll = function(req, res) {
                 {header: 'CTL:', key: 'ctl', width: 30, style: {font: {name: 'Calibri', size: 11}}},
                 {header: 'INT:', key: 'int', width: 30, style: {font: {name: 'Calibri', size: 11}}},
                 {header: 'EXT:', key: 'ext', width: 30, style: {font: {name: 'Calibri', size: 11}}},
-                {header: 'SCL:', key: 'scl', width: 30, style: {font: {name: 'Calibri', size: 11}}}
+                {header: 'SCL:', key: 'scl', width: 30, style: {font: {name: 'Calibri', size: 11}}},
+                {header: 'OUT:', key: 'out', width: 30, style: {font: {name: 'Calibri', size: 11}}}
             ];
             for (let binTrackerItem of binTracker.data) {
                 sheet.addRow({
@@ -2987,7 +3114,8 @@ exports.generateAll = function(req, res) {
                     ctl: binTrackerItem.data.CTL,
                     int: binTrackerItem.data.INT,
                     ext: binTrackerItem.data.EXT,
-                    scl: binTrackerItem.data.SCL
+                    scl: binTrackerItem.data.SCL,
+                    out: binTrackerItem.data.OUT
                 });
             }
             workbook.xlsx.writeFile(outputDir + '/BIN BOMS/' + binTracker.layout + '-BIN_TRACKER' + '.xlsx').then(function() {

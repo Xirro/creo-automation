@@ -543,6 +543,60 @@
                                                                     <thead>
                                                                     </thead>
                                                                     <tbody>
+
+                                                                    <% if (Array.isArray(binBom.OUT) == true) { %>
+                                                                        <% if (binBom.OUT.length != 0) { %>
+                                                                        <input type="text" hidden="hidden" name="binTracker_OUT_<%=layoutBom.lineup.slice(0,7) + binBom.section %>" value="<%=layoutBom.lineup.slice(0,7) + binBom.section + '-OUT' %>">
+
+                                                                        <tr data-toggle="collapse" data-target="#OUT_<%=currentLayoutBom%>_<%=currentBom%>" class="accordion-toggle">
+                                                                                <td>
+                                                                                    <span class="dripicons-checkmark icon-success"></span>
+                                                                                    <%= binBom.section + '-OUT'%>
+                                                                                    <i class="fas fa-angle-down rotate-icon"></i>
+                                                                                </td>
+                                                                            </tr>
+                                                                            <tr>
+                                                                                <td id="bomTD" colspan="6" class="hiddenRow">
+                                                                                    <div class="accordion-body collapse in no-transition" id="OUT_<%=currentLayoutBom%>_<%=currentBom%>">
+                                                                                        <input type="text" hidden="hidden" name="title_<%=layoutBom.lineup.slice(0,7) + binBom.section + '-OUT' %>" value="<%=layoutBom.lineup.slice(0,7) + binBom.section + '-OUT' %>">
+                                                                                        <h6><%= binBom.section + '-OUT' %></h6>
+                                                                                        <table id="bomTable" align="center">
+                                                                                            <thead>
+                                                                                            <tr>
+                                                                                                <th style="width: 10%">Qty</th>
+                                                                                                <th style="width: 60%">Description</th>
+                                                                                                <th style="width: 30%">P/N</th>
+                                                                                                <th style="display:none;"></th>
+                                                                                            </tr>
+                                                                                            </thead>
+                                                                                            <tbody>
+                                                                                            <% for(let row of binBom.OUT){ %>
+                                                                                            <tr>
+                                                                                                <td><input type="text" hidden="hidden" name="qty_<%=layoutBom.lineup.slice(0,7) + binBom.section + '-OUT' %>" value="<%=row.qty%>"><%=row.qty%></td>
+                                                                                                <td><input type="text" hidden="hidden" name="partDesc_<%=layoutBom.lineup.slice(0,7) + binBom.section + '-OUT' %>" value="<%=row.partDesc%>"><%=row.partDesc%></td>
+                                                                                                <td><input type="text" hidden="hidden" name="part_<%=layoutBom.lineup.slice(0,7) + binBom.section + '-OUT' %>" value="<%=row.part.slice(0,15) %>"><%= row.part.slice(0,15) %></td>
+                                                                                                <td style="display:none;"><input type="text" hidden="hidden" name="material_<%=layoutBom.lineup.slice(0,7) + binBom.section + '-OUT' %>" value="<%=row.material %>"><%=row.material%></td>
+                                                                                                <td style="display:none;"><input type="text" hidden="hidden" name="gauge_<%=layoutBom.lineup.slice(0,7) + binBom.section + '-OUT' %>" value="<%=row.gauge %>"><%=row.gauge%></td>
+                                                                                                <td style="display:none;"><input type="text" hidden="hidden" name="bin_<%=layoutBom.lineup.slice(0,7) + binBom.section + '-OUT' %>" value="<%=row.bin %>"><%=row.bin%></td>
+                                                                                                <td style="display:none;"><input type="text" hidden="hidden" name="finish_<%=layoutBom.lineup.slice(0,7) + binBom.section + '-OUT' %>" value="<%=row.finish %>"><%=row.finish%></td>
+                                                                                                <td style="display:none;"><input type="text" hidden="hidden" name="weight_<%=layoutBom.lineup.slice(0,7) + binBom.section + '-OUT' %>" value="<%=row.weight %>"><%=row.weight%></td>
+                                                                                            </tr>
+                                                                                            <% } %>
+                                                                                            </tbody>
+                                                                                        </table>
+                                                                                    </div>
+                                                                                </td>
+                                                                            </tr>
+                                                                        <% } %>
+                                                                    <% } else { %>
+                                                                    <tr style="background-color: #e8e8e8;">
+                                                                        <td>
+                                                                            <input type="text" hidden="hidden" name="binTracker_OUT_<%=layoutBom.lineup.slice(0,7) + binBom.section %>" value="<%= layoutBom.lineup.slice(0,7) +  binBom.OUT + '-OUT' %>">
+                                                                            <%= binBom.OUT + '-OUT' %></td>
+                                                                    </tr>
+                                                                    <% } %>
+
+
                                                                     <% if (Array.isArray(binBom.PUR) == true) { %>
                                                                         <input type="text" hidden="hidden" name="binTracker_PUR_<%=layoutBom.lineup.slice(0,7) + binBom.section %>" value="<%=layoutBom.lineup.slice(0,7) + binBom.section + '-PUR' %>">
                                                                         <% let message = 'OK'; %>
@@ -585,6 +639,7 @@
                                                                                         </tr>
                                                                                         </thead>
                                                                                         <tbody>
+
                                                                                         <% for(let row of binBom.PUR){ %>
                                                                                             <% if (row.partNum.slice(0,6) == '999999') { %>
                                                                                             <tr>

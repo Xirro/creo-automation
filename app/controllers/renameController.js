@@ -272,7 +272,6 @@ exports.loadParts = function(req, res) {
                     }
                 })
             }*/
-
             //LISTS ALL PARTS/ASMS IN THE WORKING DIRECTORY
             const parts = await creo(sessionId, {
                 command: "creo",
@@ -1561,8 +1560,33 @@ exports.rename = function(req, res) {
                 }
             }
 
+            const drawings = await creo(sessionId, {
+                command: "creo",
+                function: "list_files",
+                data: {
+                    filename: "*drw"
+                }
+            });
 
+            for (let drawing of drawings.data.filelist) {
+                await creo(sessionId, {
+                    command: "file",
+                    function: "open",
+                    data: {
+                        file: drawing,
+                        display: true,
+                        activate: true
+                    }
+                });
 
+                await creo(sessionId, {
+                    command: "file",
+                    function: "save",
+                    data: {
+                        file: drawing
+                    }
+                });
+            }
 
 
         })
