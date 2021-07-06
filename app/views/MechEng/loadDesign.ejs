@@ -280,6 +280,48 @@
                                                                 </tr>
                                                                 <% } %>
                                                             <% } %>
+                                                            <% if (Array.isArray(layoutBom.OUT) == true) { %>
+                                                                <% if (layoutBom.OUT.length != 0) { %>
+                                                                <tr data-toggle="collapse" data-target="#OUT_<%=currentLayoutBom%>" class="accordion-toggle">
+                                                                    <td>
+                                                                        <span class="dripicons-checkmark icon-success"></span>
+                                                                        <%= layoutBom.lineup.slice(0,7) + layoutBom.lineup.slice(12,15) + '-OUT' %>
+                                                                        <input type="text" hidden="hidden" name="title_<%= layoutBom.lineup.slice(0,7) + layoutBom.lineup.slice(12,15) + '-OUT' %>" value="<%= layoutBom.lineup.slice(0,7) + layoutBom.lineup.slice(12,15) + '-OUT' %>">
+                                                                        <i class="fas fa-angle-down rotate-icon"></i>
+                                                                    </td>
+                                                                </tr>
+                                                                <tr>
+                                                                    <td id="bomTD" colspan="6" class="hiddenRow">
+                                                                        <div class="accordion-body collapse in no-transition" id="OUT_<%=currentLayoutBom%>">
+                                                                            <h6><%= layoutBom.lineup.slice(0,7) + layoutBom.lineup.slice(12,15) + '-OUT' %></h6>
+                                                                            <table id="bomTable" align="center">
+                                                                                <thead>
+                                                                                <tr>
+                                                                                    <th style="width: 10%">Qty</th>
+                                                                                    <th style="width: 60%">Description</th>
+                                                                                    <th style="width: 30%">P/N</th>
+                                                                                </tr>
+                                                                                </thead>
+                                                                                <tbody>
+                                                                                    <% for(let row of layoutBom.OUT){ %>
+                                                                                    <tr>
+                                                                                        <td><input type="text" hidden="hidden" name="qty_<%= layoutBom.lineup.slice(0,7) + layoutBom.lineup.slice(12,15) + '-OUT' %>" value="<%=row.qty%>"><%=row.qty%></td>
+                                                                                        <td><input type="text" hidden="hidden" name="partDesc_<%= layoutBom.lineup.slice(0,7) + layoutBom.lineup.slice(12,15) + '-OUT' %>" value="<%=row.partDesc%>"><%=row.partDesc%></td>
+                                                                                        <td><input type="text" hidden="hidden" name="partNum_<%= layoutBom.lineup.slice(0,7) + layoutBom.lineup.slice(12,15) + '-OUT' %>" value="<%=row.partNum.slice(0,15) %>"><%= row.partNum.slice(0,15) %></td>
+                                                                                        <td style="display:none;"><input type="text" hidden="hidden" name="material_<%= layoutBom.lineup.slice(0,7) + layoutBom.lineup.slice(12,15) + '-OUT' %>" value="<%=row.material %>"><%=row.material%></td>
+                                                                                        <td style="display:none;"><input type="text" hidden="hidden" name="gauge_<%= layoutBom.lineup.slice(0,7) + layoutBom.lineup.slice(12,15) + '-OUT' %>" value="<%=row.gauge %>"><%=row.gauge%></td>
+                                                                                        <td style="display:none;"><input type="text" hidden="hidden" name="bin_<%= layoutBom.lineup.slice(0,7) + layoutBom.lineup.slice(12,15) + '-OUT' %>" value="<%=row.bin %>"><%=row.bin%></td>
+                                                                                        <td style="display:none;"><input type="text" hidden="hidden" name="finish_<%= layoutBom.lineup.slice(0,7) + layoutBom.lineup.slice(12,15) + '-OUT' %>" value="<%=row.finish %>"><%=row.finish%></td>
+                                                                                        <td style="display:none;"><input type="text" hidden="hidden" name="weight_<%= layoutBom.lineup.slice(0,7) + layoutBom.lineup.slice(12,15) + '-OUT' %>" value="<%=row.weight %>"><%=row.weight%></td>
+                                                                                    </tr>
+                                                                                    <% } %>
+                                                                                </tbody>
+                                                                            </table>
+                                                                        </div>
+                                                                    </td>
+                                                                </tr>
+                                                                <% } %>
+                                                            <% } %>
 
                                                             <% if (Array.isArray(layoutBom.AL) == true) { %>
                                                                 <% if (layoutBom.AL.length != 0) { %>
