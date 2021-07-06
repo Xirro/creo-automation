@@ -1310,8 +1310,8 @@ exports.loadDesign = function(req, res) {
                             })
                         }
                         for (let part6 of out) {
-                            if (lineup_OUT_bom.filter(e => e.part === part6.part.slice(0,15)).length > 0) {
-                                lineup_OUT_bom.filter(e => e.part === part6.part.slice(0,15))[0].qty += part6.qty;
+                            if (lineup_OUT_bom.filter(e => e.partNum.slice(0,15) === part6.part.slice(0,15)).length > 0) {
+                                lineup_OUT_bom.filter(e => e.partNum.slice(0,15) === part6.part.slice(0,15))[0].qty += part6.qty;
                             } else {
                                 lineup_OUT_bom.push({
                                     qty: part6.qty,
@@ -2521,7 +2521,7 @@ exports.generateAll = function(req, res) {
             for (let outItem of out.data) {
                 sheet.addRow({
                     qty: parseInt(outItem.qty),
-                    partNum: outItem.partNum,
+                    part: outItem.partNum,
                     desc: outItem.partDesc,
                     material: outItem.material,
                     gauge: outItem.gauge,
