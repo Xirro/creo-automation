@@ -1274,53 +1274,55 @@ exports.compareSinglePart = function(req, res) {
 
 
         console.log(dirList);
+        console.log(workingDir);
 
 
         //LOOP FOR K: DRIVE SEARCH. CURRENTLY SET AT 100, USE dirList.length IF YOU WANT THE ENTIRE K: DRIVE
         for (let i = 0; i < dirList.length; i++) {
-
-            await creo(sessionId, {
-                command: "creo",
-                function: "cd",
-                data: {
-                    dirname: 'K:\\' + dirList[i] + '\\2. PROJECT FILES\\ENGINEERING WIP\\MECHANICAL ENGINEERING\\PROE'
-                }
-            });
-
-            let innerDirs = await creo(sessionId, {
-                command: "creo",
-                function: "list_dirs",
-                data: {}
-            });
-
-            if (innerDirs.data.dirlist.length > 0) {
-                let innerDirList = innerDirs.data.dirlist.sort(function(a,b) {
-                    let intA;
-                    let intB;
-
-                    if (a.includes('_') == true) {
-                        if (a.split('_')[0].slice(0, 2) == '21' || a.split('_')[0].slice(0, 2) == '20' || a.split('_')[0].slice(0, 2) == '19') {
-                            intA = a.split('_')[0];
-                        } else if (a.split('_')[1].slice(0, 2) == '21' || a.split('_')[1].slice(0, 2) == '20' || a.split('_')[1].slice(0, 2) == '19') {
-                            intA = a.split('_')[1];
-                        }
-                    } else {
-                        intA = a;
+            if (workingDir != 'K:\\' + dirList[i] + '\\2. PROJECT FILES\\ENGINEERING WIP\\MECHANICAL ENGINEERING\\PROE') {
+                await creo(sessionId, {
+                    command: "creo",
+                    function: "cd",
+                    data: {
+                        dirname: 'K:\\' + dirList[i] + '\\2. PROJECT FILES\\ENGINEERING WIP\\MECHANICAL ENGINEERING\\PROE'
                     }
-
-                    if (b.includes('_') == true) {
-                        if (b.split('_')[0].slice(0, 2) == '21' || b.split('_')[0].slice(0, 2) == '20' || b.split('_')[0].slice(0, 2) == '19') {
-                            intB = b.split('_')[0];
-                        } else if (b.split('_')[1].slice(0, 2) == '21' || b.split('_')[1].slice(0, 2) == '20' || b.split('_')[1].slice(0, 2) == '19') {
-                            intB = b.split('_')[1];
-                        }
-                    } else {
-                        intB = b;
-                    }
-                    return intB - intA
                 });
-                let comparisonTarget = 'K:\\' + dirList[i] + '\\2. PROJECT FILES\\ENGINEERING WIP\\MECHANICAL ENGINEERING\\PROE' + "\\" + innerDirList[0];
-                comparisonDirs.push(comparisonTarget);
+
+                let innerDirs = await creo(sessionId, {
+                    command: "creo",
+                    function: "list_dirs",
+                    data: {}
+                });
+
+                if (innerDirs.data.dirlist.length > 0) {
+                    let innerDirList = innerDirs.data.dirlist.sort(function(a,b) {
+                        let intA;
+                        let intB;
+
+                        if (a.includes('_') == true) {
+                            if (a.split('_')[0].slice(0, 2) == '21' || a.split('_')[0].slice(0, 2) == '20' || a.split('_')[0].slice(0, 2) == '19') {
+                                intA = a.split('_')[0];
+                            } else if (a.split('_')[1].slice(0, 2) == '21' || a.split('_')[1].slice(0, 2) == '20' || a.split('_')[1].slice(0, 2) == '19') {
+                                intA = a.split('_')[1];
+                            }
+                        } else {
+                            intA = a;
+                        }
+
+                        if (b.includes('_') == true) {
+                            if (b.split('_')[0].slice(0, 2) == '21' || b.split('_')[0].slice(0, 2) == '20' || b.split('_')[0].slice(0, 2) == '19') {
+                                intB = b.split('_')[0];
+                            } else if (b.split('_')[1].slice(0, 2) == '21' || b.split('_')[1].slice(0, 2) == '20' || b.split('_')[1].slice(0, 2) == '19') {
+                                intB = b.split('_')[1];
+                            }
+                        } else {
+                            intB = b;
+                        }
+                        return intB - intA
+                    });
+                    let comparisonTarget = 'K:\\' + dirList[i] + '\\2. PROJECT FILES\\ENGINEERING WIP\\MECHANICAL ENGINEERING\\PROE' + "\\" + innerDirList[0];
+                    comparisonDirs.push(comparisonTarget);
+                }
             }
         }
 
@@ -1663,7 +1665,8 @@ exports.compareSinglePart = function(req, res) {
                         offsetStd: possibleMatch.offsetStd,
                         xRot: xRot,
                         yRot: yRot,
-                        zRot: zRot
+                        zRot: zRot,
+                        volumeDiffPercent: ((Number(customPart.volume.toFixed(decimalPlaces)) - Number(volumeIntf))/Number(customPart.volume.toFixed(decimalPlaces))*100).toFixed(5)
                     }
                 }
             }
@@ -1952,20 +1955,23 @@ exports.compareSinglePart = function(req, res) {
                 {header: 'Offset Standard', key: 'offsetStd', width: 40, style: {font: {name: 'Calibri', size: 11}}},
                 {header: 'X Axis Rotation', key: 'xRot', width: 20, style: {font: {name: 'Calibri', size: 11}}},
                 {header: 'Y Axis Rotation', key: 'yRot', width: 20, style: {font: {name: 'Calibri', size: 11}}},
-                {header: 'Z Axis Rotation', key: 'zRot', width: 20, style: {font: {name: 'Calibri', size: 11}}}
+                {header: 'Z Axis Rotation', key: 'zRot', width: 20, style: {font: {name: 'Calibri', size: 11}}},
+                {header: 'Volume % Difference', key:'volumeDiffPercent', width: 20, style: {font: {name: 'Calibri', size: 11}}}
             ];
             for (let part of partMatchArr) {
-                sheet1.addRow({
-                    customInstance: part.customPart.slice(0,15),
-                    customGeneric: part.customPart.slice(16,31),
-                    equivInstance: part.stdInstance,
-                    equivGeneric: part.stdGeneric.slice(0,15),
-                    offsetCustom: part.offsetCustom._data,
-                    offsetStd: part.offsetStd._data,
-                    xRot: part.xRot,
-                    yRot: part.yRot,
-                    zRot: part.zRot
-                });
+                if (part.customPart.slice(16,31) != part.stdGeneric.slice(0,15)) {
+                    sheet1.addRow({
+                        customInstance: part.customPart.slice(0,15),
+                        customGeneric: part.customPart.slice(16,31),
+                        equivInstance: part.stdInstance,
+                        equivGeneric: part.stdGeneric.slice(0,15),
+                        offsetCustom: part.offsetCustom._data,
+                        offsetStd: part.offsetStd._data,
+                        xRot: part.xRot,
+                        yRot: part.yRot,
+                        zRot: part.zRot
+                    });
+                }
             }
             for (let part of partSimilarityArr) {
                 sheet2.addRow({
@@ -1977,7 +1983,8 @@ exports.compareSinglePart = function(req, res) {
                     offsetStd: part.offsetStd._data,
                     xRot: part.xRot,
                     yRot: part.yRot,
-                    zRot: part.zRot
+                    zRot: part.zRot,
+                    volumeDiffPercent: part.volumeDiffPercent
                 });
             }
             workbook.xlsx.writeFile(compareDir + '/partComparison.xlsx').then(function() {

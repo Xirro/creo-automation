@@ -1578,7 +1578,6 @@ exports.rename = function(req, res) {
                         activate: true
                     }
                 });
-
                 await creo(sessionId, {
                     command: "file",
                     function: "save",
