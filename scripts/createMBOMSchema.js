@@ -17,6 +17,34 @@ let connection = mysql.createConnection({
 
 connection.query('USE ' + database, function(err,rows) { if(err) throw err; });
 // MECHANICAL ENGINEERING TABLES
+
+connection.query('\
+CREATE TABLE IF NOT EXISTS ' + dbConfig.database + '.' + dbConfig.jobscope_classCodes_table + ' ( \
+    idCode INT UNSIGNED NOT NULL AUTO_INCREMENT, \
+    classCode VARCHAR(6) NULL, \
+    PRIMARY KEY (idCode), \
+    UNIQUE INDEX idClassCode_UNIQUE (idCode ASC))\
+    ENGINE = InnoDB;', function(err,rows) { if(err) throw err; });
+
+connection.query("INSERT INTO "+dbConfig.database+"."+dbConfig.jobscope_classCodes_table+" (classCode) VALUES " +
+    "('STEEL'), " +
+    "('ALUM'), " +
+    "('GLAST'), " +
+    "('WIRE'), " +
+    "('PAINT'), " +
+    "('INSUL'), " +
+    "('COPPER'), " +
+    "('MCCB'), " +
+    "('ICCB'), " +
+    "('SWITCH'), " +
+    "('MV GEAR'), " +
+    "('BUYOUT'), " +
+    "('ELEC'), " +
+    "('MECH') ", function (err, result) {
+    if (err)
+        console.log("Error inserting : %s ", err)
+});
+
 connection.query('\
 CREATE TABLE IF NOT EXISTS ' + dbConfig.database + '.' + dbConfig.MBOM_summary_table + ' ( \
     mbomID INT UNSIGNED NOT NULL AUTO_INCREMENT, \

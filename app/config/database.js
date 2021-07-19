@@ -44,6 +44,7 @@ module.exports = {
     //Pre-loaded Static Tables (Shared b/w apps)
     'permissions_table': 'userPermissions',
     'jobscope_codes_table': 'jobscopeCatCodes',
+    'jobscope_classCodes_table': 'jobscopeClassCodes',
     'layout_paramTypes_table':'layoutParamTypes',
     'layout_paramType_restrictions': 'layoutParamRestrictions',
     'secType_table':'sectionType',

@@ -1840,7 +1840,7 @@ exports.compareSinglePart = function(req, res) {
 
             for (let customPart of customPartData) {
                 for (let stdPart of stdPartData) {
-                    if (stdPart.stdPartInstance.slice(7,11) == customPart.customPart.slice(7,11) != '4105') {
+                    if (stdPart.stdPartInstance.slice(7,11) == customPart.customPart.slice(7,11) && customPart.customPart.slice(7,11) != '4105') {
                         if (Number(stdPart.massPropsStdInstance.data.density.toFixed(5)) == Number(customPart.massPropsCustomPart.data.density.toFixed(5)) && Number(stdPart.massPropsStdInstance.data.surface_area.toFixed(5)) == Number(customPart.massPropsCustomPart.data.surface_area.toFixed(5)) && Number(stdPart.massPropsStdInstance.data.mass.toFixed(5)) == Number(customPart.massPropsCustomPart.data.mass.toFixed(5)) && Number(stdPart.massPropsStdInstance.data.volume.toFixed(5)) == Number(customPart.massPropsCustomPart.data.volume.toFixed(5))) {
                             if (possibleMatches.filter(e => e.customPart == customPart.customPart).length == 0) {
                                 possibleMatches.push({

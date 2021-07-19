@@ -412,7 +412,7 @@
                                                 <ol data-draggable="target" id="mcBrkQueue" class="breakerQueueMC" style="width: 100%;">
                                                     <% if(mbomBrkData.length != 0) { %>
                                                         <% for (let k=0; k < mbomBrkData.length; k++) { %>
-                                                            <% let devProduct = (mbomBrkData[k].catCode).includes('MC'); %>
+                                                            <% let devProduct = (mbomBrkData[k].class).includes("MCCB"); %>
                                                             <% if(devProduct){ %>
                                                                 <% var currentMouldedBrk = mbomBrkData[k].idDev; %>
                                                                 <% if(mbomSecData.length != 0) { %>
@@ -439,7 +439,7 @@
                                                 <ol data-draggable="target" id="icBrkQueue" class="breakerQueueIC" style="width: 100%;">
                                                     <% if(mbomBrkData.length != 0) { %>
                                                         <% for (let k=0; k < mbomBrkData.length; k++) { %>
-                                                            <% let devProduct = (mbomBrkData[k].catCode).includes('IC'); %>
+                                                            <% let devProduct = (mbomBrkData[k].class).includes("ICCB"); %>
                                                             <% if(devProduct){ %>
                                                                 <% var currentICBrk = mbomBrkData[k].idDev; %>
                                                                 <% if(mbomSecData.length != 0) { %>
@@ -539,7 +539,7 @@
                                                                                         <% let tempDesc = '('+brkAccQty[y]+')' + ' - ' + brkAcc[y]; %>
                                                                                         <% title1 += tempDesc + '<br>'; %>
                                                                                     <% } %>
-                                                                                    <% if(mbomBrkData[j].catCode.includes('MC')){ %>
+                                                                                    <% if(mbomBrkData[j].class.includes('MCCB')){ %>
                                                                                         <li id="B<%= mbomBrkData[j].idDev%>" data-draggable="item" data-toggle="tooltip" data-html="true" title="<%- title1 %>" style="background-color: #fcca9c;">
                                                                                             <%= mbomBrkData[j].devDesignation %>
                                                                                         </li>
@@ -601,7 +601,7 @@
                                                     <input type="text" name="numSections" class="form-control" value="<%= mbomData.numSections %>" id="numSections" hidden="hidden">
                                                 </div>
                                             <% } %>
-                                            <div class="col-sm-4">
+                                            <div class="col-sm-6">
                                                 <div class="form-group">
                                                     <label for="" class="col-form-label">Layout Name</label>
                                                     <input type="text" name="devLayout" class="form-control" value="<%=mbomData.boardDesignation%>" placeholder="Layout name here" id="" readonly="readonly">
@@ -637,43 +637,55 @@
                                                 <div class="form-group">
                                                     <label for="devCatCode" class="col-form-label">Cat. Code</label>
                                                     <select class="form-control" name="catCode" id="devCatCode">
-                                                        <% if(brkData.catCode == '36-CB MC') {%>
-                                                            <option value="Select">Select</option>
-                                                            <option value="36-CB MC" selected>36-CB MC</option>
-                                                            <option value="37-CB IC">37-CB IC</option>
-                                                        <% } else if(brkData.catCode == '37-CB IC') { %>
-                                                            <option value="Select">Select</option>
-                                                            <option value="36-CB MC">36-CB MC</option>
-                                                            <option value="37-CB IC" selected>37-CB IC</option>
-                                                        <% } else { %>
-                                                            <option value="Select">Select</option>
-                                                            <option value="36-CB MC">36-CB MC</option>
-                                                            <option value="37-CB IC">37-CB IC</option>
-                                                        <% } %>
+                                                        <option value="Select">Select</option>
+                                                        <option value="00-CB" selected>00-CB</option>
                                                     </select>
                                                 </div>
                                             </div>
                                             <div class="col-sm-2">
-                                                <% if(brkAccData.length != 0){ %>
-                                                    <script> openBreakerAccessories() </script>
-                                                    <div class="form-group" style="margin-top: 2.5rem; padding-left: 2.5rem;">
-                                                        <input class="form-check-input" type="checkbox" name="addBreakerAccessories" id="addAccessories" checked="checked" onclick="openBreakerAccessories()">
-                                                        <label class="form-check-label" for="addAccessories">Add Loose Accessories</label>
-                                                    </div>
-                                                <% } else { %>
-                                                    <div class="form-group" style="margin-top: 2.5rem; padding-left: 2.5rem;">
-                                                        <input class="form-check-input" type="checkbox" name="addBreakerAccessories" id="addAccessories" onclick="openBreakerAccessories()">
-                                                        <label class="form-check-label" for="addAccessories">Add Loose Accessories</label>
-                                                    </div>
-                                                <% } %>
+                                                <div class="form-group">
+                                                    <label for="devClassCode" class="col-form-label">Class</label>
+                                                    <select class="form-control" name="classCode" id="devClassCode">
+                                                        <% if (brkData.class == 'MCCB') { %>
+                                                            <option value="Select">Select</option>
+                                                            <option value="MCCB" selected>MCCB</option>
+                                                            <option value="ICCB">ICCB</option>
+                                                        <% } else if (brkData.class == 'ICCB') { %>
+                                                            <option value="Select">Select</option>
+                                                            <option value="MCCB">MCCB</option>
+                                                            <option value="ICCB" selected>ICCB</option>
+                                                        <% } else { %>
+                                                            <option value="Select">Select</option>
+                                                            <option value="MCCB">MCCB</option>
+                                                            <option value="ICCB">ICCB</option>
+                                                        <% } %>
+                                                    </select>
+                                                </div>
                                             </div>
+                                        </div>
+                                            <div class="row justify-content-center">
+                                                <div class="col-sm-2">
+                                                    <% if(brkAccData.length != 0){ %>
+                                                        <script> openBreakerAccessories() </script>
+                                                        <div class="form-group" style="margin-top: 2.5rem; padding-left: 2.5rem;">
+                                                            <input class="form-check-input" type="checkbox" name="addBreakerAccessories" id="addAccessories" checked="checked" onclick="openBreakerAccessories()">
+                                                            <label class="form-check-label" for="addAccessories">Add Loose Accessories</label>
+                                                        </div>
+                                                    <% } else { %>
+                                                        <div class="form-group" style="margin-top: 2.5rem; padding-left: 2.5rem;">
+                                                            <input class="form-check-input" type="checkbox" name="addBreakerAccessories" id="addAccessories" onclick="openBreakerAccessories()">
+                                                            <label class="form-check-label" for="addAccessories">Add Loose Accessories</label>
+                                                        </div>
+                                                    <% } %>
+                                                </div>
+                                            </div>
+
                                             <div class="col-sm-2">
                                                 <div class="form-group">
                                                     <label for="" class="col-form-label"></label>
                                                     <input type="text" id="" name="unitOfIssue" class="form-control" value="EA" hidden="hidden"/>
                                                 </div>
                                             </div>
-                                        </div>
                                     </form>
                                     <% if(brkAccData.length != 0){ %>
                                     <div class="row" id="breakerAccessoriesDiv" style="display: flex;">
@@ -1047,7 +1059,7 @@
                                                     </div>
                                                 </div>
                                                 <div class="row">
-                                                    <div class="col-sm-6">
+                                                    <div class="col-sm-4">
                                                         <label for="" class="col-form-label">P/N</label>
                                                         <input type="text" name="itemPN" id="" class="form-control" value="" placeholder="Type P/N Here" autocomplete="off" required/>
                                                     </div>
@@ -1066,6 +1078,15 @@
                                                             <option value="Select">Select</option>
                                                             <% for (let i = 0; i < catCodeData.length; i++) { %>
                                                                 <option value="<%= catCodeData[i]%>"><%= catCodeData[i]%></option>
+                                                            <% } %>
+                                                        </select>
+                                                    </div>
+                                                    <div class="col-sm-2">
+                                                        <label for="" class="col-form-label">Class</label>
+                                                        <select class="form-control" name="classCode" id="">
+                                                            <option value="Select">Select</option>
+                                                            <% for (let i = 0; i < classCodeData.length; i++) { %>
+                                                                <option value="<%= classCodeData[i]%>"><%=classCodeData[i]%></option>
                                                             <% } %>
                                                         </select>
                                                     </div>

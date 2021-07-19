@@ -167,7 +167,6 @@ exports.copyMBOM = function(req, res) {
                 return null;
             })
         .then(() => {
-
             return querySql("SELECT * FROM " + database + "." + dbConfig.MBOM_user_items + " WHERE mbomID = ?", copyMbomID);
         })
         .then(rows => {
@@ -181,7 +180,8 @@ exports.copyMBOM = function(req, res) {
                     itemDesc: row.itemDesc,
                     itemPN: row.itemPN,
                     unitOfIssue: row.unitOfIssue,
-                    catCode: row.catCode
+                    catCode: row.catCode,
+                    class: row.class
                 });
             }
 
@@ -269,6 +269,7 @@ exports.copyMBOM = function(req, res) {
                     cradlePN: row.cradlePN,
                     unitOfIssue: row.unitOfIssue,
                     catCode: row.catCode,
+                    class: row.class,
                     devMfg: row.devMfg
                 });
             }
@@ -279,9 +280,9 @@ exports.copyMBOM = function(req, res) {
             async function(rows){
                 for(let i = 0; i < rows.length; i++){
                     await querySql("INSERT INTO " + database + "." + dbConfig.MBOM_breaker_table + " SET mbomID = ?," +
-                        "secID = ?, devLayout = ?, devDesignation = ?, brkPN = ?, cradlePN = ?, unitOfIssue = ?, catCode = ?, " +
+                        "secID = ?, devLayout = ?, devDesignation = ?, brkPN = ?, cradlePN = ?, unitOfIssue = ?, catCode = ?, class = ?, " +
                         "devMfg = ? ", [rows[i].mbomID, rows[i].secID, rows[i].devLayout, rows[i].devDesignation,
-                        rows[i].brkPN, rows[i].cradlePN, rows[i].unitOfIssue, rows[i].catCode, rows[i].devMfg])
+                        rows[i].brkPN, rows[i].cradlePN, rows[i].unitOfIssue, rows[i].catCode, rows[i].class, rows[i].devMfg])
                         .then(rows => {
                             brkData[i].newidDev = rows.insertId;
                         });
@@ -475,7 +476,6 @@ exports.deleteBreakerAcc = function(req, res){
 
     res.redirect('searchMBOM/?bomID=' + mbomData.jobNum + mbomData.releaseNum + "_" + mbomID);
 };
-
 
 /***********************************************
  BRK ACC FROM EDIT
@@ -683,6 +683,7 @@ exports.searchMBOMGet = function(req, res) {
     let userItemData = [];
     let mbomSecData = [];
     let catCodeData = [];
+    let classCodeData = [];
     let brkAccData = [];
     let brkData ={};
     let mbomBrkAcc = [];
@@ -708,12 +709,13 @@ exports.searchMBOMGet = function(req, res) {
                 const itemSum = await querySql("SELECT * FROM " + database + " . " + dbConfig.MBOM_item_table + " WHERE mbomID = ?", mbomID);
                 const secSum = await querySql("SELECT * FROM " + database + " . " + dbConfig.MBOM_new_section_sum + " WHERE mbomID = ?", mbomID);
                 const catCodeSum = await querySql("SELECT * FROM " + database + "." + dbConfig.jobscope_codes_table);
+                const classCodeSum = await querySql("SELECT * FROM " + database + "." + dbConfig.jobscope_classCodes_table);
                 const brkAccessories = await querySql("SELECT * FROM " + database + "." + dbConfig.MBOM_brkAcc_table + " WHERE mbomID = ?", mbomID);
 
-                return {comItems, userItems, brkSum, itemSum, secSum, catCodeSum, brkAccessories}
+                return {comItems, userItems, brkSum, itemSum, secSum, catCodeSum, classCodeSum, brkAccessories}
             }
         )
-        .then(({comItems, userItems, brkSum, itemSum, secSum, catCodeSum, brkAccessories}) => {
+        .then(({comItems, userItems, brkSum, itemSum, secSum, catCodeSum, classCodeSum, brkAccessories}) => {
             for(let row of comItems)
                 comItemData.push(row);
             for(let row of userItems)
@@ -730,6 +732,8 @@ exports.searchMBOMGet = function(req, res) {
                 });
             for(let row of catCodeSum)
                 catCodeData.push(row.catCode);
+            for(let row of classCodeSum)
+                classCodeData.push(row.classCode);
             for(let row of brkAccessories)
                 mbomBrkAcc.push(row);
 
@@ -746,6 +750,7 @@ exports.searchMBOMGet = function(req, res) {
                 comItemData: comItemData,
                 userItemData: userItemData,
                 catCodeData: catCodeData,
+                classCodeData: classCodeData,
                 brkAccData: brkAccData,
                 brkData: brkData,
                 mbomBrkAcc: mbomBrkAcc
@@ -767,19 +772,25 @@ exports.createComItemTableGET = function(req, res) {
     req.setTimeout(0); //no timeout
     let comItemData = [];
     let catCodeData = [];
+    let classCodeData = [];
 
     async function f(){
         const comItems = await querySql("SELECT * FROM " + database + "." + dbConfig.MBOM_common_items);
         const catCodes =  await querySql("SELECT catCode FROM " + database + " . " + dbConfig.jobscope_codes_table);
-        return {comItems, catCodes}
+        const classCodes = await querySql("SELECT classCode FROM " + database + "." + dbConfig.jobscope_classCodes_table);
+
+        return {comItems, catCodes, classCodes}
     }
 
-    f().then(({comItems, catCodes}) => {
+    f().then(({comItems, catCodes, classCodes}) => {
         for(let row of comItems){
             comItemData.push(row);
         }
         for(let row of catCodes){
             catCodeData.push(row);
+        }
+        for(let row of classCodes) {
+            classCodeData.push(row);
         }
 
         return null;
@@ -788,7 +799,8 @@ exports.createComItemTableGET = function(req, res) {
             res.locals = {title: 'Create Com Item'};
             res.render('MBOM/createComItemTable', {
                 comItemData: comItemData,
-                catCodeData: catCodeData
+                catCodeData: catCodeData,
+                classCodeData: classCodeData
             });
         })
         .catch(err => {
@@ -821,7 +833,8 @@ exports.createComItemTablePOST = function(req, res) {
         itemDesc: (req.body.itemDesc).toUpperCase(),
         itemPN: req.body.itemPN,
         unitOfIssue: req.body.unitOfIssue,
-        catCode: req.body.catCode
+        catCode: req.body.catCode,
+        class: req.body.class
     };
 
     querySql("SELECT * FROM " + database + " . " + dbConfig.MBOM_common_items + " WHERE itemType = ? AND itemMfg = ? " +
@@ -858,17 +871,19 @@ exports.editComItemTableGET = function(req, res) {
     let editComItemData = {};
     let comItemData = [];
     let catCodeData = [];
+    let classCodeData = [];
 
     async function f(){
         const editComItem = await querySql("SELECT * FROM " + database + "." + dbConfig.MBOM_common_items + " WHERE " +
             "comitemID = ?", comItemID);
         const comItems = await querySql("SELECT * FROM " + database + "." + dbConfig.MBOM_common_items);
         const catCodes =  await querySql("SELECT catCode FROM " + database + " . " + dbConfig.jobscope_codes_table);
-        return {editComItem, comItems, catCodes}
+        const classCodes = await querySql("SELECT classCode FROM " + database + "." + dbConfig.jobscope_classCodes_table);
+        return {editComItem, comItems, catCodes, classCodes}
     }
 
 
-    f().then(({editComItem, comItems, userProfiles, catCodes}) => {
+    f().then(({editComItem, comItems, userProfiles, catCodes, classCodes}) => {
         for(let row of editComItem){
             editComItemData = {
                 comItemID: row.comItemID,
@@ -877,7 +892,8 @@ exports.editComItemTableGET = function(req, res) {
                 itemDesc: row.itemDesc,
                 itemPN: row.itemPN,
                 unitOfIssue: row.unitOfIssue,
-                catCode: row.catCode
+                catCode: row.catCode,
+                classCode: row.class
             }
         }
         for(let row of comItems){
@@ -885,6 +901,9 @@ exports.editComItemTableGET = function(req, res) {
         }
         for(let row of catCodes){
             catCodeData.push(row);
+        }
+        for (let row of classCodes) {
+            classCodeData.push(row);
         }
 
 
@@ -896,6 +915,7 @@ exports.editComItemTableGET = function(req, res) {
                 editComItemData: editComItemData,
                 comItemData: comItemData,
                 catCodeData: catCodeData,
+                classCodeData: classCodeData
             });
         })
         .catch(err => {
@@ -929,12 +949,13 @@ exports.editComItemTablePOST = function(req, res) {
         itemDesc: (req.body.itemDesc).toUpperCase(),
         itemPN: (req.body.itemPN).toUpperCase(),
         unitOfIssue: req.body.unitOfIssue,
-        catCode: req.body.catCode
+        catCode: req.body.catCode,
+        class: req.body.class
     };
 
     querySql("UPDATE " + database + "." + dbConfig.MBOM_common_items + " SET itemType = ?, itemMfg = ?, itemDesc = ?, " +
-        "itemPN = ?, unitOfIssue = ?, catCode = ? WHERE comItemID = ?", [updateData.itemType, updateData.itemMfg,
-        updateData.itemDesc, updateData.itemPN, updateData.unitOfIssue, updateData.catCode, qs.comItemID])
+        "itemPN = ?, unitOfIssue = ?, catCode = ?, class = ? WHERE comItemID = ?", [updateData.itemType, updateData.itemMfg,
+        updateData.itemDesc, updateData.itemPN, updateData.unitOfIssue, updateData.catCode, updateData.class, qs.comItemID])
         .then(() => {
             res.locals = {title: 'Edit Common Item'};
             res.redirect('../MBOM');
@@ -1146,6 +1167,7 @@ exports.createUserItem = function(req, res) {
         itemDesc: (req.body.itemDesc).toUpperCase(),
         itemPN: req.body.itemPN,
         catCode: req.body.catCode,
+        class: req.body.classCode,
         unitOfIssue: req.body.unitOfIssue
     };
 
@@ -1225,6 +1247,7 @@ exports.editUserItem = function(req, res) {
     let comItemData = [];
     let userItemData = {};
     let catCodeData = [];
+    let classCodeData = [];
 
     let data = [];
     let mbomData = {
@@ -1242,11 +1265,12 @@ exports.editUserItem = function(req, res) {
         const itemSum = await querySql("SELECT * FROM " + database + "." + dbConfig.MBOM_item_table + " WHERE itemSumID = ?", qs.itemSumID);
         const userItem = await querySql("SELECT * FROM " + database + "." + dbConfig.MBOM_user_items + " WHERE userItemID = ?", qs.userItemID);
         const catCode = await querySql("SELECT * FROM " + database + "." + dbConfig.jobscope_codes_table);
+        const classCode = await querySql("SELECT * FROM " + database + "." + dbConfig.jobscope_classCodes_table);
 
-        return {comItem, itemSum, userItem, catCode};
+        return {comItem, itemSum, userItem, catCode, classCode};
     }
 
-    f().then(({comItem, itemSum, userItem, catCode}) => {
+    f().then(({comItem, itemSum, userItem, catCode, classCode}) => {
         for(let row of comItem){
             comItemData.push(row);
         }
@@ -1261,11 +1285,15 @@ exports.editUserItem = function(req, res) {
                 itemDesc: row.itemDesc,
                 itemPN: row.itemPN,
                 unitOfIssue: row.unitOfIssue,
-                catCode: row.catCode
+                catCode: row.catCode,
+                class: row.class
             };
         }
         for(let row of catCode){
             catCodeData.push(row);
+        }
+        for(let row of classCode) {
+            classCodeData.push(row);
         }
         return null;
     })
@@ -1277,6 +1305,7 @@ exports.editUserItem = function(req, res) {
                 comItemData: comItemData,
                 userItemData: userItemData,
                 catCodeData: catCodeData,
+                classCodeData: classCodeData
             });
         })
         .catch(err => {
@@ -1321,6 +1350,7 @@ exports.editUserItemSave = function(req, res) {
         itemDesc: (req.body.itemDesc).toUpperCase(),
         unitOfIssue: req.body.unitOfIssue,
         catCode: req.body.catCode,
+        class: req.body.class,
         itemPN: req.body.itemPN,
         shipLoose: shipLooseCheck
     };
@@ -1332,8 +1362,8 @@ exports.editUserItemSave = function(req, res) {
                 userItemID = rows[0].userItemID;
 
                 querySql("UPDATE " + database + "." + dbConfig.MBOM_user_items + " SET itemType = ?, itemMfg = ?, " +
-                    "itemDesc = ?, unitOfIssue = ?, catCode = ? WHERE itemPN = ? AND mbomID = ?", [updateData.itemType,
-                    updateData.itemMfg, updateData.itemDesc, updateData.unitOfIssue, updateData.catCode, updateData.itemPN, updateData.mbomID])
+                    "itemDesc = ?, unitOfIssue = ?, catCode = ?, class = ? WHERE itemPN = ? AND mbomID = ?", [updateData.itemType,
+                    updateData.itemMfg, updateData.itemDesc, updateData.unitOfIssue, updateData.catCode, updateData.class, updateData.itemPN, updateData.mbomID])
                     .then(() => {
                         querySql("UPDATE " + database + "." + dbConfig.MBOM_item_table + " SET itemQty = ?, shipLoose = ? " +
                             "WHERE itemSumID = ?", [updateData.itemQty, updateData.shipLoose, itemSumID]);
@@ -1351,8 +1381,8 @@ exports.editUserItemSave = function(req, res) {
                     });
             } else {
                 querySql("INSERT INTO " + database + "." + dbConfig.MBOM_user_items + " SET itemType = ?, itemMfg = ?, " +
-                    "itemDesc = ?, unitOfIssue = ?, catCode = ?, itemPN = ?, mbomID = ?", [updateData.itemType,
-                    updateData.itemMfg, updateData.itemDesc, updateData.unitOfIssue, updateData.catCode, updateData.itemPN, updateData.mbomID])
+                    "itemDesc = ?, unitOfIssue = ?, catCode = ?, class = ?, itemPN = ?, mbomID = ?", [updateData.itemType,
+                    updateData.itemMfg, updateData.itemDesc, updateData.unitOfIssue, updateData.catCode, updateData.class, updateData.itemPN, updateData.mbomID])
                     .then(() => {
                         return querySql("SELECT * FROM " + database + "." + dbConfig.MBOM_user_items + " WHERE itemPN = ? " +
                             "AND mbomID = ?", [updateData.itemPN, updateData.mbomID])
@@ -1516,6 +1546,7 @@ exports.addBrk = function(req, res) {
                 devLayout: req.body.devLayout,
                 unitOfIssue: req.body.unitOfIssue,
                 catCode: req.body.catCode,
+                class: req.body.classCode,
                 brkPN: req.body.brkPN,
                 cradlePN: req.body.cradlePN,
                 devMfg: (req.body.devMfg).toUpperCase()
@@ -1596,6 +1627,7 @@ exports.copyBreaker = function(req, res) {
             devDesignation: brk[0].devDesignation,
             unitOfIssue: brk[0].unitOfIssue,
             catCode: brk[0].catCode,
+            class: brk[0].class,
             brkPN: brk[0].brkPN,
             cradlePN: brk[0].cradlePN,
             devMfg: brk[0].devMfg
@@ -1700,13 +1732,14 @@ exports.editBreakerSave = function(req, res) {
         devDesignation: req.body.devDesignation,
         unitOfIssue: req.body.unitOfIssue,
         catCode: req.body.catCode,
+        class: req.body.class,
         brkPN: req.body.brkPN,
         cradlePN: req.body.cradlePN,
         devMfg: req.body.devMfg
     };
     querySql("UPDATE " + database + "." + dbConfig.MBOM_breaker_table + " SET mbomID = ?, " +
-        " devLayout = ?, devDesignation = ?, unitOfIssue = ?, catCode = ?, brkPN = ?, cradlePN = ?, devMfg = ? WHERE idDev = ?", [updateData.mbomID,
-        updateData.devLayout, updateData.devDesignation, updateData.unitOfIssue, updateData.catCode, updateData.brkPN, updateData.cradlePN,
+        " devLayout = ?, devDesignation = ?, unitOfIssue = ?, catCode = ?, class = ?, brkPN = ?, cradlePN = ?, devMfg = ? WHERE idDev = ?", [updateData.mbomID,
+        updateData.devLayout, updateData.devDesignation, updateData.unitOfIssue, updateData.catCode, updateData.class, updateData.brkPN, updateData.cradlePN,
         updateData.devMfg, updateData.idDev])
         .then(() => {
             res.locals = {title: 'Copy Breaker'};
@@ -2014,7 +2047,8 @@ exports.generateMBOM = function (req, res) {
         {header: 'Buy Part', key: 'buyPart', width: 20, style: {font: {name: 'Calibri', size: 11}}},
         {header: 'Stock Part', key: 'stockPart', width: 20, style: {font: {name: 'Calibri', size: 11}}},
         {header: 'Manufacturer:', key: 'manufacturer', width: 20, style: {font: {name: 'Calibri', size: 11}}},
-        {header: 'Device Designation:', key: 'deviceDes', width: 50, style: {font: {name: 'Calibri', size: 11}}}
+        {header: 'Device Designation:', key: 'deviceDes', width: 50, style: {font: {name: 'Calibri', size: 11}}},
+        {header: 'Class:', key: 'deviceClass', width: 50, style: {font: {name: 'Calibri', size: 11}}}
     ];
     sheet.getRow('1').font = {name: 'Calibri', size: 11, bold: true};
 
@@ -2098,7 +2132,8 @@ exports.generateMBOM = function (req, res) {
                     buyPart: 0,
                     stockPart: 0,
                     manufacturer: 'SAI',
-                    deviceDes: null
+                    deviceDes: null,
+                    deviceClass: null
                 });
 
                 //FOR ITEMS
@@ -2117,7 +2152,8 @@ exports.generateMBOM = function (req, res) {
                                         itemMfg: item.itemMfg,
                                         itemDesc: item.itemDesc,
                                         unitOfIssue: item.unitOfIssue,
-                                        catCode: item.catCode
+                                        catCode: item.catCode,
+                                        class: item.class
                                     });
                                 }
                             }
@@ -2133,7 +2169,8 @@ exports.generateMBOM = function (req, res) {
                                         itemMfg: item.itemMfg,
                                         itemDesc: item.itemDesc,
                                         unitOfIssue: item.unitOfIssue,
-                                        catCode: item.catCode
+                                        catCode: item.catCode,
+                                        class: item.class
                                     });
                                 }
                             }
@@ -2174,6 +2211,7 @@ exports.generateMBOM = function (req, res) {
                         let itemDesc4 = itemDesc.substring(120, 160);
                         let unitOfIssue = row.unitOfIssue;
                         let catCode = row.catCode;
+                        let classCode = row.class;
                         let itemMfg = row.itemMfg;
                         let mfgPartNum = null;
                         if (itemPN.length > 20) {
@@ -2198,7 +2236,8 @@ exports.generateMBOM = function (req, res) {
                             buyPart: 1,
                             stockPart: 0,
                             manufacturer: itemMfg,
-                            deviceDes: null
+                            deviceDes: null,
+                            deviceClass: classCode
                         });
                         count++;
                     }
@@ -2223,6 +2262,7 @@ exports.generateMBOM = function (req, res) {
                             qty: 1,
                             unitOfIssue: row.unitOfIssue,
                             catCode: row.catCode,
+                            class: row.class,
                             devMfg: row.devMfg
                         })
                     }
@@ -2257,6 +2297,7 @@ exports.generateMBOM = function (req, res) {
                     let qty = row.qty;
                     let unitOfIssue = row.unitOfIssue;
                     let catCode = row.catCode;
+                    let classCode = row.class;
                     let devMfg = row.devMfg;
                     let idDev = row.idDev;
 
@@ -2292,6 +2333,7 @@ exports.generateMBOM = function (req, res) {
                             stockPart: 0,
                             manufacturer: devMfg,
                             deviceDes: devDes,
+                            deviceClass: classCode
                         });
                         count++;
                         if (count < 10)
@@ -2317,7 +2359,8 @@ exports.generateMBOM = function (req, res) {
                             buyPart: 1,
                             stockPart: 0,
                             manufacturer: devMfg,
-                            deviceDes: devDes
+                            deviceDes: devDes,
+                            deviceClass: classCode
                         });
                     } else if (brkPN != '' && crdPN == '') {
                         sheet.addRow({
@@ -2338,6 +2381,7 @@ exports.generateMBOM = function (req, res) {
                             stockPart: 0,
                             manufacturer: devMfg,
                             deviceDes: devDes,
+                            deviceClass: classCode
                         });
                     } else if (brkPN == '' && crdPN != '') {
                         sheet.addRow({
@@ -2357,7 +2401,8 @@ exports.generateMBOM = function (req, res) {
                             buyPart: 1,
                             stockPart: 0,
                             manufacturer: devMfg,
-                            deviceDes: devDes
+                            deviceDes: devDes,
+                            deviceClass: classCode
                         });
                     }
 
@@ -2423,7 +2468,8 @@ exports.generateMBOM = function (req, res) {
                             buyPart: 1,
                             stockPart: 0,
                             manufacturer: el.brkAccMfg,
-                            deviceDes: devDes
+                            deviceDes: devDes,
+                            deviceClass: classCode
                         });
                     }
                     count++;
@@ -2448,7 +2494,8 @@ exports.generateMBOM = function (req, res) {
                 buyPart: 0,
                 stockPart: 0,
                 manufacturer: 'SAI',
-                deviceDes: null
+                deviceDes: null,
+                deviceClass: null
             });
             let count = 1;
             let shipLooseItems = [];
@@ -2466,7 +2513,8 @@ exports.generateMBOM = function (req, res) {
                                     itemMfg: item.itemMfg,
                                     itemDesc: item.itemDesc,
                                     unitOfIssue: item.unitOfIssue,
-                                    catCode: item.catCode
+                                    catCode: item.catCode,
+                                    class: item.class
                                 });
                             }
                         }
@@ -2481,7 +2529,8 @@ exports.generateMBOM = function (req, res) {
                                     itemMfg: item.itemMfg,
                                     itemDesc: item.itemDesc,
                                     unitOfIssue: item.unitOfIssue,
-                                    catCode: item.catCode
+                                    catCode: item.catCode,
+                                    class: item.class
                                 });
                             }
                         }
@@ -2522,6 +2571,7 @@ exports.generateMBOM = function (req, res) {
                 let itemDesc4 = itemDesc.substring(120, 160);
                 let unitOfIssue = row.unitOfIssue;
                 let catCode = row.catCode;
+                let classCode = row.class;
                 let itemMfg = row.itemMfg;
                 let mfgPartNum = itemPN;
                 if(itemPN.length > 20){
@@ -2552,7 +2602,8 @@ exports.generateMBOM = function (req, res) {
                     buyPart: 1,
                     stockPart: 0,
                     manufacturer: itemMfg,
-                    deviceDes: null
+                    deviceDes: null,
+                    deviceClass: classCode
                 });
                 count++;
             }
@@ -2575,7 +2626,8 @@ exports.generateMBOM = function (req, res) {
                 buyPart: 0,
                 stockPart: 0,
                 manufacturer: 'SAI',
-                deviceDes: null
+                deviceDes: null,
+                deviceClass: null
             });
 
             for (let i = 0; i < mbomAssemNumArr.length; i++) {
@@ -2605,7 +2657,8 @@ exports.generateMBOM = function (req, res) {
                     buyPart: null,
                     stockPart: null,
                     manufacturer: null,
-                    deviceDes: null
+                    deviceDes: null,
+                    deviceClass: null
                 });
                 if(i+1 == mbomAssemNumArr.length){
                     seqNum = parseInt(seqNum) + 1;
@@ -2633,7 +2686,8 @@ exports.generateMBOM = function (req, res) {
                         buyPart: null,
                         stockPart: null,
                         manufacturer: null,
-                        deviceDes: null
+                        deviceDes: null,
+                        deviceClass: null
                     });
                 }
             }

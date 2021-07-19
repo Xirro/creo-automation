@@ -198,7 +198,7 @@
                                                             <label for="example-text-input" class="col-form-label">P/N</label>
                                                             <input type="text" name="itemPN" class="form-control" value="" placeholder="Type P/N Here" autocomplete="off"/>
                                                         </div>
-                                                        <div class="col-sm-3">
+                                                        <div class="col-sm-2">
                                                             <label for="example-text-input" class="col-form-label">Unit Of Issue</label>
                                                             <select class="form-control select2" name="unitOfIssue">
                                                                 <option value="Select">Select</option>
@@ -207,12 +207,21 @@
                                                                 <option value="LBS">LBS</option>
                                                             </select>
                                                         </div>
-                                                        <div class="col-sm-3">
+                                                        <div class="col-sm-2">
                                                             <label for="example-text-input" class="col-form-label">Cat. Code</label>
                                                             <select class="form-control select2" name="catCode">
                                                                 <option value="Select">Select</option>
                                                                 <% for (let i = 0; i < catCodeData.length; i++) { %>
                                                                     <option value="<%= catCodeData[i].catCode%>"><%= catCodeData[i].catCode%></option>
+                                                                <% } %>
+                                                            </select>
+                                                        </div>
+                                                        <div class="col-sm-2">
+                                                            <label for="example-text-input" class="col-form-label">Class</label>
+                                                            <select class="form-control select2" name="class">
+                                                                <option value="Select">Select</option>
+                                                                <% for (let i = 0; i < classCodeData.length; i++) { %>
+                                                                    <option value="<%= classCodeData[i].classCode%>"><%=classCodeData[i].classCode%></option>
                                                                 <% } %>
                                                             </select>
                                                         </div>

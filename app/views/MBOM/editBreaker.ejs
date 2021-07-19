@@ -264,6 +264,7 @@
                                                             <label for="example-text-input" class="col-form-label">Cat. Code</label>
                                                             <select class="form-control" id="editDevCatCode" name="catCode">
                                                                 <option value="Select">Select</option>
+                                                                <option value="00-CB" selected>00-CB</option>
                                                                 <% if (mbomBrkData[0].catCode == '36-CB MC') { %>
                                                                     <option value="36-CB MC" selected="selected">36-CB MC</option>
                                                                 <% } else { %>
@@ -273,6 +274,26 @@
                                                                     <option value="37-CB IC" selected="selected">37-CB IC</option>
                                                                 <% } else { %>
                                                                     <option value="37-CB IC">37-CB IC</option>
+                                                                <% } %>
+                                                            </select>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-sm-2">
+                                                        <div class="form-group">
+                                                            <label for="example-text-input" class="col-form-label">Class</label>
+                                                            <select class="form-control" id="editDevClass" name="class">
+                                                                <% if (mbomBrkData[0].class == 'MCCB') { %>
+                                                                    <option value="Select">Select</option>
+                                                                    <option value="MCCB" selected>MCCB</option>
+                                                                    <option value="ICCB">ICCB</option>
+                                                                <% } else if (mbomBrkData[0].class == 'ICCB') { %>
+                                                                    <option value="Select">Select</option>
+                                                                    <option value="MCCB">MCCB</option>
+                                                                    <option value="ICCB" selected>ICCB</option>
+                                                                <% } else { %>
+                                                                    <option value="Select">Select</option>
+                                                                    <option value="MCCB">MCCB</option>
+                                                                    <option value="ICCB">ICCB</option>
                                                                 <% } %>
                                                             </select>
                                                         </div>
