@@ -1,7 +1,7 @@
 const fs = require('fs');
 
 module.exports = {
-    /*"connection": {
+    "connection": {
         'user': 'doadmin',
         'password': 'xaikjabounn01k3i',
         'host': 'saidb-do-user-6679940-0.db.ondigitalocean.com',
@@ -24,7 +24,7 @@ module.exports = {
                 cert: fs.readFileSync('app/config/ca-certificate.crt')
             }
         },
-    },*/
+    },
 
     /*'connection': {
         'host': 'localhost',
