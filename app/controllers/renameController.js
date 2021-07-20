@@ -684,6 +684,8 @@ exports.loadParts = function(req, res) {
                 count++
             }
 
+
+
             /*for (let asm of asms) {
                 await creo(sessionId, {
                     command: "file",
@@ -857,7 +859,7 @@ exports.rename = function(req, res) {
 
 
     cd()
-        /*.then(async function() {
+    /*.then(async function() {
             if (Array.isArray(asmName) == true) {
                 for (let name of asmName) {
                     await creo(sessionId, {
@@ -906,6 +908,8 @@ exports.rename = function(req, res) {
                 let asmChildren = bom.data.children.children;
                 await asmToPartWithParents(asmChildren, [], null);
             }
+
+            await fs.writeFile('asmBom.txt', util.inspect(masterFilteredAsmBom, {showHidden: false, depth: null, maxArrayLength: null}));
             return null
         })*/
         .then(async function() {

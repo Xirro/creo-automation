@@ -126,14 +126,16 @@ exports.setWD = function(req, res) {
                     }
                 });
 
-                const innerDirs = await creo(sessionId, {
+
+                let innerDirs = await creo(sessionId, {
                     command: "creo",
                     function: "list_dirs",
                     data: {
                         "dirname": "_outputDir"
                     }
                 });
-                if (innerDirs.data.dirlist.length == 0) {
+
+                if (innerDirs.data.dirlist.length == 0 || innerDirs.data == undefined) {
                     await creo(sessionId, {
                         command: "creo",
                         function: "mkdir",
@@ -181,7 +183,7 @@ exports.setWD = function(req, res) {
                 }
 
             } else {
-                const innerDirs = await creo(sessionId, {
+                let innerDirs = await creo(sessionId, {
                     command: "creo",
                     function: "list_dirs",
                     data: {
@@ -189,7 +191,7 @@ exports.setWD = function(req, res) {
                     }
                 });
 
-                if (innerDirs.data.dirlist.length == 0) {
+                if (innerDirs.data.dirlist.length == 0 || innerDirs.data == undefined) {
                     await creo(sessionId, {
                         command: "creo",
                         function: "mkdir",
