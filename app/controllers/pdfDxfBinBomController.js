@@ -135,7 +135,9 @@ exports.setWD = function(req, res) {
                     }
                 });
 
-                if (innerDirs.data.dirlist.length == 0 || innerDirs.data == undefined) {
+                console.log(innerDirs);
+
+                if (innerDirs.data.dirlist.length == 0 || !innerDirs.data) {
                     await creo(sessionId, {
                         command: "creo",
                         function: "mkdir",
@@ -191,7 +193,9 @@ exports.setWD = function(req, res) {
                     }
                 });
 
-                if (innerDirs.data.dirlist.length == 0 || innerDirs.data == undefined) {
+                console.log(innerDirs);
+
+                if (innerDirs.data.dirlist.length == 0 || !innerDirs.data) {
                     await creo(sessionId, {
                         command: "creo",
                         function: "mkdir",
