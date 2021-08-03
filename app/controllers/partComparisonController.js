@@ -1646,7 +1646,7 @@ exports.compareSinglePart = function(req, res) {
                         yRot: yRot,
                         zRot: zRot
                     }
-                } else if (between(Number(customPart.volume.toFixed(decimalPlaces)), (0.95 * volumeIntf) + acceptableRange, (1.05 * volumeIntf) + acceptableRange)) {
+                } else if (between(Number(customPart.volume.toFixed(decimalPlaces)), (0.975 * volumeIntf) + acceptableRange, (1.025 * volumeIntf) + acceptableRange)) {
                     return {
                         matchType: "SIMILAR",
                         customPart: customPart.customPart,
@@ -1832,15 +1832,6 @@ exports.compareSinglePart = function(req, res) {
             for (let customPart of customPartData) {
                 for (let stdPart of stdPartData) {
                     if (stdPart.stdPartInstance.slice(7,11) == customPart.customPart.slice(7,11) && customPart.customPart.slice(7,11) != '4105') {
-                        if (stdPart.stdPartInstance.slice(0,6) == "220813") {
-                            console.log(stdPart);
-                            console.log(stdPart.massPropsStdInstance);
-                            console.log(customPart);
-                            console.log(customPart.massPropsCustomPart);
-
-                        }
-
-                        //PROBLEM IS HERE -- NEED TO INCORPORATE BETWEEN FUNCTION
 
                         function between(x, min, max) {
                             return x >= min && x < max;
@@ -1882,43 +1873,6 @@ exports.compareSinglePart = function(req, res) {
                                 })
                             }
                         }
-
-
-                        /*if (Number(stdPart.massPropsStdInstance.data.density.toFixed(5)) == Number(customPart.massPropsCustomPart.data.density.toFixed(5)) && Number(stdPart.massPropsStdInstance.data.surface_area.toFixed(5)) == Number(customPart.massPropsCustomPart.data.surface_area.toFixed(5)) && Number(stdPart.massPropsStdInstance.data.mass.toFixed(5)) == Number(customPart.massPropsCustomPart.data.mass.toFixed(5)) && Number(stdPart.massPropsStdInstance.data.volume.toFixed(5)) == Number(customPart.massPropsCustomPart.data.volume.toFixed(5))) {
-                            if (possibleMatches.filter(e => e.customPart == customPart.customPart).length == 0) {
-                                possibleMatches.push({
-                                    customPart: customPart.customPart,
-                                    surface_area: Number(stdPart.massPropsStdInstance.data.surface_area.toFixed(5)),
-                                    density: Number(stdPart.massPropsStdInstance.data.density.toFixed(5)),
-                                    mass: Number(stdPart.massPropsStdInstance.data.mass.toFixed(5)),
-                                    volume: Number(stdPart.massPropsStdInstance.data.volume.toFixed(5)),
-                                    dCustom: customPart.dCustom,
-                                    maxCustom: customPart.maxCustom,
-                                    minCustom: customPart.minCustom,
-                                    offsetCustom: customPart.offsetCustom,
-                                    possibleMatches: [{
-                                        stdInstance: stdPart.stdPartInstance,
-                                        stdGeneric: stdPart.stdPart,
-                                        compareToDir: stdPart.compareToDir,
-                                        dStd: stdPart.dStd,
-                                        maxStd: stdPart.maxStd,
-                                        minStd: stdPart.minStd,
-                                        offsetStd: stdPart.offsetStd
-                                    }]
-                                })
-
-                            } else {
-                                possibleMatches.filter(e => e.customPart == customPart.customPart)[0].possibleMatches.push({
-                                    stdInstance: stdPart.stdPartInstance,
-                                    stdGeneric: stdPart.stdPart,
-                                    compareToDir: stdPart.compareToDir,
-                                    dStd: stdPart.dStd,
-                                    maxStd: stdPart.maxStd,
-                                    minStd: stdPart.minStd,
-                                    offsetStd: stdPart.offsetStd
-                                })
-                            }
-                        }*/
                     }
                 }
             }

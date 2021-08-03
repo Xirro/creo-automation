@@ -604,11 +604,11 @@ exports.createSubmittal = function(req, res) {
     }
 
     submittalLookup(subData,[])
-        .then(async function() {
+        /*.then(async function() {
             let counter = await getCounter();
             await querySql("UPDATE " + database + "." + dbConfig.script_counter_table + " SET submittalCount = ? WHERE idCounter = ?",[counter+1, 1]);
             return null
-        })
+        })*/
         .then(async function() {
             let existingSubID = null;
             for (let submittal of subData) {
