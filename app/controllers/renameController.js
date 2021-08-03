@@ -363,22 +363,22 @@ exports.loadParts = function(req, res) {
         })
         .then(async function() {
             for (let asm of asmList) {
-                let doesDwgExist = await creo(sessionId, {
-                    command: "creo",
-                    function: "list_files",
-                    data: {
-                        filename: asm.slice(0,15)+".drw"
-                    }
-                });
-
-                let doesBomDwgExist = await creo(sessionId, {
-                    command: "creo",
-                    function: "list_files",
-                    data: {
-                        filename: asm.slice(0,15)+"-bom.drw"
-                    }
-                });
                 if (asm.includes('<') == true) {
+                    let doesDwgExist = await creo(sessionId, {
+                        command: "creo",
+                        function: "list_files",
+                        data: {
+                            filename: asm.slice(0,15)+".drw"
+                        }
+                    });
+
+                    let doesBomDwgExist = await creo(sessionId, {
+                        command: "creo",
+                        function: "list_files",
+                        data: {
+                            filename: asm.slice(0,15)+"-bom.drw"
+                        }
+                    });
                     let asmGeneric = asm.split('<')[1].slice(0,15);
                     let asmInstance = asm.split('<')[0];
                     let asmOffset = parseInt(asmInstance.slice(12,15)) - parseInt(asmGeneric.slice(12,15));
@@ -429,6 +429,21 @@ exports.loadParts = function(req, res) {
                         });
                     }
                 } else {
+                    let doesDwgExist = await creo(sessionId, {
+                        command: "creo",
+                        function: "list_files",
+                        data: {
+                            filename: asm.slice(0,15)+".drw"
+                        }
+                    });
+
+                    let doesBomDwgExist = await creo(sessionId, {
+                        command: "creo",
+                        function: "list_files",
+                        data: {
+                            filename: asm.slice(0,15)+"-bom.drw"
+                        }
+                    });
                     if (doesDwgExist.data.filelist.length > 0 && doesBomDwgExist.data.filelist.length > 0) {
                         asmData.push({
                             currentName: asm.slice(0,15),
