@@ -52,13 +52,20 @@ exports.MBOM = function(req, res) {
 
 exports.createMBOM = function(req, res) {
     req.setTimeout(0); //no timeout
+    let noSectionMBOM;
+    if (req.body.noSectionMBOM) {
+        noSectionMBOM = 'Y';
+    } else {
+        noSectionMBOM = 'N';
+    }
     let data = {
         jobNum: req.body.jobNum,
         releaseNum: req.body.releaseNum,
         jobName: req.body.jobName,
         customer: req.body.customer,
         boardDesignation: req.body.boardDesignation,
-        numSections: 0
+        numSections: 0,
+        noSectionMBOM: noSectionMBOM
     };
     let mbomID, message;
     querySql("SELECT * FROM mbomSum")
@@ -109,13 +116,20 @@ exports.copyMBOM = function(req, res) {
 
     //NEW
     let newMbomID;
+    let noSectionMBOM;
+    if (req.body.noSectionMBOM) {
+        noSectionMBOM = 'Y';
+    } else {
+        noSectionMBOM = 'N';
+    }
     let newMbomData = {
         jobNum: req.body.jobNum,
         releaseNum: req.body.releaseNum,
         jobName: req.body.jobName,
         customer: req.body.customer,
         boardDesignation: req.body.boardDesignation,
-        numSections: null
+        numSections: null,
+        noSectionMBOM: noSectionMBOM
     };
     let newUserItemData = [];
     let newItemsForItemTable = [];
@@ -336,16 +350,25 @@ exports.editMBOM = function(req, res) {
     urlObj.host = req.get('host');
     let qs = queryString.parse(urlObj.search);
 
+    let noSectionMBOM;
+
+    if (req.body.noSectionMBOM) {
+        noSectionMBOM = 'Y';
+    } else {
+        noSectionMBOM = 'N';
+    }
+
     let data = {
         jobNum: req.body.jobNum,
         releaseNum: req.body.releaseNum,
         jobName: req.body.jobName,
         customer: req.body.customer,
-        boardDesignation: req.body.boardDesignation
+        boardDesignation: req.body.boardDesignation,
+        noSectionMBOM: noSectionMBOM
     };
 
     querySql("UPDATE " + database + "." + dbConfig.MBOM_summary_table + " SET jobName = ?, customer = ?, " +
-        "boardDesignation = ? WHERE mbomID = ?", [data.jobName, data.customer, data.boardDesignation, qs.mbomID])
+        "boardDesignation = ?, noSectionMBOM = ? WHERE mbomID = ?", [data.jobName, data.customer, data.boardDesignation, data.noSectionMBOM, qs.mbomID])
         .then(() => {
             res.locals = {title: 'Search MBOM'};
             res.redirect('../searchMBOM/?bomID=' + data.jobNum + data.releaseNum + "_" + qs.mbomID);
@@ -377,7 +400,8 @@ exports.addBreakerAcc = function(req, res) {
         brkPN: req.body.brkPN,
         cradlePN: req.body.cradlePN,
         devMfg: req.body.devMfg,
-        catCode: req.body.catCode
+        catCode: req.body.catCode,
+        class: req.body.classCode
     };
 
     if (currentMbomID == '') {
@@ -462,7 +486,8 @@ exports.deleteBreakerAcc = function(req, res){
         brkPN: req.body.brkPN,
         cradlePN: req.body.cradlePN,
         devMfg: req.body.devMfg,
-        catCode: req.body.catCode
+        catCode: req.body.catCode,
+        class: req.body.classCode
     };
     let pn = req.body.pn;
 
@@ -493,7 +518,8 @@ exports.addBrkAccFromEdit = function(req, res) {
         releaseNum: req.body.releaseNum,
         jobName: req.body.jobName,
         customer: req.body.customer,
-        boardDesignation: req.body.devLayout
+        boardDesignation: req.body.devLayout,
+
     };
 
 
@@ -502,7 +528,8 @@ exports.addBrkAccFromEdit = function(req, res) {
         brkPN: req.body.editBrkPN,
         cradlePN: req.body.editCradlePN,
         devMfg: req.body.editDevMfg,
-        catCode: req.body.editDevCatCode
+        catCode: req.body.editDevCatCode,
+        class: req.body.class
     };
 
 
@@ -568,7 +595,8 @@ exports.editBrkAccFromEdit = function(req, res) {
         brkPN: req.body.editBrkPN,
         cradlePN: req.body.editCradlePN,
         devMfg: req.body.editDevMfg,
-        catCode: req.body.editDevCatCode
+        catCode: req.body.editDevCatCode,
+        class: req.body.class
     };
 
     let idDev = req.body.idDev;
@@ -623,7 +651,8 @@ exports.deleteBrkAccFromEdit = function(req, res) {
         brkPN: req.body.brkPN,
         cradlePN: req.body.cradlePN,
         devMfg: req.body.devMfg,
-        catCode: req.body.catCode
+        catCode: req.body.catCode,
+        class: req.body.class
     };
     let mbomData = {
         mbomID: req.body.mbomID,
@@ -2094,26 +2123,628 @@ exports.generateMBOM = function (req, res) {
             return null;
         })
         .then(() => {
-            mbomSecSumData.sort(function(a,b) {
-                let intA = parseInt(a.sectionNum);
-                let intB = parseInt(b.sectionNum);
-                return intA - intB
-            });
+            if (mbomSumData[0].noSectionMBOM == 'N') {
+
+                mbomSecSumData.sort(function (a, b) {
+                    let intA = parseInt(a.sectionNum);
+                    let intB = parseInt(b.sectionNum);
+                    return intA - intB
+                });
 
 
-            let mbomAssemNumArr = [];
-            for (let i = 0; i < mbomSecSumData.length; i++) {
-                let sectionNumber;
-                if (parseInt(mbomSecSumData[i].sectionNum) < 10 ) {
-                    sectionNumber = '10'+ mbomSecSumData[i].sectionNum
-                } else {
-                    sectionNumber = '1'+mbomSecSumData[i].sectionNum;
+                let mbomAssemNumArr = [];
+                for (let i = 0; i < mbomSecSumData.length; i++) {
+                    let sectionNumber;
+                    if (parseInt(mbomSecSumData[i].sectionNum) < 10) {
+                        sectionNumber = '10' + mbomSecSumData[i].sectionNum
+                    } else {
+                        sectionNumber = '1' + mbomSecSumData[i].sectionNum;
+                    }
+
+                    let assemblyNum = mbomData.jobNum + mbomData.releaseNum + '-MBOM-' + sectionNumber;
+                    mbomAssemNumArr.push(assemblyNum);
+                    let count = 1;
+
+
+                    sheet.addRow({
+                        assemblyNum: assemblyNum,
+                        seqNum: null,
+                        compPartNum: assemblyNum,
+                        mfgPartNum: null,
+                        desc1: assemblyNum + ' Bill of Material',
+                        desc2: null,
+                        desc3: null,
+                        desc4: null,
+                        qty: 1,
+                        unitOfIssue: 'EA',
+                        unitOfPurchase: 'EA',
+                        categoryCode: '82-BOM',
+                        makePart: 1,
+                        buyPart: 0,
+                        stockPart: 0,
+                        manufacturer: 'SAI',
+                        deviceDes: null,
+                        deviceClass: null
+                    });
+
+                    //FOR ITEMS
+                    let itemArr = [];
+                    for (let row of mbomItemData) {
+                        if (row.secID == mbomSecSumData[i].secID) {
+                            if (row.userItemID != null) {
+                                for (let item of mbomUserItem) {
+                                    if (item.userItemID == row.userItemID) {
+                                        itemArr.push({
+                                            itemID: item.userItemID,
+                                            sumID: row.itemSumID,
+                                            itemPN: item.itemPN,
+                                            qty: row.itemQty,
+                                            shipLoose: row.shipLoose,
+                                            itemMfg: item.itemMfg,
+                                            itemDesc: item.itemDesc,
+                                            unitOfIssue: item.unitOfIssue,
+                                            catCode: item.catCode,
+                                            class: item.class
+                                        });
+                                    }
+                                }
+                            } else {
+                                for (let item of mbomComItem) {
+                                    if (item.comItemID == row.comItemID) {
+                                        itemArr.push({
+                                            itemID: item.comItemID,
+                                            sumID: row.itemSumID,
+                                            itemPN: item.itemPN,
+                                            qty: row.itemQty,
+                                            shipLoose: row.shipLoose,
+                                            itemMfg: item.itemMfg,
+                                            itemDesc: item.itemDesc,
+                                            unitOfIssue: item.unitOfIssue,
+                                            catCode: item.catCode,
+                                            class: item.class
+                                        });
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    let totalItemQty = [];
+                    let itemObj = null;
+                    for (let f = 0; f < itemArr.length; f++) {
+                        itemObj = itemArr[f];
+                        if (!totalItemQty[itemObj.itemID]) {
+                            totalItemQty[itemObj.itemID] = itemObj;
+                        } else {
+                            totalItemQty[itemObj.itemID].qty += itemObj.qty;
+                            totalItemQty[itemObj.itemID].itemDesc = itemObj.itemDesc;
+                        }
+                    }
+                    let totalItemQtyResults = [];
+                    for (let prop in totalItemQty)
+                        totalItemQtyResults.push(totalItemQty[prop]);
+
+                    for (let row of totalItemQtyResults) {
+                        if (row.shipLoose == 'N') {
+                            let seqNum;
+                            if (count < 10)
+                                seqNum = '00' + count;
+                            else if (count < 100)
+                                seqNum = '0' + count;
+                            else
+                                seqNum = count;
+
+                            let itemPN = row.itemPN;
+                            let qty = row.qty;
+                            let itemDesc = row.itemDesc;
+                            let itemDesc1 = itemDesc.substring(0, 40);
+                            let itemDesc2 = itemDesc.substring(40, 80);
+                            let itemDesc3 = itemDesc.substring(80, 120);
+                            let itemDesc4 = itemDesc.substring(120, 160);
+                            let unitOfIssue = row.unitOfIssue;
+                            let catCode = row.catCode;
+                            let classCode = row.class;
+                            let itemMfg = row.itemMfg;
+                            let mfgPartNum = null;
+                            if (itemPN.length > 20) {
+                                mfgPartNum = itemPN;
+                                itemPN = mbomData.jobNum + mbomData.releaseNum + '-' + partNumCount + '-ITEM';
+                                partNumCount++;
+                            }
+                            sheet.addRow({
+                                assemblyNum: assemblyNum,
+                                seqNum: seqNum.toString(),
+                                compPartNum: itemPN,
+                                mfgPartNum: mfgPartNum,
+                                desc1: itemDesc1,
+                                desc2: itemDesc2,
+                                desc3: itemDesc3,
+                                desc4: itemDesc4,
+                                qty: qty,
+                                unitOfIssue: unitOfIssue,
+                                unitOfPurchase: unitOfIssue,
+                                categoryCode: catCode,
+                                makePart: 0,
+                                buyPart: 1,
+                                stockPart: 0,
+                                manufacturer: itemMfg,
+                                deviceDes: null,
+                                deviceClass: classCode
+                            });
+                            count++;
+                        }
+                    }
+
+                    //FOR BREAKERS
+                    let brkArr = [];
+                    let brkAccArr = [];
+
+                    for (let row of mbomBrkSum) {
+                        if (row.secID == mbomSecSumData[i].secID) {
+                            for (let el of mbomBrkAccSum) {
+                                if (el.idDev == row.idDev) {
+                                    brkAccArr.push(el);
+                                }
+                            }
+                            brkArr.push({
+                                idDev: [row.idDev],
+                                brkPN: row.brkPN,
+                                cradlePN: row.cradlePN,
+                                devDesignation: row.devDesignation,
+                                qty: 1,
+                                unitOfIssue: row.unitOfIssue,
+                                catCode: row.catCode,
+                                class: row.class,
+                                devMfg: row.devMfg
+                            })
+                        }
+                    }
+
+                    let totalBrkQty = [];
+                    let brkObj = null;
+
+                    for (let f = 0; f < brkArr.length; f++) {
+                        brkObj = brkArr[f];
+                        if (totalBrkQty.filter(e => e.brkPN == brkObj.brkPN).length == 0) {
+                            totalBrkQty.push(brkObj);
+                        } else {
+                            totalBrkQty.filter(e => e.brkPN == brkObj.brkPN)[0].qty += brkObj.qty;
+                            totalBrkQty.filter(e => e.brkPN == brkObj.brkPN)[0].devDesignation += ", " + brkObj.devDesignation;
+                            totalBrkQty.filter(e => e.brkPN == brkObj.brkPN)[0].idDev.push(brkObj.idDev[0])
+                        }
+                    }
+
+
+                    for (let row of totalBrkQty) {
+                        let seqNum;
+                        if (count < 10)
+                            seqNum = '00' + count;
+                        else if (count < 100)
+                            seqNum = '0' + count;
+                        else
+                            seqNum = count;
+                        let brkPN = row.brkPN;
+                        let crdPN = row.cradlePN;
+                        let devDes = row.devDesignation;
+                        let qty = row.qty;
+                        let unitOfIssue = row.unitOfIssue;
+                        let catCode = row.catCode;
+                        let classCode = row.class;
+                        let devMfg = row.devMfg;
+                        let idDev = row.idDev;
+
+                        let brkMfgPartNum = null;
+                        if (brkPN.length > 20) {
+                            brkMfgPartNum = brkPN;
+                            brkPN = mbomData.jobNum + mbomData.releaseNum + "-" + partNumCount + "-BRK";
+                            partNumCount++;
+                        }
+                        let crdMfgPartNum = null;
+                        if (crdPN.length > 20) {
+                            crdMfgPartNum = crdPN;
+                            crdPN = mbomData.jobNum + mbomData.releaseNum + "-" + partNumCount + "-CRA";
+                            partNumCount++;
+                        }
+
+                        if (brkPN != '' && crdPN != '') {
+                            sheet.addRow({
+                                assemblyNum: assemblyNum,
+                                seqNum: seqNum.toString(),
+                                compPartNum: brkPN,
+                                mfgPartNum: brkMfgPartNum,
+                                desc1: 'BREAKER',
+                                desc2: null,
+                                desc3: null,
+                                desc4: null,
+                                qty: qty,
+                                unitOfIssue: unitOfIssue,
+                                unitOfPurchase: unitOfIssue,
+                                categoryCode: catCode,
+                                makePart: 0,
+                                buyPart: 1,
+                                stockPart: 0,
+                                manufacturer: devMfg,
+                                deviceDes: devDes,
+                                deviceClass: classCode
+                            });
+                            count++;
+                            if (count < 10)
+                                seqNum = '00' + count;
+                            else if (count < 100)
+                                seqNum = '0' + count;
+                            else
+                                seqNum = count;
+                            sheet.addRow({
+                                assemblyNum: assemblyNum,
+                                seqNum: seqNum.toString(),
+                                compPartNum: crdPN,
+                                mfgPartNum: crdMfgPartNum,
+                                desc1: 'CRADLE',
+                                desc2: null,
+                                desc3: null,
+                                desc4: null,
+                                qty: qty,
+                                unitOfIssue: unitOfIssue,
+                                unitOfPurchase: unitOfIssue,
+                                categoryCode: catCode,
+                                makePart: 0,
+                                buyPart: 1,
+                                stockPart: 0,
+                                manufacturer: devMfg,
+                                deviceDes: devDes,
+                                deviceClass: classCode
+                            });
+                        } else if (brkPN != '' && crdPN == '') {
+                            sheet.addRow({
+                                assemblyNum: assemblyNum,
+                                seqNum: seqNum.toString(),
+                                compPartNum: brkPN,
+                                mfgPartNum: brkMfgPartNum,
+                                desc1: 'BREAKER',
+                                desc2: null,
+                                desc3: null,
+                                desc4: null,
+                                qty: qty,
+                                unitOfIssue: unitOfIssue,
+                                unitOfPurchase: unitOfIssue,
+                                categoryCode: catCode,
+                                makePart: 0,
+                                buyPart: 1,
+                                stockPart: 0,
+                                manufacturer: devMfg,
+                                deviceDes: devDes,
+                                deviceClass: classCode
+                            });
+                        } else if (brkPN == '' && crdPN != '') {
+                            sheet.addRow({
+                                assemblyNum: assemblyNum,
+                                seqNum: seqNum.toString(),
+                                compPartNum: crdPN,
+                                mfgPartNum: crdMfgPartNum,
+                                desc1: 'CRADLE',
+                                desc2: null,
+                                desc3: null,
+                                desc4: null,
+                                qty: qty,
+                                unitOfIssue: unitOfIssue,
+                                unitOfPurchase: unitOfIssue,
+                                categoryCode: catCode,
+                                makePart: 0,
+                                buyPart: 1,
+                                stockPart: 0,
+                                manufacturer: devMfg,
+                                deviceDes: devDes,
+                                deviceClass: classCode
+                            });
+                        }
+
+                        let totalBrkAccQty = [];
+                        // FOR BRK ACCESSORIES
+                        for (let dev of idDev) {
+                            if (brkAccArr.filter(e => e.idDev == dev).length != 0) {
+                                for (let g = 0; g < brkAccArr.filter(e => e.idDev == dev).length; g++) {
+                                    if (totalBrkAccQty.filter(e => e.brkAccPN == brkAccArr.filter(e => e.idDev == dev)[g].brkAccPN).length == 0) {
+                                        totalBrkAccQty.push({
+                                            brkAccID: [brkAccArr.filter(e => e.idDev == dev)[g].brkAccID],
+                                            mbomID: brkAccArr.filter(e => e.idDev == dev)[g].mbomID,
+                                            idDev: [brkAccArr.filter(e => e.idDev == dev)[g].idDev],
+                                            brkAccQty: brkAccArr.filter(e => e.idDev == dev)[g].brkAccQty,
+                                            brkAccType: brkAccArr.filter(e => e.idDev == dev)[g].brkAccType,
+                                            brkAccMfg: brkAccArr.filter(e => e.idDev == dev)[g].brkAccMfg,
+                                            brkAccDesc: brkAccArr.filter(e => e.idDev == dev)[g].brkAccDesc,
+                                            brkAccPN: brkAccArr.filter(e => e.idDev == dev)[g].brkAccPN,
+                                        });
+                                    } else {
+                                        totalBrkAccQty.filter(e => e.brkAccPN == brkAccArr.filter(e => e.idDev == dev)[g].brkAccPN)[0].brkAccQty += brkAccArr.filter(e => e.idDev == dev)[g].brkAccQty;
+                                        totalBrkAccQty.filter(e => e.brkAccPN == brkAccArr.filter(e => e.idDev == dev)[g].brkAccPN)[0].brkAccID.push(brkAccArr.filter(e => e.idDev == dev)[g].brkAccID);
+                                        totalBrkAccQty.filter(e => e.brkAccPN == brkAccArr.filter(e => e.idDev == dev)[g].brkAccPN)[0].idDev.push(brkAccArr.filter(e => e.idDev == dev)[g].idDev);
+                                    }
+                                }
+                            }
+                        }
+                        for (let el of totalBrkAccQty) {
+                            count++;
+                            let brkAccDesc = el.brkAccDesc;
+                            let brkAccDesc1 = brkAccDesc.substring(0, 40);
+                            let brkAccDesc2 = brkAccDesc.substring(40, 80);
+                            let brkAccDesc3 = brkAccDesc.substring(80, 120);
+                            let brkAccDesc4 = brkAccDesc.substring(120, 160);
+                            let brkAccPN = el.brkAccPN;
+                            let brkAccMfgPartNum = null;
+                            if (brkAccPN.length > 20) {
+                                brkAccMfgPartNum = brkAccPN;
+                                brkAccPN = mbomData.jobNum + mbomData.releaseNum + '-' + partNumCount + '-BRKACC';
+                                partNumCount++;
+                            }
+                            if (count < 10)
+                                seqNum = '00' + count;
+                            else if (count < 100)
+                                seqNum = '0' + count;
+                            else
+                                seqNum = count;
+
+                            sheet.addRow({
+                                assemblyNum: assemblyNum,
+                                seqNum: seqNum.toString(),
+                                compPartNum: brkAccPN,
+                                mfgPartNum: brkAccMfgPartNum,
+                                desc1: brkAccDesc1,
+                                desc2: brkAccDesc2,
+                                desc3: brkAccDesc3,
+                                desc4: brkAccDesc4,
+                                qty: el.brkAccQty,
+                                unitOfIssue: unitOfIssue,
+                                unitOfPurchase: unitOfIssue,
+                                categoryCode: catCode,
+                                makePart: 0,
+                                buyPart: 1,
+                                stockPart: 0,
+                                manufacturer: el.brkAccMfg,
+                                deviceDes: devDes,
+                                deviceClass: classCode
+                            });
+                        }
+                        count++;
+                    }
                 }
 
-                let assemblyNum = mbomData.jobNum + mbomData.releaseNum + '-MBOM-' + sectionNumber;
-                mbomAssemNumArr.push(assemblyNum);
+                //FOR SHIP LOOSE ITEMS
+                sheet.addRow({
+                    assemblyNum: mbomData.jobNum + mbomData.releaseNum + '-MBOM-SP',
+                    seqNum: null,
+                    compPartNum: mbomData.jobNum + mbomData.releaseNum + '-MBOM-SP',
+                    mfgPartNum: null,
+                    desc1: mbomData.jobNum + mbomData.releaseNum + '-MBOM-SP Bill of Material',
+                    desc2: null,
+                    desc3: null,
+                    desc4: null,
+                    qty: 1,
+                    unitOfIssue: 'EA',
+                    unitOfPurchase: 'EA',
+                    categoryCode: '82-BOM',
+                    makePart: 1,
+                    buyPart: 0,
+                    stockPart: 0,
+                    manufacturer: 'SAI',
+                    deviceDes: null,
+                    deviceClass: null
+                });
                 let count = 1;
+                let shipLooseItems = [];
 
+                for (let row of mbomItemData) {
+                    if (row.shipLoose == 'Y') {
+                        if (row.userItemID != null) {
+                            for (let item of mbomUserItem) {
+                                if (item.userItemID == row.userItemID) {
+                                    shipLooseItems.push({
+                                        itemID: item.userItemID,
+                                        sumID: row.itemSumID,
+                                        itemPN: item.itemPN,
+                                        qty: row.itemQty,
+                                        itemMfg: item.itemMfg,
+                                        itemDesc: item.itemDesc,
+                                        unitOfIssue: item.unitOfIssue,
+                                        catCode: item.catCode,
+                                        class: item.class
+                                    });
+                                }
+                            }
+                        } else {
+                            for (let item of mbomComItem) {
+                                if (item.comItemID == row.comItemID) {
+                                    shipLooseItems.push({
+                                        itemID: item.comItemID,
+                                        sumID: row.itemSumID,
+                                        itemPN: item.itemPN,
+                                        qty: row.itemQty,
+                                        itemMfg: item.itemMfg,
+                                        itemDesc: item.itemDesc,
+                                        unitOfIssue: item.unitOfIssue,
+                                        catCode: item.catCode,
+                                        class: item.class
+                                    });
+                                }
+                            }
+                        }
+                    }
+                }
+
+                let totalSLQty = [];
+                let SLobj = null;
+                for (let f = 0; f < shipLooseItems.length; f++) {
+                    SLobj = shipLooseItems[f];
+                    if (!totalSLQty[SLobj.itemID]) {
+                        totalSLQty[SLobj.itemID] = SLobj;
+                    } else {
+                        totalSLQty[SLobj.itemID].qty += SLobj.qty;
+                        totalSLQty[SLobj.itemID].itemDesc = SLobj.itemDesc;
+                    }
+                }
+                let totalSLQtyResults = [];
+                for (let prop in totalSLQty)
+                    totalSLQtyResults.push(totalSLQty[prop]);
+
+                for (let row of totalSLQtyResults) {
+                    let seqNum;
+                    if (count < 10)
+                        seqNum = '00' + count;
+                    else if (count < 100)
+                        seqNum = '0' + count;
+                    else
+                        seqNum = count;
+
+                    let itemPN = (row.itemPN).toString();
+                    let qty = row.qty;
+                    let itemDesc = row.itemDesc;
+                    let itemDesc1 = itemDesc.substring(0, 40);
+                    let itemDesc2 = itemDesc.substring(40, 80);
+                    let itemDesc3 = itemDesc.substring(80, 120);
+                    let itemDesc4 = itemDesc.substring(120, 160);
+                    let unitOfIssue = row.unitOfIssue;
+                    let catCode = row.catCode;
+                    let classCode = row.class;
+                    let itemMfg = row.itemMfg;
+                    let mfgPartNum = itemPN;
+                    if (itemPN.length > 20) {
+                        itemPN = itemPN.slice(0, 20);
+                        partNumCount++;
+                    }
+                    /*let mfgPartNum = null;
+                    if(itemPN.length > 20){
+                        mfgPartNum = itemPN;
+                        itemPN = mbomData.jobNum + mbomData.releaseNum + '-' + partNumCount + '-ITEM';
+                        partNumCount++;
+                    }*/
+
+                    sheet.addRow({
+                        assemblyNum: mbomData.jobNum + mbomData.releaseNum + '-MBOM-SP',
+                        seqNum: seqNum.toString(),
+                        compPartNum: itemPN,
+                        mfgPartNum: mfgPartNum,
+                        desc1: itemDesc1,
+                        desc2: itemDesc2,
+                        desc3: itemDesc3,
+                        desc4: itemDesc4,
+                        qty: qty,
+                        unitOfIssue: unitOfIssue,
+                        unitOfPurchase: unitOfIssue,
+                        categoryCode: catCode,
+                        makePart: 0,
+                        buyPart: 1,
+                        stockPart: 0,
+                        manufacturer: itemMfg,
+                        deviceDes: null,
+                        deviceClass: classCode
+                    });
+                    count++;
+                }
+
+                //MBOM SUMMARY
+                sheet.addRow({
+                    assemblyNum: mbomData.jobNum + mbomData.releaseNum + '-MBOM',
+                    seqNum: null,
+                    compPartNum: mbomData.jobNum + mbomData.releaseNum + '-MBOM',
+                    mfgPartNum: null,
+                    desc1: mbomData.jobNum + mbomData.releaseNum + '-MBOM Bill of Material',
+                    desc2: null,
+                    desc3: null,
+                    desc4: null,
+                    qty: 1,
+                    unitOfIssue: 'EA',
+                    unitOfPurchase: 'EA',
+                    categoryCode: '82-BOM',
+                    makePart: 1,
+                    buyPart: 0,
+                    stockPart: 0,
+                    manufacturer: 'SAI',
+                    deviceDes: null,
+                    deviceClass: null
+                });
+
+                for (let i = 0; i < mbomAssemNumArr.length; i++) {
+                    let seqNum;
+                    if ((i + 1) < 10)
+                        seqNum = '00' + (i + 1);
+                    else if ((i + 1) < 100)
+                        seqNum = '0' + (i + 1);
+                    else
+                        seqNum = (i + 1);
+
+                    sheet.addRow({
+                        assemblyNum: mbomData.jobNum + mbomData.releaseNum + '-MBOM',
+                        seqNum: seqNum.toString(),
+                        compPartNum: mbomAssemNumArr[i],
+                        mfgPartNum: null,
+                        desc1: null,
+                        desc2: null,
+                        desc3: null,
+                        desc4: null,
+                        qty: 1,
+                        /*qty: result[0].qtyBoard,*/
+                        unitOfIssue: null,
+                        unitOfPurchase: null,
+                        categoryCode: null,
+                        makePart: null,
+                        buyPart: null,
+                        stockPart: null,
+                        manufacturer: null,
+                        deviceDes: null,
+                        deviceClass: null
+                    });
+                    if (i + 1 == mbomAssemNumArr.length) {
+                        seqNum = parseInt(seqNum) + 1;
+                        if (seqNum < 10)
+                            seqNum = '00' + seqNum;
+                        else if (seqNum < 100)
+                            seqNum = '0' + seqNum;
+                        else
+                            seqNum = seqNum.toString();
+                        sheet.addRow({
+                            assemblyNum: mbomData.jobNum + mbomData.releaseNum + '-MBOM',
+                            seqNum: seqNum,
+                            compPartNum: mbomData.jobNum + mbomData.releaseNum + '-MBOM-SP',
+                            mfgPartNum: null,
+                            desc1: null,
+                            desc2: null,
+                            desc3: null,
+                            desc4: null,
+                            qty: 1,
+                            /*qty: result[0].qtyBoard,*/
+                            unitOfIssue: null,
+                            unitOfPurchase: null,
+                            categoryCode: null,
+                            makePart: null,
+                            buyPart: null,
+                            stockPart: null,
+                            manufacturer: null,
+                            deviceDes: null,
+                            deviceClass: null
+                        });
+                    }
+                }
+
+                /*sheet.getColumn(3).eachCell(function(cell){
+                    if(cell.value != 'Component Part Number:' && cell.value.includes(mbomData.jobNum + mbomData.releaseNum + '-') &&
+                        !cell.value.includes(mbomData.jobNum + mbomData.releaseNum + '-MBOM')){
+                        cell.fill = {type: 'pattern', pattern:'solid', fgColor:{argb:'FFFF9999'}};
+                        cell.alignment = {wrapText: true};
+                    }
+                });*/
+                sheet.getColumn(4).eachCell(function (cell) {
+                    cell.alignment = {wrapText: true};
+                });
+
+
+                workbook.xlsx.writeFile('uploads/' + mbomData.jobNum + mbomData.releaseNum + ' MBOM.xlsx').then(function () {
+                    const remoteFilePath = 'uploads/';
+                    const remoteFilename = mbomData.jobNum + mbomData.releaseNum + ' MBOM.xlsx';
+                    res.download(remoteFilePath + remoteFilename);
+                });
+
+                return null;
+            } else {
+                let assemblyNum = mbomData.jobNum + mbomData.releaseNum + '-MBOM';
+                let count = 1;
 
                 sheet.addRow({
                     assemblyNum: assemblyNum,
@@ -2139,44 +2770,43 @@ exports.generateMBOM = function (req, res) {
                 //FOR ITEMS
                 let itemArr = [];
                 for (let row of mbomItemData) {
-                    if (row.secID == mbomSecSumData[i].secID) {
-                        if (row.userItemID != null) {
-                            for (let item of mbomUserItem) {
-                                if (item.userItemID == row.userItemID) {
-                                    itemArr.push({
-                                        itemID: item.userItemID,
-                                        sumID: row.itemSumID,
-                                        itemPN: item.itemPN,
-                                        qty: row.itemQty,
-                                        shipLoose: row.shipLoose,
-                                        itemMfg: item.itemMfg,
-                                        itemDesc: item.itemDesc,
-                                        unitOfIssue: item.unitOfIssue,
-                                        catCode: item.catCode,
-                                        class: item.class
-                                    });
-                                }
+                    if (row.userItemID != null) {
+                        for (let item of mbomUserItem) {
+                            if (item.userItemID == row.userItemID) {
+                                itemArr.push({
+                                    itemID: item.userItemID,
+                                    sumID: row.itemSumID,
+                                    itemPN: item.itemPN,
+                                    qty: row.itemQty,
+                                    shipLoose: row.shipLoose,
+                                    itemMfg: item.itemMfg,
+                                    itemDesc: item.itemDesc,
+                                    unitOfIssue: item.unitOfIssue,
+                                    catCode: item.catCode,
+                                    class: item.class
+                                })
                             }
-                        } else {
-                            for (let item of mbomComItem) {
-                                if (item.comItemID == row.comItemID) {
-                                    itemArr.push({
-                                        itemID: item.comItemID,
-                                        sumID: row.itemSumID,
-                                        itemPN: item.itemPN,
-                                        qty: row.itemQty,
-                                        shipLoose: row.shipLoose,
-                                        itemMfg: item.itemMfg,
-                                        itemDesc: item.itemDesc,
-                                        unitOfIssue: item.unitOfIssue,
-                                        catCode: item.catCode,
-                                        class: item.class
-                                    });
-                                }
+                        }
+                    } else {
+                        for (let item of mbomComItem) {
+                            if (item.comItemID == row.comItemID) {
+                                itemArr.push({
+                                    itemID: item.comItemID,
+                                    sumID: row.itemSumID,
+                                    itemPN: item.itemPN,
+                                    qty: row.itemQty,
+                                    shipLoose: row.shipLoose,
+                                    itemMfg: item.itemMfg,
+                                    itemDesc: item.itemDesc,
+                                    unitOfIssue: item.unitOfIssue,
+                                    catCode: item.catCode,
+                                    class: item.class
+                                })
                             }
                         }
                     }
                 }
+
                 let totalItemQty = [];
                 let itemObj = null;
                 for (let f = 0; f < itemArr.length; f++) {
@@ -2193,54 +2823,52 @@ exports.generateMBOM = function (req, res) {
                     totalItemQtyResults.push(totalItemQty[prop]);
 
                 for (let row of totalItemQtyResults) {
-                    if (row.shipLoose == 'N') {
-                        let seqNum;
-                        if (count < 10)
-                            seqNum = '00' + count;
-                        else if (count < 100)
-                            seqNum = '0' + count;
-                        else
-                            seqNum = count;
+                    let seqNum;
+                    if (count < 10)
+                        seqNum = '00' + count;
+                    else if (count < 100)
+                        seqNum = '0' + count;
+                    else
+                        seqNum = count;
 
-                        let itemPN = row.itemPN;
-                        let qty = row.qty;
-                        let itemDesc = row.itemDesc;
-                        let itemDesc1 = itemDesc.substring(0, 40);
-                        let itemDesc2 = itemDesc.substring(40, 80);
-                        let itemDesc3 = itemDesc.substring(80, 120);
-                        let itemDesc4 = itemDesc.substring(120, 160);
-                        let unitOfIssue = row.unitOfIssue;
-                        let catCode = row.catCode;
-                        let classCode = row.class;
-                        let itemMfg = row.itemMfg;
-                        let mfgPartNum = null;
-                        if (itemPN.length > 20) {
-                            mfgPartNum = itemPN;
-                            itemPN = mbomData.jobNum + mbomData.releaseNum + '-' + partNumCount + '-ITEM';
-                            partNumCount++;
-                        }
-                        sheet.addRow({
-                            assemblyNum: assemblyNum,
-                            seqNum: seqNum.toString(),
-                            compPartNum: itemPN,
-                            mfgPartNum: mfgPartNum,
-                            desc1: itemDesc1,
-                            desc2: itemDesc2,
-                            desc3: itemDesc3,
-                            desc4: itemDesc4,
-                            qty: qty,
-                            unitOfIssue: unitOfIssue,
-                            unitOfPurchase: unitOfIssue,
-                            categoryCode: catCode,
-                            makePart: 0,
-                            buyPart: 1,
-                            stockPart: 0,
-                            manufacturer: itemMfg,
-                            deviceDes: null,
-                            deviceClass: classCode
-                        });
-                        count++;
+                    let itemPN = row.itemPN;
+                    let qty = row.qty;
+                    let itemDesc = row.itemDesc;
+                    let itemDesc1 = itemDesc.substring(0, 40);
+                    let itemDesc2 = itemDesc.substring(40, 80);
+                    let itemDesc3 = itemDesc.substring(80, 120);
+                    let itemDesc4 = itemDesc.substring(120, 160);
+                    let unitOfIssue = row.unitOfIssue;
+                    let catCode = row.catCode;
+                    let classCode = row.class;
+                    let itemMfg = row.itemMfg;
+                    let mfgPartNum = null;
+                    if (itemPN.length > 20) {
+                        mfgPartNum = itemPN;
+                        itemPN = mbomData.jobNum + mbomData.releaseNum + '-' + partNumCount + '-ITEM';
+                        partNumCount++;
                     }
+                    sheet.addRow({
+                        assemblyNum: assemblyNum,
+                        seqNum: seqNum.toString(),
+                        compPartNum: itemPN,
+                        mfgPartNum: mfgPartNum,
+                        desc1: itemDesc1,
+                        desc2: itemDesc2,
+                        desc3: itemDesc3,
+                        desc4: itemDesc4,
+                        qty: qty,
+                        unitOfIssue: unitOfIssue,
+                        unitOfPurchase: unitOfIssue,
+                        categoryCode: catCode,
+                        makePart: 0,
+                        buyPart: 1,
+                        stockPart: 0,
+                        manufacturer: itemMfg,
+                        deviceDes: null,
+                        deviceClass: classCode
+                    });
+                    count++;
                 }
 
                 //FOR BREAKERS
@@ -2248,24 +2876,22 @@ exports.generateMBOM = function (req, res) {
                 let brkAccArr = [];
 
                 for (let row of mbomBrkSum) {
-                    if (row.secID == mbomSecSumData[i].secID) {
-                        for (let el of mbomBrkAccSum) {
-                            if (el.idDev == row.idDev) {
-                                brkAccArr.push(el);
-                            }
+                    for (let el of mbomBrkAccSum) {
+                        if (el.idDev == row.idDev) {
+                            brkAccArr.push(el);
                         }
-                        brkArr.push({
-                            idDev: [row.idDev],
-                            brkPN: row.brkPN,
-                            cradlePN: row.cradlePN,
-                            devDesignation: row.devDesignation,
-                            qty: 1,
-                            unitOfIssue: row.unitOfIssue,
-                            catCode: row.catCode,
-                            class: row.class,
-                            devMfg: row.devMfg
-                        })
                     }
+                    brkArr.push({
+                        idDev: [row.idDev],
+                        brkPN: row.brkPN,
+                        cradlePN: row.cradlePN,
+                        devDesignation: row.devDesignation,
+                        qty: 1,
+                        unitOfIssue: row.unitOfIssue,
+                        catCode: row.catCode,
+                        class: row.class,
+                        devMfg: row.devMfg
+                    });
                 }
 
                 let totalBrkQty = [];
@@ -2278,10 +2904,9 @@ exports.generateMBOM = function (req, res) {
                     } else {
                         totalBrkQty.filter(e => e.brkPN == brkObj.brkPN)[0].qty += brkObj.qty;
                         totalBrkQty.filter(e => e.brkPN == brkObj.brkPN)[0].devDesignation += ", " + brkObj.devDesignation;
-                        totalBrkQty.filter(e => e.brkPN == brkObj.brkPN)[0].idDev.push(brkObj.idDev[0])
+                        totalBrkQty.filter(e => e.brkPN == brkObj.brkPN)[0].idDev.push(brkObj.idDev[0]);
                     }
                 }
-
 
                 for (let row of totalBrkQty) {
                     let seqNum;
@@ -2291,6 +2916,7 @@ exports.generateMBOM = function (req, res) {
                         seqNum = '0' + count;
                     else
                         seqNum = count;
+
                     let brkPN = row.brkPN;
                     let crdPN = row.cradlePN;
                     let devDes = row.devDesignation;
@@ -2304,9 +2930,10 @@ exports.generateMBOM = function (req, res) {
                     let brkMfgPartNum = null;
                     if (brkPN.length > 20) {
                         brkMfgPartNum = brkPN;
-                        brkPN =  mbomData.jobNum + mbomData.releaseNum + "-" + partNumCount + "-BRK";
+                        brkPN = mbomData.jobNum + mbomData.releaseNum + "-" + partNumCount + "-BRK";
                         partNumCount++;
                     }
+
                     let crdMfgPartNum = null;
                     if (crdPN.length > 20) {
                         crdMfgPartNum = crdPN;
@@ -2407,21 +3034,21 @@ exports.generateMBOM = function (req, res) {
                     }
 
                     let totalBrkAccQty = [];
-                    // FOR BRK ACCESSORIES
+                    //FOR BRK ACCESSORIES
                     for (let dev of idDev) {
                         if (brkAccArr.filter(e => e.idDev == dev).length != 0) {
                             for (let g = 0; g < brkAccArr.filter(e => e.idDev == dev).length; g++) {
                                 if (totalBrkAccQty.filter(e => e.brkAccPN == brkAccArr.filter(e => e.idDev == dev)[g].brkAccPN).length == 0) {
-                                   totalBrkAccQty.push({
-                                       brkAccID: [brkAccArr.filter(e => e.idDev == dev)[g].brkAccID],
-                                       mbomID: brkAccArr.filter(e => e.idDev == dev)[g].mbomID,
-                                       idDev: [brkAccArr.filter(e => e.idDev == dev)[g].idDev],
-                                       brkAccQty: brkAccArr.filter(e => e.idDev == dev)[g].brkAccQty,
-                                       brkAccType: brkAccArr.filter(e => e.idDev == dev)[g].brkAccType,
-                                       brkAccMfg: brkAccArr.filter(e => e.idDev == dev)[g].brkAccMfg,
-                                       brkAccDesc: brkAccArr.filter(e => e.idDev == dev)[g].brkAccDesc,
-                                       brkAccPN: brkAccArr.filter(e => e.idDev == dev)[g].brkAccPN,
-                                   });
+                                    totalBrkAccQty.push({
+                                        brkAccID: [brkAccArr.filter(e => e.idDev == dev)[g].brkAccID],
+                                        mbomID: brkAccArr.filter(e => e.idDev == dev)[g].mbomID,
+                                        idDev: [brkAccArr.filter(e => e.idDev == dev)[g].idDev],
+                                        brkAccQty: brkAccArr.filter(e => e.idDev == dev)[g].brkAccQty,
+                                        brkAccType: brkAccArr.filter(e => e.idDev == dev)[g].brkAccType,
+                                        brkAccMfg: brkAccArr.filter(e => e.idDev == dev)[g].brkAccMfg,
+                                        brkAccDesc: brkAccArr.filter(e => e.idDev == dev)[g].brkAccDesc,
+                                        brkAccPN: brkAccArr.filter(e => e.idDev == dev)[g].brkAccPN,
+                                    });
                                 } else {
                                     totalBrkAccQty.filter(e => e.brkAccPN == brkAccArr.filter(e => e.idDev == dev)[g].brkAccPN)[0].brkAccQty += brkAccArr.filter(e => e.idDev == dev)[g].brkAccQty;
                                     totalBrkAccQty.filter(e => e.brkAccPN == brkAccArr.filter(e => e.idDev == dev)[g].brkAccPN)[0].brkAccID.push(brkAccArr.filter(e => e.idDev == dev)[g].brkAccID);
@@ -2474,243 +3101,19 @@ exports.generateMBOM = function (req, res) {
                     }
                     count++;
                 }
-            }
-
-            //FOR SHIP LOOSE ITEMS
-            sheet.addRow({
-                assemblyNum: mbomData.jobNum + mbomData.releaseNum + '-MBOM-SP',
-                seqNum: null,
-                compPartNum: mbomData.jobNum + mbomData.releaseNum + '-MBOM-SP',
-                mfgPartNum: null,
-                desc1: mbomData.jobNum + mbomData.releaseNum + '-MBOM-SP Bill of Material',
-                desc2: null,
-                desc3: null,
-                desc4: null,
-                qty: 1,
-                unitOfIssue: 'EA',
-                unitOfPurchase: 'EA',
-                categoryCode: '82-BOM',
-                makePart: 1,
-                buyPart: 0,
-                stockPart: 0,
-                manufacturer: 'SAI',
-                deviceDes: null,
-                deviceClass: null
-            });
-            let count = 1;
-            let shipLooseItems = [];
-
-            for(let row of mbomItemData){
-                if(row.shipLoose == 'Y'){
-                    if(row.userItemID != null) {
-                        for (let item of mbomUserItem) {
-                            if (item.userItemID == row.userItemID) {
-                                shipLooseItems.push({
-                                    itemID: item.userItemID,
-                                    sumID: row.itemSumID,
-                                    itemPN: item.itemPN,
-                                    qty: row.itemQty,
-                                    itemMfg: item.itemMfg,
-                                    itemDesc: item.itemDesc,
-                                    unitOfIssue: item.unitOfIssue,
-                                    catCode: item.catCode,
-                                    class: item.class
-                                });
-                            }
-                        }
-                    } else {
-                        for (let item of mbomComItem) {
-                            if (item.comItemID == row.comItemID) {
-                                shipLooseItems.push({
-                                    itemID: item.comItemID,
-                                    sumID: row.itemSumID,
-                                    itemPN: item.itemPN,
-                                    qty: row.itemQty,
-                                    itemMfg: item.itemMfg,
-                                    itemDesc: item.itemDesc,
-                                    unitOfIssue: item.unitOfIssue,
-                                    catCode: item.catCode,
-                                    class: item.class
-                                });
-                            }
-                        }
-                    }
-                }
-            }
-
-            let totalSLQty = [];
-            let SLobj = null;
-            for (let f = 0; f < shipLooseItems.length; f++) {
-                SLobj = shipLooseItems[f];
-                if (!totalSLQty[SLobj.itemID]) {
-                    totalSLQty[SLobj.itemID] = SLobj;
-                } else {
-                    totalSLQty[SLobj.itemID].qty += SLobj.qty;
-                    totalSLQty[SLobj.itemID].itemDesc = SLobj.itemDesc;
-                }
-            }
-            let totalSLQtyResults = [];
-            for (let prop in totalSLQty)
-                totalSLQtyResults.push(totalSLQty[prop]);
-
-            for (let row of totalSLQtyResults) {
-                let seqNum;
-                if (count < 10)
-                    seqNum = '00' + count;
-                else if (count < 100)
-                    seqNum = '0' + count;
-                else
-                    seqNum = count;
-
-                let itemPN = (row.itemPN).toString();
-                let qty = row.qty;
-                let itemDesc = row.itemDesc;
-                let itemDesc1 = itemDesc.substring(0, 40);
-                let itemDesc2 = itemDesc.substring(40, 80);
-                let itemDesc3 = itemDesc.substring(80, 120);
-                let itemDesc4 = itemDesc.substring(120, 160);
-                let unitOfIssue = row.unitOfIssue;
-                let catCode = row.catCode;
-                let classCode = row.class;
-                let itemMfg = row.itemMfg;
-                let mfgPartNum = itemPN;
-                if(itemPN.length > 20){
-                    itemPN = itemPN.slice(0,20);
-                    partNumCount++;
-                }
-                /*let mfgPartNum = null;
-                if(itemPN.length > 20){
-                    mfgPartNum = itemPN;
-                    itemPN = mbomData.jobNum + mbomData.releaseNum + '-' + partNumCount + '-ITEM';
-                    partNumCount++;
-                }*/
-
-                sheet.addRow({
-                    assemblyNum: mbomData.jobNum + mbomData.releaseNum + '-MBOM-SP',
-                    seqNum: seqNum.toString(),
-                    compPartNum: itemPN,
-                    mfgPartNum: mfgPartNum,
-                    desc1: itemDesc1,
-                    desc2: itemDesc2,
-                    desc3: itemDesc3,
-                    desc4: itemDesc4,
-                    qty: qty,
-                    unitOfIssue: unitOfIssue,
-                    unitOfPurchase: unitOfIssue,
-                    categoryCode: catCode,
-                    makePart: 0,
-                    buyPart: 1,
-                    stockPart: 0,
-                    manufacturer: itemMfg,
-                    deviceDes: null,
-                    deviceClass: classCode
-                });
-                count++;
-            }
-
-            //MBOM SUMMARY
-            sheet.addRow({
-                assemblyNum: mbomData.jobNum + mbomData.releaseNum + '-MBOM',
-                seqNum: null,
-                compPartNum: mbomData.jobNum + mbomData.releaseNum + '-MBOM',
-                mfgPartNum: null,
-                desc1: mbomData.jobNum + mbomData.releaseNum + '-MBOM Bill of Material',
-                desc2: null,
-                desc3: null,
-                desc4: null,
-                qty: 1,
-                unitOfIssue: 'EA',
-                unitOfPurchase: 'EA',
-                categoryCode: '82-BOM',
-                makePart: 1,
-                buyPart: 0,
-                stockPart: 0,
-                manufacturer: 'SAI',
-                deviceDes: null,
-                deviceClass: null
-            });
-
-            for (let i = 0; i < mbomAssemNumArr.length; i++) {
-                let seqNum;
-                if ((i + 1) < 10)
-                    seqNum = '00' + (i + 1);
-                else if ((i + 1) < 100)
-                    seqNum = '0' + (i + 1);
-                else
-                    seqNum = (i + 1);
-
-                sheet.addRow({
-                    assemblyNum: mbomData.jobNum + mbomData.releaseNum + '-MBOM',
-                    seqNum: seqNum.toString(),
-                    compPartNum: mbomAssemNumArr[i],
-                    mfgPartNum: null,
-                    desc1: null,
-                    desc2: null,
-                    desc3: null,
-                    desc4: null,
-                    qty: 1,
-                    /*qty: result[0].qtyBoard,*/
-                    unitOfIssue: null,
-                    unitOfPurchase: null,
-                    categoryCode: null,
-                    makePart: null,
-                    buyPart: null,
-                    stockPart: null,
-                    manufacturer: null,
-                    deviceDes: null,
-                    deviceClass: null
-                });
-                if(i+1 == mbomAssemNumArr.length){
-                    seqNum = parseInt(seqNum) + 1;
-                    if (seqNum < 10)
-                        seqNum = '00' + seqNum;
-                    else if (seqNum < 100)
-                        seqNum = '0' + seqNum;
-                    else
-                        seqNum = seqNum.toString();
-                    sheet.addRow({
-                        assemblyNum: mbomData.jobNum + mbomData.releaseNum + '-MBOM',
-                        seqNum: seqNum,
-                        compPartNum: mbomData.jobNum + mbomData.releaseNum + '-MBOM-SP',
-                        mfgPartNum: null,
-                        desc1: null,
-                        desc2: null,
-                        desc3: null,
-                        desc4: null,
-                        qty: 1,
-                        /*qty: result[0].qtyBoard,*/
-                        unitOfIssue: null,
-                        unitOfPurchase: null,
-                        categoryCode: null,
-                        makePart: null,
-                        buyPart: null,
-                        stockPart: null,
-                        manufacturer: null,
-                        deviceDes: null,
-                        deviceClass: null
-                    });
-                }
-            }
-
-            /*sheet.getColumn(3).eachCell(function(cell){
-                if(cell.value != 'Component Part Number:' && cell.value.includes(mbomData.jobNum + mbomData.releaseNum + '-') &&
-                    !cell.value.includes(mbomData.jobNum + mbomData.releaseNum + '-MBOM')){
-                    cell.fill = {type: 'pattern', pattern:'solid', fgColor:{argb:'FFFF9999'}};
+                sheet.getColumn(4).eachCell(function (cell) {
                     cell.alignment = {wrapText: true};
-                }
-            });*/
-            sheet.getColumn(4).eachCell(function(cell){
-                cell.alignment = {wrapText: true};
-            });
+                });
 
 
-            workbook.xlsx.writeFile('uploads/' + mbomData.jobNum + mbomData.releaseNum + ' MBOM.xlsx').then(function () {
-                const remoteFilePath = 'uploads/';
-                const remoteFilename = mbomData.jobNum + mbomData.releaseNum + ' MBOM.xlsx';
-                res.download(remoteFilePath + remoteFilename);
-            });
+                workbook.xlsx.writeFile('uploads/' + mbomData.jobNum + mbomData.releaseNum + ' MBOM.xlsx').then(function () {
+                    const remoteFilePath = 'uploads/';
+                    const remoteFilename = mbomData.jobNum + mbomData.releaseNum + ' MBOM.xlsx';
+                    res.download(remoteFilePath + remoteFilename);
+                });
 
-            return null;
+                return null;
+            }
         })
         .catch(err => {
             console.log('there was an error:' + err);

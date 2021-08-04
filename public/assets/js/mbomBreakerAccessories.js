@@ -16,7 +16,8 @@ function addBrkAccessory(){
             brkPN: document.getElementById('brkPN').value,
             cradlePN: document.getElementById('cradlePN').value,
             devMfg: document.getElementById('devMfg').value,
-            catCode: document.getElementById('devCatCode').value
+            catCode: document.getElementById('devCatCode').value,
+            class: document.getElementById('devClassCode').value
         };
 
     }
@@ -119,6 +120,12 @@ function addBrkAccessoryFromEdit(idDev){
     element17.value = document.getElementById('editDevCatCode').value;
     element17.name = 'editDevCatCode';
     form.appendChild(element17);
+
+
+    let element18 = document.createElement('input');
+    element18.value = document.getElementById('editDevClass').value;
+    element18.name = 'class';
+    form.appendChild(element18);
 
     console.log(form);
 
@@ -291,6 +298,11 @@ function editBrkAccFromEdit (letiable) {
     element17.name = 'editDevCatCode';
     form.appendChild(element17);
 
+    let element18 = document.createElement('input');
+    element18.value = document.getElementById('editDevClass').value;
+    element18.name = 'class';
+    form.appendChild(element18);
+
     document.body.appendChild(form);
    form.submit()
 }
@@ -350,6 +362,11 @@ function deleteBrkAcc(brkAccPN) {
     element9.value = document.getElementById('devCatCode').value;
     element9.name = "catCode";
     form.appendChild(element9);
+
+    let element10 = document.createElement('input');
+    element10.value = document.getElementById('devClassCode').value;
+    element10.name = "classCode";
+    form.appendChild(element10);
 
     document.body.appendChild(form);
     form.submit()
@@ -429,6 +446,11 @@ function deleteBrkAccFromEdit(brkAcc) {
     element13.value = document.getElementById('editDevCatCode').value;
     element13.name = "catCode";
     form.appendChild(element13);
+
+    let element14 = document.createElement('input');
+    element14.value = document.getElementById('editDevClass').value;
+    element14.name = "class";
+    form.appendChild(element14);
 
     document.body.appendChild(form);
     form.submit()
@@ -511,6 +533,11 @@ function mbomBrkAccFormSubmit(accData, brkData) {
     element13.value = brkData.catCode;
     element13.name = "catCode";
     form.appendChild(element13);
+
+    let element14 = document.createElement('input');
+    element14.value = brkData.class;
+    element14.name = "classCode";
+    form.appendChild(element14);
 
     document.body.appendChild(form);
     form.submit()

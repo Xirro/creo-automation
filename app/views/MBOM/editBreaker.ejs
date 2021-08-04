@@ -159,6 +159,17 @@
                                                                 <input type="text" name="boardDesignation" class="form-control" value="<%= mbomData.boardDesignation %>" placeholder="Type Designation Here" id="" readonly="readonly">
                                                             </div>
                                                         </div>
+                                                        <div class="row justify-content-center">
+                                                            <div class="col-sm-1" style="margin-top: 1%;">
+                                                                <% if (mbomData.noSectionMBOM == 'N') { %>
+                                                                    <input class="form-check-input" type="checkbox" value="true" name="noSectionMBOM" id="noSectionMBOM" disabled="disabled">
+                                                                    <label for="noSectionMBOM" class="form-check-label">No Section MBOM</label>
+                                                                <% } else { %>
+                                                                    <input class="form-check-input" type="checkbox" value="true" name="noSectionMBOM" id="noSectionMBOM" checked="checked" disabled="disabled">
+                                                                    <label for="noSectionMBOM" class="form-check-label">No Section MBOM</label>
+                                                                <% } %>
+                                                            </div>
+                                                        </div>
                                                     <% } %>
                                                 </div>
                                             </form>
@@ -195,6 +206,9 @@
                                                         </div>
                                                         <div class="col-sm-3">
                                                             <input type="text" name="boardDesignation" class="form-control" value="<%= mbomData.boardDesignation %>" placeholder="Type Designation Here" id="boardDesignation" readonly="readonly" hidden="hidden" >
+                                                        </div>
+                                                        <div class="col-sm-3">
+                                                            <input type="text" name="noSectionMBOM" class="form-control" value="<%= mbomData.noSectionMBOM%>" id="noSectionMBOM" readonly="readonly" hidden="hidden">
                                                         </div>
                                                     <% } %>
                                                         <div class="form-group">

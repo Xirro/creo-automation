@@ -180,6 +180,17 @@
                                                         <input type="text" name="boardDesignation" class="form-control" value="<%= mbomData.boardDesignation %>" placeholder="Type Designation Here" id="boardDesignation" readonly="readonly">
                                                     </div>
                                                 </div>
+                                            <div class="row justify-content-center">
+                                                <div class="col-sm-1" style="margin-top: 1%;">
+                                                    <% if (mbomData.noSectionMBOM == 'N') { %>
+                                                        <input class="form-check-input" type="checkbox" value="true" name="noSectionMBOM" id="noSectionMBOM" disabled="disabled">
+                                                        <label for="noSectionMBOM" class="form-check-label">No Section MBOM</label>
+                                                    <% } else { %>
+                                                        <input class="form-check-input" type="checkbox" value="true" name="noSectionMBOM" id="noSectionMBOM" checked="checked" disabled="disabled">
+                                                        <label for="noSectionMBOM" class="form-check-label">No Section MBOM</label>
+                                                    <% } %>
+                                                </div>
+                                            </div>
                                             <% } %>
                                         </div>
                                     </form>
@@ -231,6 +242,17 @@
                                                                             <input type="text" name="boardDesignation" class="form-control" value="<%= mbomData.boardDesignation %>" placeholder="Type Designation Here" id="">
                                                                         </div>
                                                                     </div>
+                                                                    <div class="row justify-content-center">
+                                                                        <div class="col-sm-4" style="margin-top:2%;">
+                                                                            <% if (mbomData.noSectionMBOM == 'N') { %>
+                                                                                <input class="form-check-input" type="checkbox" value="true" name="noSectionMBOM" id="noSectionMBOM">
+                                                                                <label for="noSectionMBOM" class="form-check-label">No Section MBOM</label>
+                                                                            <% } else { %>
+                                                                                <input class="form-check-input" type="checkbox" value="true" name="noSectionMBOM" id="noSectionMBOM" checked="checked">
+                                                                                <label for="noSectionMBOM" class="form-check-label">No Section MBOM</label>
+                                                                            <% } %>
+                                                                        </div>
+                                                                    </div>
                                                                 </div>
                                                                 <div class="modal-footer justify-content-center">
                                                                     <div class="w-50">
@@ -267,6 +289,7 @@
                                                     <input type="text" name="customer" class="form-control" value="<%= mbomData.customer %>" id="customer" hidden="hidden">
                                                     <input type="text" name="boardDesignation" class="form-control" value="<%= mbomData.boardDesignation %>" id="boardDesignation" hidden="hidden">
                                                     <input type="text" name="numSections" class="form-control" value="<%= mbomData.numSections %>" id="numSections" hidden="hidden">
+                                                    <input type="text" name="noSectionMBOM" class="form-control" value="<%= mbomData.noSectionMBOM%>" id="noSectionMBOM" hidden="hidden">
                                                 </div>
                                             <% } %>
                                             <div class="col-sm-2">
@@ -823,6 +846,7 @@
                                                             <input type="text" name="customer" class="form-control" value="<%= mbomData.customer %>" id="customer" hidden="hidden">
                                                             <input type="text" name="boardDesignation" class="form-control" value="<%= mbomData.boardDesignation %>" id="boardDesignation" hidden="hidden">
                                                             <input type="text" name="numSections" class="form-control" value="<%= mbomData.numSections %>" id="numSections" hidden="hidden">
+                                                            <input type="text" name="noSectionMBOM" class="form-control" value="<%= mbomData.noSectionMBOM%>" id="noSectionMBOM" hidden="hidden">
                                                         </div>
                                                     <% } %>
                                                     <%
