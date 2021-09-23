@@ -38,7 +38,7 @@ reqPromise(connectOptions)
                 "command": "creo",
                 "function": "set_creo_version",
                 "data": {
-                    "version": "3"
+                    "version": "7"
                 }
             },
             json: true

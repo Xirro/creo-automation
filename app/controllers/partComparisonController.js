@@ -40,7 +40,7 @@ reqPromise(connectOptions)
                 "command": "creo",
                 "function": "set_creo_version",
                 "data": {
-                    "version": "3"
+                    "version": "7"
                 }
             },
             json: true
@@ -1269,8 +1269,12 @@ exports.compareSinglePart = function(req, res) {
         let comparisonDirs = [];
         let masterComparisonDirs = [];
 
+        let date = new Date();
+        let currentYear = date.getFullYear();
+        let yearArr = [currentYear, currentYear - 1, currentYear - 2];
+        let yearStrArr = yearArr.map(item => { return item.toString().slice(2,4); });
 
-        //LOOP FOR K: DRIVE SEARCH. CURRENTLY SET AT 100, USE dirList.length IF YOU WANT THE ENTIRE K: DRIVE
+        //LOOP FOR K: DRIVE SEARCH. CURRENTLY SET AT dirList.length TO SEARCH ENTIRE K: DRIVE
         for (let i = 0; i < dirList.length; i++) {
             if (workingDir != 'K:\\' + dirList[i] + '\\2. PROJECT FILES\\ENGINEERING WIP\\MECHANICAL ENGINEERING\\PROE') {
                 await creo(sessionId, {
@@ -1288,14 +1292,15 @@ exports.compareSinglePart = function(req, res) {
                 });
 
                 if (innerDirs.data.dirlist.length > 0) {
+
                     let innerDirList = innerDirs.data.dirlist.sort(function(a,b) {
                         let intA;
                         let intB;
 
                         if (a.includes('_') == true) {
-                            if (a.split('_')[0].slice(0, 2) == '21' || a.split('_')[0].slice(0, 2) == '20' || a.split('_')[0].slice(0, 2) == '19') {
+                            if (a.split('_')[0].slice(0, 2) == yearStrArr[0] || a.split('_')[0].slice(0, 2) == yearStrArr[1] || a.split('_')[0].slice(0, 2) == yearStrArr[2]) {
                                 intA = a.split('_')[0];
-                            } else if (a.split('_')[1].slice(0, 2) == '21' || a.split('_')[1].slice(0, 2) == '20' || a.split('_')[1].slice(0, 2) == '19') {
+                            } else if (a.split('_')[1].slice(0, 2) == yearStrArr[0] || a.split('_')[1].slice(0, 2) == yearStrArr[1] || a.split('_')[1].slice(0, 2) == yearStrArr[2]) {
                                 intA = a.split('_')[1];
                             }
                         } else {
@@ -1303,9 +1308,9 @@ exports.compareSinglePart = function(req, res) {
                         }
 
                         if (b.includes('_') == true) {
-                            if (b.split('_')[0].slice(0, 2) == '21' || b.split('_')[0].slice(0, 2) == '20' || b.split('_')[0].slice(0, 2) == '19') {
+                            if (b.split('_')[0].slice(0, 2) == yearStrArr[0] || b.split('_')[0].slice(0, 2) == yearStrArr[1] || b.split('_')[0].slice(0, 2) == yearStrArr[2]) {
                                 intB = b.split('_')[0];
-                            } else if (b.split('_')[1].slice(0, 2) == '21' || b.split('_')[1].slice(0, 2) == '20' || b.split('_')[1].slice(0, 2) == '19') {
+                            } else if (b.split('_')[1].slice(0, 2) == yearStrArr[0] || b.split('_')[1].slice(0, 2) == yearStrArr[1] || b.split('_')[1].slice(0, 2) == yearStrArr[2]) {
                                 intB = b.split('_')[1];
                             }
                         } else {
