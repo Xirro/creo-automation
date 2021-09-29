@@ -52,8 +52,6 @@ app.set('view engine', 'ejs');
 app.use(express.static(path.join(__dirname, '/public')));
 app.use('/public', express.static('public'));
 
-
-
 app.get('/', function(req, res) {
     res.redirect('/home');
 });
@@ -63,15 +61,12 @@ app.use(flash());
 
 //Routes
 require('./app/routes/main.js')(app); //Main Router
-//require('./app/routes/creoson.js')(app); //creoSON Router
 require('./app/routes/pdfDxfBinBom.js')(app); //PDF DXF BIN BOM Router
 require('./app/routes/submittal.js')(app); //Submittal Router
 require('./app/routes/mbom.js')(app); //MBOM router
 require('./app/routes/slimVAC.js')(app); //SlimVAC Router
 require('./app/routes/partComparison.js')(app); //partComparison Router
 require('./app/routes/rename.js')(app); //Rename Router
-
-
 
 //Start app
 app.listen(3000, function(err) {
