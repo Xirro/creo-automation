@@ -1,17 +1,22 @@
-const path = require('path');
+//imports from npm
 const url = require('url');
 const queryString = require('query-string');
 const moment = require('moment');
 
-//Excel Connection
-const Excel = require('exceljs');
-
-//DATABASE INFORMATION (TABLE NAMES)
+//Database information (table names)
 const dbConfig = require('../config/database.js');
 const database = dbConfig.database;
-const creoDB = database;
 
-//Creoson Connection
+//Database interaction function (querySql)
+//querySql takes 2 arguments, query (the sql string to be passed)
+//and params (if there are ?'s in the query, these values will be inserted in their place)
+//second argument params is optional, you only need to include it if you need to insert values into the string
+//querySql returns the result of the sql query
+const DB = require('../config/db.js');
+const querySql = DB.querySql;
+const Promise = require('bluebird');
+
+//Creoson Connection (generates the sessionId that is needed for all creoson calls)
 const reqPromise = require('request-promise');
 let creoHttp = 'http://localhost:9056/creoson';
 let sessionId;
@@ -36,7 +41,7 @@ reqPromise(connectOptions)
                 "command": "creo",
                 "function": "set_creo_version",
                 "data": {
-                    "version": "7"
+                    "version": "3"
                 }
             },
             json: true
@@ -46,7 +51,14 @@ reqPromise(connectOptions)
         console.log('there was an error:' + err)
     });
 
+//IN ANY OF THESE FUNCTIONS IF YOU WANT TO DEBUG OR ANALYZE THE BEHAVIOR
+//THE BEST THING TO DO IS console.log WHATEVER VARIABLE, OBJECT, ARRAY, PROPERTY, ETC. THAT YOU ARE TRYING TO STUDY
 
+
+
+//creo function (used to remove some of the boilerplate thats involved with creoson http calls)
+//Inputs: creoson sessionId provided from above, and function data JSON object
+//Outputs: a POST request, formatted in Creoson JSON syntax in the form of a promise
 function creo(sessionId, functionData) {
     if (functionData.data.length != 0) {
         return reqPromise({
@@ -74,8 +86,11 @@ function creo(sessionId, functionData) {
     }
 }
 
+//regenAndSave "helper" function for creoson
 async function regenAndSave(sessionId, filename) {
+    //takes the filename provided and if it is not empty
     if (filename.length != 0) {
+        //regen the file
         await creo(sessionId, {
             command: "file",
             function: "regenerate",
@@ -83,6 +98,7 @@ async function regenAndSave(sessionId, filename) {
                 file: filename
             }
         });
+        //save the file
         await creo(sessionId, {
             command: "file",
             function: "save",
@@ -94,8 +110,11 @@ async function regenAndSave(sessionId, filename) {
     return null
 }
 
+//regenSaveAndClose "helper" function for creoson
 async function regenSaveAndClose(sessionId, filename) {
+    //takes the filename provided and if it is not empty
     if (filename.length != 0) {
+        //regen the file
         await creo(sessionId, {
             command: "file",
             function: "regenerate",
@@ -103,6 +122,7 @@ async function regenSaveAndClose(sessionId, filename) {
                 file: filename
             }
         });
+        //save the file
         await creo(sessionId, {
             command: "file",
             function: "save",
@@ -110,6 +130,7 @@ async function regenSaveAndClose(sessionId, filename) {
                 file: filename
             }
         });
+        //close the window
         await creo(sessionId, {
             command: "file",
             function: "close_window",
@@ -121,32 +142,38 @@ async function regenSaveAndClose(sessionId, filename) {
     return null
 }
 
-
-
-const DB = require('../config/db.js');
-const querySql = DB.querySql;
-const Promise = require('bluebird');
-
 exports = {};
 module.exports = exports;
-
+//Initialize creoWorkingDir and creoStandardLib variables
 let creoWorkingDir, creoStandardLib;
 
+//submittalLookup "helper" function for db querys
+//takes in a subData empty array to fill and a lookupArray - a (3) element array which resembles the following ["220XXX", "A", 24]
+//use element 1 & 2 when you know the job num and release but not the subID, and use element 3 if you know the subID
 async function submittalLookup(subData, lookupArray) {
+    //Initialize submittals
     let submittals;
+    //if provided an empty lookupArray [], simply lookup the entire submittalSum table
     if (lookupArray.length == 0) {
         submittals = await querySql("SELECT * FROM " + database + "." + dbConfig.submittal_summary_table);
     } else {
+        //if job num and release exists
         if (lookupArray[0] != null && lookupArray[1] != null) {
+            //select the row from submittalSum referenced by the jobNum and releaseNum
             submittals =  await querySql("SELECT * FROM " + database + "." + dbConfig.submittal_summary_table+" WHERE jobNum = ? AND releaseNum = ?",[lookupArray[0], lookupArray[1]]);
         } else if (lookupArray[2] != null) {
+        //if the subID exists
+            //select the row from submittalSum referened by the subID
             submittals =  await querySql("SELECT * FROM " + database + "." + dbConfig.submittal_summary_table+" WHERE subID = ?", lookupArray[2]);
         }
     }
 
+    //for each submittal
     for (let submittal of submittals) {
+        //re-format the date using moment and utc()
         let drawnDate = moment(submittal.drawnDate).utc().format("YYYY-MM-DD");
         let checkedDate = moment(submittal.checkedDate).utc().format("YYYY-MM-DD");
+        //push to subData
         await subData.push({
             subID: submittal.subID,
             jobNum: submittal.jobNum,
@@ -160,17 +187,24 @@ async function submittalLookup(subData, lookupArray) {
             checkedDate: checkedDate
         });
     }
+
     return null
 }
 
+//revLookup "helper" function for db querys
 async function revLookup(revData, lookupArray) {
+    //initialize revs variable
     let revs;
+    //if provided an empty lookupArray [], simply lookup the entire submittalRevSum table
     if (lookupArray.length == 0) {
         revs = await querySql("SELECT * FROM " + database + "." + dbConfig.submittal_rev_table);
     } else {
+    //if provided a subID in lookupArray, then lookup the submittalRevSum row referenced by the subID
         revs =  await querySql("SELECT * FROM " + database + "." + dbConfig.submittal_rev_table + " WHERE subID = ?", lookupArray[0]);
     }
+    //for each rev
     for (let rev of revs) {
+        //push to rev data
         await revData.push({
             revID: rev.revID,
             subID: rev.subID,
@@ -178,22 +212,30 @@ async function revLookup(revData, lookupArray) {
             revNote: rev.revNote
         })
     }
+
     return null
 }
 
+//getCreoData "helper" function for db querys
+//takes in subData and revData arrays. Also provided an empty array creoData to fill
 async function getCreoData(subData, revData, creoData) {
+    //Initialize/set variables based on subData and revData values
     let jobNum = subData[0].jobNum;
     let releaseNum = subData[0].releaseNum;
     let layoutName = subData[0].layoutName;
     let latestRevNum = revData[revData.length - 1].revNum;
 
+    //this line converts a letter to a number (i.e. A -> 1, B -> 2, ....) we use this for the layout assembly number 0000-00X
     let layoutNum = releaseNum.toLowerCase().charCodeAt(0) - 96;
+    //look up the current wd and write it to dir
     let dir = await creo(sessionId, {
         command: "creo",
         function: "pwd",
         data: {}
     });
+    //if no current wd
     if (dir.data == undefined) {
+        //set wd to the creoWorkingDir
         await creo(sessionId, {
             command: "creo",
             function: "cd",
@@ -202,7 +244,9 @@ async function getCreoData(subData, revData, creoData) {
             }
         });
     } else {
+    // if current dir but it doesnt match creoWorkingDir
         if (dir.data.dirname != creoWorkingDir) {
+            //set the wd to the creoWorkingDir
             await creo(sessionId, {
                 command: "creo",
                 function: "cd",
@@ -213,11 +257,13 @@ async function getCreoData(subData, revData, creoData) {
         }
     }
 
+    //Initialize variables
     let creoLayoutAsm;
     let creoLayoutDrw;
     let creoOneLineAsm;
     let creoOutputDir = null;
     let creoOutputPDF;
+    //auto-generate drawing names based on jobNum and layoutNum
     if (layoutNum < 10) {
         creoLayoutAsm = jobNum+'-'+'0000'+'-'+'00'+layoutNum+'.asm';
         creoOneLineAsm = jobNum+'-'+'0001'+'-'+'00'+layoutNum+'.asm';
@@ -227,6 +273,8 @@ async function getCreoData(subData, revData, creoData) {
     }
     creoLayoutDrw = creoLayoutAsm.slice(0,15)+'-S.drw';
     creoOutputPDF = creoLayoutAsm.slice(0,15)+'-'+latestRevNum+'_'+layoutName+'.pdf';
+
+    //push to creoData
     creoData.push({
         workingDir: creoWorkingDir,
         layoutAsm: creoLayoutAsm,
@@ -240,11 +288,17 @@ async function getCreoData(subData, revData, creoData) {
     return null
 }
 
+//getLayoutData "helper" function for db querys
+//takes in subData. also provided an empty array layoutData to fill
 async function getLayoutData(subData, layoutData) {
+    //lookup the submittalLayoutSum row referenced by subID
     const layouts = await querySql("SELECT * FROM " + database + "." + dbConfig.submittal_layout_table + " WHERE subID = ?", subData[0].subID);
 
+    //if layouts exist
     if (layouts.length != 0) {
+        //for each layout
         for (let layout of layouts) {
+            //push to layoutData
             layoutData.push({
                 subID: layout.subID,
                 layoutID: layout.layoutID,
@@ -278,15 +332,23 @@ async function getLayoutData(subData, layoutData) {
     return null
 }
 
+//getBreakerData "helper" function for db querys
+//takes in layoutData. also provided an empty array deviceData to fill
 async function getBreakerData(layoutData, deviceData) {
+    //initialize breakers
     let breakers;
+    //if layoutData exists
     if (layoutData.length != 0) {
+        //write to layoutID, then update breakers with the value returned from submittalBrkSum row referenced by layoutID
         let layoutID = layoutData[0].layoutID;
         breakers = await querySql("SELECT * FROM " + database + "." + dbConfig.submittal_breaker_table + " WHERE layoutID = ?", layoutID);
     } else {
+        //if no layoutData, then assume no breakers
         breakers = [];
     }
+    //for each breaker
     for (let breaker of breakers) {
+        //push to deviceData
         deviceData.push({
             devID: breaker.devID,
             layoutID: breaker.layoutID,
@@ -321,12 +383,20 @@ async function getBreakerData(layoutData, deviceData) {
     return null
 }
 
+//getBreakerAccData "helper" function for db querys
+//takes in deviceData. also provided an empty array brkAccData to fill
 async function getBreakerAccData(deviceData, brkAccData) {
+    //for each breaker
     for (let data of deviceData) {
+        //lookup breaker accessories rows referenced by devID
         const devAccs = await querySql("SELECT * FROM " + database + "." + dbConfig.submittal_brkAcc_table + " WHERE devID = ?", data.devID);
+        //lookup all options in brkAccOptions table
         const devAccOptions = await querySql("SELECT * FROM " + database + "." + dbConfig.brkAcc_options_table);
+        //for each breaker accessory
         for (let devAcc of devAccs) {
+            //for each accessory option
             for  (let devAccOpt of devAccOptions) {
+                //if the brkAccDropdownID's match, then push to brkAccData
                 if (devAcc.brkAccDropdownID == devAccOpt.brkAccDropdownID) {
                     brkAccData.push({
                         brkAccID: devAcc.brkAccID,
@@ -343,17 +413,25 @@ async function getBreakerAccData(deviceData, brkAccData) {
     return null
 }
 
+//getLayoutAndBrkAccDropdownData "helper" function for db querys
+//takes in empty layoutDropdownData and brkAccDropdownData arrays to fill
 async function getLayoutAndBrkAccDropdownData(layoutDropdownData, brkAccDropdownData) {
+    //lookup everything from layoutParamTypes table and write it to layoutDropdowns
     const layoutDropdowns = await querySql("SELECT * FROM " + database + "." + dbConfig.layout_paramTypes_table);
+    //lookup everything from brkAccOptions table and write it to brkAccDropdowns
     const brkAccDropdowns = await querySql("SELECT * FROM " + database + "." + dbConfig.brkAcc_options_table);
 
+    //for each option in layoutDropdowns, push to layoutDropdownData
     for (let dropdown of layoutDropdowns) {
         layoutDropdownData.push({
             type: dropdown.dropdownType,
             value: dropdown.dropdownValue
         });
     }
+
+    //initialize temp variable
     let tempBrkAccDropdownData = [];
+    //for each option in brkAccDropdowns, push to tempBrkAccDropdownData
     for (let dropdown of brkAccDropdowns) {
         tempBrkAccDropdownData.push({
             id: dropdown.brkAccDropdownID,
@@ -362,11 +440,15 @@ async function getLayoutAndBrkAccDropdownData(layoutDropdownData, brkAccDropdown
             value: dropdown.brkAccOpt
         });
     }
+
+    //for each item in tempBrkAccDropdownData
     for (let item of tempBrkAccDropdownData) {
+        //if record already exists in brkAccDropdownData, push to the id and value arrays within the filtered object
         if (brkAccDropdownData.filter(e => e.type === item.type).length > 0) {
             brkAccDropdownData.filter(e => e.type === item.type)[0].value.push(item.value);
             brkAccDropdownData.filter(e => e.type === item.type)[0].id.push(item.brkAccDropdownID)
         } else {
+        //if no prior record exists, then create it
             brkAccDropdownData.push({
                 id: [item.id],
                 type: item.type,
@@ -378,10 +460,16 @@ async function getLayoutAndBrkAccDropdownData(layoutDropdownData, brkAccDropdown
     return null
 }
 
+//getSectionData "helper" function for db querys
+//takes in layoutData. also provided an empty array sectionData to fill
 async function getSectionData(layoutData, sectionData) {
+    //if layoutData exists
     if (layoutData.length != 0) {
+        //lookup all rows from submittalSectionSum that correspond to layoutID
         const sections = await querySql("SELECT * FROM " + database + "." + dbConfig.submittal_sections_table+ " WHERE layoutID = ?", layoutData[0].layoutID);
+        //for each section
         for (let section of sections) {
+            //push to sectionData
             sectionData.push({
                 secID: section.secID,
                 layoutID: section.layoutID,
@@ -401,22 +489,30 @@ async function getSectionData(layoutData, sectionData) {
     return null
 }
 
+//getTypeAndRestrictionData "helper" function for db querys
+//takes in empty sectionTypeData, brkTypeData, and restrictionData arrays to fill
 async function getTypeAndRestrictionData(sectionTypeData, brkTypeData, restrictionData) {
+    //lookup everything from secType and write it to secTypes
     const secTypes = await querySql("SELECT * FROM " + database + "." + dbConfig.secType_table);
+    //for each secType push to sectionTypeData
     for (let secType of secTypes) {
         sectionTypeData.push({
             secType: secType.type
         });
     }
 
+    //lookup everything from brkType and write it to brkTypes
     const brkTypes = await querySql("SELECT * FROM " + database + "." + dbConfig.brkType_table);
+    //for each brkType push to brkTypeData
     for (let brkType of brkTypes) {
         brkTypeData.push({
             brkType: brkType.type
         })
     }
 
+    //lookup everything from layoutParamRestriction and write it to layoutParamRestrictions
     const layoutParamRestrictions = await querySql("SELECT * FROM " + database + "." + dbConfig.layout_paramType_restrictions);
+    //for each restriction push to restrictionData
     for (let restriction of layoutParamRestrictions) {
         restrictionData.push({
             type: restriction.dropdownType,
@@ -428,10 +524,16 @@ async function getTypeAndRestrictionData(sectionTypeData, brkTypeData, restricti
     return null
 }
 
+//getPbRowData "helper" function for db querys
+//takes in sectionData. also provided an empty array pbRowData to fill
 async function getPbRowData(sectionData, pbRowData) {
+    //for each section
     for (let section of sectionData) {
+        //lookup the submittalPanelBrk rows referenced by secID
         const pbRows = await querySql("SELECT * FROM " + database + "." + dbConfig.submittal_panel_breakers + " WHERE secID = ?", section.secID);
+        //if rows exist
         if (pbRows.length != 0) {
+            //for each row, push to pbRowData
             for (let row of pbRows) {
                 pbRowData.push({
                     secID: section.secID,
@@ -448,15 +550,23 @@ async function getPbRowData(sectionData, pbRowData) {
     return null
 }
 
+//getMfgBreakerDropdownData "helper" function for db querys
+//takes in empty brkDropdownOpts array to fill
 async function getMfgBreakerDropdownData(brkDropdownOpts) {
+    //lookup everything in brkDropdownOptions table and write it to breakerDropdownOptions
     const breakerDropdownOptions = await querySql("SELECT * FROM " + database + "." + dbConfig.breakerDropdown_options_table);
+    //for each option, push to brkDropdownOpts
     for (let opt of breakerDropdownOptions) {
         brkDropdownOpts.push(opt);
     }
     return null
 }
 
+//searchSubmittalRoutine "helper" function for db querys
+//main function in combining all of the functions above into a compact function that can be run quickly in the functions called below
+//specifically useful for getting all the data needed to successfully return to/render the searchSubmittal page during the generateSubmittal process
 async function searchSubmittalRoutine(subID, res, message) {
+    //Initialize variables
     let subData = [];
     let revData = [];
     let creoData = [];
@@ -471,38 +581,50 @@ async function searchSubmittalRoutine(subID, res, message) {
     let restrictionData = [];
     let pbRowData = [];
     let brkDropdownOpts = [];
+    //execute submittalLookup function
     submittalLookup(subData, [null, null, subID])
         .then(async function() {
+            //execute revLookup function
             return await revLookup(revData,[subData[0].subID])
         })
         .then(async function() {
+            //execute getCreoData function
             return await getCreoData(subData, revData, creoData);
         })
         .then(async function () {
+            //execute getLayoutData function
             return await getLayoutData(subData, layoutData);
         })
         .then(async function() {
+            //execute getBreakerData function
             return await getBreakerData(layoutData, deviceData);
         })
         .then(async function() {
+            //execute getBreakerAccData function
             return await getBreakerAccData(deviceData, brkAccData);
         })
         .then(async function() {
+            //execute getLayoutAndBrkAccDropdownData function
             return await getLayoutAndBrkAccDropdownData(layoutDropdownData, brkAccDropdownData);
         })
         .then(async function() {
+            //execute getSectionData function
             return await getSectionData(layoutData, sectionData);
         })
         .then(async function() {
+            //execute getTypeAndRestrictionData function
             return await getTypeAndRestrictionData(sectionTypeData, brkTypeData, restrictionData);
         })
         .then(async function() {
+            //execute getPbRowData function
             return await getPbRowData(sectionData, pbRowData);
         })
         .then(async function() {
+            //execute getMfgBreakerDropdownData function
             return await getMfgBreakerDropdownData(brkDropdownOpts);
         })
         .then(() => {
+            //render the searchSubmittal page with all required data
             res.locals = {title: 'Submittal'};
             res.render('Submittal/searchSubmittal', {
                 message: message,
@@ -531,6 +653,7 @@ async function searchSubmittalRoutine(subID, res, message) {
             })
         })
         .catch(err => {
+            //if an error occurs at anytime at any point in the above code, log it to the console
             console.log(err);
         })
 }
@@ -539,15 +662,20 @@ async function searchSubmittalRoutine(subID, res, message) {
 /***********************************************
  MAIN SUBMITTAL
  ***********************************************/
-
+//submittal function
 exports.submittal = function(req, res) {
+    //initialize variables
     let submittalData = [];
 
+    //lookup everything from the submittalSum table
     querySql("SELECT * FROM " + database + "." + dbConfig.submittal_summary_table)
         .then(async function(submittals) {
+            //for each submittal
             for (let submittal of submittals) {
+                //re-format the date using moment and format()
                 let drawnDate = moment(submittal.drawnDate).utc().format("YYYY-MM-DD");
                 let checkedDate = moment(submittal.checkedDate).utc().format("YYYY-MM-DD");
+                //push to submittalData
                 await submittalData.push({
                     subID: submittal.subID,
                     jobNum: submittal.jobNum,
@@ -564,6 +692,7 @@ exports.submittal = function(req, res) {
             return null
         })
         .then(() => {
+            //render the submittal page with message, newSubData, and submittalData
             res.locals = {title: 'Submittal'};
             res.render('Submittal/submittal', {
                 message: null,
@@ -572,11 +701,20 @@ exports.submittal = function(req, res) {
             });
         })
         .catch(err => {
+            //if an error occurs at anytime at any point in the above code, log it to the console
             console.log(err);
         });
 };
 
+
+
+
+
+
+
+//createSubmittal function
 exports.createSubmittal = function(req, res) {
+    //Initialize variables
     let submittalData = [];
     let subData = [];
     let newSubData = {
@@ -591,27 +729,23 @@ exports.createSubmittal = function(req, res) {
         checkedDate: req.body.checkedDate
     };
 
-    async function getCounter() {
-        let currentCount =  await querySql("SELECT submittalCount FROM " + database + "." + dbConfig.script_counter_table+" WHERE idCounter = ?",1);
-        return currentCount[0].mbomCount;
-    }
-
+    //createSubmittal async function definition - helper function for db query
     async function createSubmittal(subData) {
         return await querySql("INSERT INTO " + database + "." + dbConfig.submittal_summary_table + " SET ?", subData);
     }
+    //createRev async function definition - helper function for db query
     async function createRev(revData) {
         return await querySql("INSERT INTO " + database + "." + dbConfig.submittal_rev_table + " SET ?", revData);
     }
 
+    //execute submittalLookup function
     submittalLookup(subData,[])
-        /*.then(async function() {
-            let counter = await getCounter();
-            await querySql("UPDATE " + database + "." + dbConfig.script_counter_table + " SET submittalCount = ? WHERE idCounter = ?",[counter+1, 1]);
-            return null
-        })*/
         .then(async function() {
+            //initialize existingSubID
             let existingSubID = null;
+            //for each submittal (since lookupArray is [] submittalLookup returns all submittals)
             for (let submittal of subData) {
+                //push to submittalData
                 submittalData.push({
                     subID: submittal.subID,
                     jobNum: submittal.jobNum,
@@ -624,38 +758,58 @@ exports.createSubmittal = function(req, res) {
                     checkedBy: submittal.checkedBy,
                     checkedDate: submittal.checkedDate
                 });
+                //if the jobNum and releaseNum already exist
                 if (submittal.jobNum == newSubData.jobNum && submittal.releaseNum == newSubData.releaseNum) {
+                    //update existingSubID
                     existingSubID = submittal.subID;
                 }
             }
+            //if existsingSubID exists
             if (existingSubID != null) {
                 res.locals = {title: 'Submittal'};
                 res.render('Submittal/submittal', {
+                    //render the submittal page with a message warning the user that this already exists
                     message: "Submittal already exists for "+newSubData.jobNum+newSubData.releaseNum,
                     newSubData: newSubData,
                     submittalData: submittalData
                 });
             } else {
+            //if no existingSubID
+                //execute createSubmittal function feeding it newSubData
                 await createSubmittal(newSubData);
+                //initialize submittals array
                 let submittals = [];
+                //execute submittalLookup again, but this time with lookupArray including the job num and release
                 await submittalLookup(submittals,[newSubData.jobNum, newSubData.releaseNum, null]);
+                //write the subID obtained from submittals array (should only include 1 element)
                 let subID = submittals[0].subID;
+                //initialize/set newRevData
                 let newRevData = {
                     subID: subID,
                     revNum: 'S00',
                     revNote: req.body.revNote
                 };
+                //execute createRev function feeding it newRevData
                 await createRev(newRevData);
+                //redirect to the searchSubmittal page
                 res.locals = {title: 'Submittal'};
                 res.redirect('../searchSubmittal/?subID='+newSubData.jobNum+newSubData.releaseNum+"_"+subID);
             }
         })
         .catch(err => {
+            //if an error occurs at anytime at any point in the above code, log it to the console
             console.log(err);
         })
 };
 
+
+
+
+
+
+//editSubmittal function
 exports.editSubmittal = function(req, res) {
+    //initialize/set variables
     let urlObj = url.parse(req.originalUrl);
     urlObj.protocol = req.protocol;
     urlObj.host = req.get('host');
@@ -673,20 +827,32 @@ exports.editSubmittal = function(req, res) {
         checkedDate: req.body.checkedDate
     };
 
+    //editSubmittal async function definition - helper function for dq query
     async function editSubmittal(subData) {
+        //updates the submittalSum table with the data provided in the row referenced by subID (this is obtained from the url querystring above)
         return await querySql("UPDATE " + database + "." + dbConfig.submittal_summary_table + " SET ? WHERE subID = ?", [subData, subID]);
     }
 
+    //execute editSubmittal feeding it newSubData
     editSubmittal(newSubData)
         .then(() => {
+            //redirect to searchSubmittal page
             res.redirect('../searchSubmittal/?subID='+jobNumReleaseNum+"_"+subID);
         })
         .catch(err => {
+            //if an error occurs at anytime at any point in the above code, log it to the console
             console.log(err);
         });
 };
 
+
+
+
+
+
+//searchSubmittal function
 exports.searchSubmittal = function(req, res) {
+    //initialize/set variables
     let urlObj = url.parse(req.originalUrl);
     urlObj.protocol = req.protocol;
     urlObj.host = req.get('host');
@@ -706,38 +872,51 @@ exports.searchSubmittal = function(req, res) {
     let restrictionData = [];
     let pbRowData = [];
     let brkDropdownOpts = [];
+
+    //execute submittalLookup function with the lookupArray including the subID
     submittalLookup(subData, [null, null, subID])
         .then(async function() {
+            //execute the revLookup function
             return await revLookup(revData,[subData[0].subID])
         })
         .then(async function() {
+            //execute the getCreoData function
             return await getCreoData(subData, revData, creoData);
         })
         .then(async function () {
+            //execute the getLayoutData function
             return await getLayoutData(subData, layoutData);
         })
         .then(async function() {
+            //execute the getBreakerData function
             return await getBreakerData(layoutData, deviceData);
         })
         .then(async function() {
+            //execute the getBreakerAccData function
             return await getBreakerAccData(deviceData, brkAccData);
         })
         .then(async function() {
+            //execute the getLayoutAndBrkAccDropdownData function
             return await getLayoutAndBrkAccDropdownData(layoutDropdownData, brkAccDropdownData);
         })
         .then(async function() {
+            //execute the getSectionData function
             return await getSectionData(layoutData, sectionData);
         })
         .then(async function() {
+            //execute the getTypeAndRestrictionData function
             return await getTypeAndRestrictionData(sectionTypeData, brkTypeData, restrictionData);
         })
         .then(async function() {
+            //execute the getPbRowData function
             return await getPbRowData(sectionData, pbRowData);
         })
         .then(async function() {
+            //execute the getMfgBreakerDropdownData function
             return await getMfgBreakerDropdownData(brkDropdownOpts);
         })
         .then(() => {
+            //render the searchSubmittal page with all required data
             res.locals = {title: 'Submittal'};
             res.render('Submittal/searchSubmittal', {
                 message: null,
@@ -766,15 +945,25 @@ exports.searchSubmittal = function(req, res) {
             })
         })
         .catch((err) => {
+            //if an error occurs at anytime at any point in the above code, log it to the console
             return Promise.reject(err);
         });
 };
 
+
+
+
+
+
+
+
+
 /***********************************************
  LAYOUTS IN SUBMITTAL
  ***********************************************/
-
+//addLayout function
 exports.addLayout = function(req, res) {
+    //initialize/set variables
     let urlObj = url.parse(req.originalUrl);
     urlObj.protocol = req.protocol;
     urlObj.host = req.get('host');
@@ -815,20 +1004,33 @@ exports.addLayout = function(req, res) {
         numSections: 0
     };
 
+    //createLayout async function definition
     async function createLayout(layoutData) {
+        //inserts new row into submittalLayoutSum with layoutData
         return await querySql("INSERT INTO " + database + "." + dbConfig.submittal_layout_table + " SET ?", layoutData);
     }
 
+    //execute createLayout function
     createLayout(newLayoutData)
         .then(() => {
+            //redirect to searchSubmittal page
             res.redirect('../searchSubmittal/?subID='+jobNumReleaseNum+"_"+subID);
         })
         .catch(err => {
+            //if an error occurs at anytime at any point in the above code, log it to the console
             console.log(err);
         });
 };
 
+
+
+
+
+
+
+//editLayout function
 exports.editLayout = function(req, res) {
+    //initialize/set variables
     let urlObj = url.parse(req.originalUrl);
     urlObj.protocol = req.protocol;
     urlObj.host = req.get('host');
@@ -868,24 +1070,38 @@ exports.editLayout = function(req, res) {
         trolley: checkArray[6]
     };
 
+    //editLayout async function definition
     async function editLayout(layoutData) {
+        //update the submittalLayoutSub table with layoutData in the row referenced by subID
         return await querySql("UPDATE " + database + "." + dbConfig.submittal_layout_table + " SET ? WHERE subID = ?", [layoutData, subID]);
     }
 
+    //execute editLayout function
     editLayout(newLayoutData)
         .then(() => {
+            //redirect to searchSubmittal page
             res.redirect('../searchSubmittal/?subID='+jobNumReleaseNum+"_"+subID);
         })
         .catch(err => {
+            //if an error occurs at anytime at any point in the above code, log it to the console
             console.log(err);
         });
 };
 
 
+
+
+
+
+
+
+
 /*********************************************
  SECTION CONFIGURE
  *********************************************/
+//layoutAddSection function
 exports.layoutAddSection = function(req, res){
+    //initialize/set variables
     let urlObj = url.parse(req.originalUrl);
     urlObj.protocol = req.protocol;
     urlObj.host = req.get('host');
@@ -894,9 +1110,12 @@ exports.layoutAddSection = function(req, res){
     let subID = qs.subID.split('_')[1];
     let layoutID, numSections;
 
+    //lookup submittalLayoutSum row referenced by subID
     querySql("SELECT * FROM " + database + "." + dbConfig.submittal_layout_table + " WHERE subID = ?", subID)
         .then(layouts => {
+            //if layouts exist
             if (layouts.length != 0) {
+                //set the layoutID and numSections variables
                 layoutID = layouts[0].layoutID;
                 numSections = layouts[0].numSections;
                 if (numSections == null)
@@ -904,22 +1123,35 @@ exports.layoutAddSection = function(req, res){
                 else
                     numSections += 1;
 
+                //update the submittalLayoutSum table numSections column in the row referenced by layoutID
                 querySql("UPDATE " + database + "." + dbConfig.submittal_layout_table + " SET numSections = ? WHERE layoutID = ? ", [numSections, layoutID]);
+                //insert new row into submittalSectionSum and set the layoutID and sectionNum
                 querySql("INSERT INTO " + database + "." + dbConfig.submittal_sections_table + " SET layoutID = ?, sectionNum = ?", [layoutID, numSections]);
             }
             return null
         })
         .then(() => {
+            //redirect to searchSubmittal page
             res.locals = {title: 'Add Section'};
             res.redirect('../searchSubmittal/?subID='+jobRelease+"_"+subID);
             return null
         })
         .catch((err) => {
+            //if an error occurs at anytime at any point in the above code, log it to the console
             return Promise.reject(err);
         });
 };
 
+
+
+
+
+
+
+
+//layoutDeleteSection function
 exports.layoutDeleteSection = function(req, res) {
+    //initialize/set variables
     let urlObj = url.parse(req.originalUrl);
     urlObj.protocol = req.protocol;
     urlObj.host = req.get('host');
@@ -929,28 +1161,35 @@ exports.layoutDeleteSection = function(req, res) {
     let subID = qs.subID.split('_')[1];
     let layoutID;
     let numSections;
-    let deletedSecID;
 
-
+    //lookup submittalLayout table row referenced by subID
     querySql("SELECT * FROM " + database + "." + dbConfig.submittal_layout_table + " WHERE subID = ?", subID)
         .then(layouts => {
+            //if layouts exist
             if (layouts.length != 0) {
+                //set the layoutID and numSections variables
                 layoutID = layouts[0].layoutID;
                 numSections = layouts[0].numSections;
                 if (numSections == 1)
                     numSections = null;
                 else
                     numSections -= 1;
+                //update the submittalLayout table numSections column in the row referenced by layoutID
                 querySql("UPDATE " + database + "." + dbConfig.submittal_layout_table + " SET numSections = ? WHERE layoutID = ? ", [numSections, layoutID]);
             }
+            //lookup submittalSection table rows referenced by layoutID
             return querySql("SELECT * FROM " + database + "." + dbConfig.submittal_sections_table + " WHERE layoutID = ?", layoutID)
         })
         .then(sections => {
+            //if sections exist
             if (sections.length != 0) {
+                //for each section
                 for (let section of sections) {
                     if (parseInt(section.sectionNum) == parseInt(selectedSection.toString())) {
+                        //if the sectionNum matches the selected section to be deleted, the delete the row
                         querySql("DELETE FROM " + database + "." + dbConfig.submittal_sections_table + " WHERE secID = ?",section.secID);
                     } else if (parseInt(section.sectionNum) > parseInt(selectedSection.toString())) {
+                        //if the sectionNum is greater than the selected section to be deleted, then update the row with the decremented sectionNum
                         querySql("UPDATE " + database + "." + dbConfig.submittal_sections_table + " SET sectionNum = ? WHERE secID = ?", [section.sectionNum - 1, section.secID]);
                     }
                 }
@@ -958,16 +1197,26 @@ exports.layoutDeleteSection = function(req, res) {
             return null
         })
         .then(() => {
+            //redirect to searchSubmittal page
             res.locals = {title: 'Add Section'};
             res.redirect('../searchSubmittal/?subID='+jobRelease+"_"+subID);
             return null
         })
         .catch((err) => {
+            //if an error occurs at anytime at any point in the above code, log it to the console
             return Promise.reject(err);
         });
 };
 
+
+
+
+
+
+
+//layoutSectionProperties function
 exports.layoutSectionProperties = function(req, res) {
+    //initialize/set variables
     let urlObj = url.parse(req.originalUrl);
     urlObj.protocol = req.protocol;
     urlObj.host = req.get('host');
@@ -980,9 +1229,13 @@ exports.layoutSectionProperties = function(req, res) {
     let totalRows = req.body["totalRows_"+sectionNum];
     let pbRowData = [];
 
+    //if the section is a panelboard, analyze the HTML elements names/values to set pbRowData
     if(req.body.pbCheck){
+        //for each row
         for (let i = 0; i < totalRows; i++) {
+            //if the rowType_# HTML element has a value of DUAL
             if (req.body["rowType_"+(i+1)] == 'DUAL') {
+                //push to pbRowData
                 pbRowData.push({
                     row: i+1,
                     configuration: "DUAL",
@@ -996,7 +1249,10 @@ exports.layoutSectionProperties = function(req, res) {
                     frame: req.body["row"+(i+1)+"_frameR"]
                 });
             } else if (req.body["rowType_"+(i+1)] == 'SINGLE') {
+            //if the rowType_# HTML element has a value of SINGLE
+                //if the row_#_frameL HTML element exists
                 if (req.body["row"+(i+1)+"_frameL"]) {
+                    //push to pbRowData
                     pbRowData.push({
                         row: i+1,
                         configuration: "SINGLE",
@@ -1004,6 +1260,8 @@ exports.layoutSectionProperties = function(req, res) {
                         frame: req.body["row"+(i+1)+"_frameL"]
                     });
                 } else if (req.body["row"+(i+1)+"_frameR"]) {
+                //if the row_#_frameR HTML element exists
+                    //push to pbRowData
                     pbRowData.push({
                         row: i+1,
                         configuration: "SINGLE",
@@ -1011,6 +1269,8 @@ exports.layoutSectionProperties = function(req, res) {
                         frame: req.body["row"+(i+1)+"_frameR"]
                     });
                 } else if (req.body["row"+(i+1)+"_frameCL"]) {
+                //if the row_#_frameCL HTML element exists
+                    //push to pbRowData
                     pbRowData.push({
                         row: i+1,
                         configuration: "SINGLE",
@@ -1018,6 +1278,8 @@ exports.layoutSectionProperties = function(req, res) {
                         frame: req.body["row"+(i+1)+"_frameCL"]
                     });
                 } else if (req.body["row"+(i+1)+"_frameCR"]) {
+                //if the row_#_frameCR HTML element exists
+                    //push to pbRowData
                     pbRowData.push({
                         row: i+1,
                         configuration: "SINGLE",
@@ -1027,6 +1289,7 @@ exports.layoutSectionProperties = function(req, res) {
                 }
             }
         }
+        //if panelboard without main iccb, then set comp object as all panelboard
         if(req.body.pbCheck == 'noBrk'){
             comp = {
                 A: 'panelboard',
@@ -1035,6 +1298,7 @@ exports.layoutSectionProperties = function(req, res) {
                 D: 'panelboard'
             };
         } else {
+        //if panelboard with main iccb, then set comp object as brk in bottom D, and the rest panelboard
             comp = {
                 A: 'panelboard',
                 B: 'panelboard',
@@ -1043,6 +1307,7 @@ exports.layoutSectionProperties = function(req, res) {
             }
         }
     } else {
+    //if not a panelboard, then set comp object according to the user input for A, B, C, and D
         comp = {
             A: req.body.compA.split('_')[0],
             B: req.body.compB.split('_')[0],
@@ -1051,6 +1316,7 @@ exports.layoutSectionProperties = function(req, res) {
         };
     }
 
+    //set data
     let data = {
         secType: req.body.secType,
         brkType: req.body.brkType,
@@ -1061,26 +1327,32 @@ exports.layoutSectionProperties = function(req, res) {
         secDepth: req.body.secDepth
     };
 
+    //set applyToArr (used to let section configuration options apply to multiple sections to save time)
     let applyToArr = [];
     applyToArr.push(sectionNum);
 
     let apply = req.body.applyToCheck;
-    let secIDArr = [];
 
-
+    //lookup submittalLayout row referenced by subID
     querySql("SELECT * FROM " + database + "." + dbConfig.submittal_layout_table + " WHERE subID = ?", subID)
         .then(layouts => {
+            //set layoutID
             layoutID = layouts[0].layoutID;
             return null
         })
         .then(async function() {
             if (apply) {
+
+                //if apply is an array
                 if(apply instanceof Array) {
+                    //for each section applied
                     for (let i = 0; i < apply.length; i++) {
+                        //push to applyToArr
                         let temp = apply[i].split('o')[1];
                         applyToArr.push(temp);
                     }
                 } else {
+                    //push to applyToArr
                     let temp = apply.split('o')[1];
                     applyToArr.push(temp);
                 }
@@ -1094,14 +1366,20 @@ exports.layoutSectionProperties = function(req, res) {
             return null
         })
         .then(async function() {
+            //for each section in the applyToArr
             for(let row of applyToArr) {
+                //lookup the submittalSection row referenced by layoutID and sectionNum
                 await querySql("SELECT * FROM " + database + "." + dbConfig.submittal_sections_table + " WHERE layoutID = ? " +
                     "AND sectionNum = ?", [layoutID, row])
                     .then(async function(rows){
+                        //for each section returned (typically 1)
                         for(let row of rows){
+                            //update the submittalBrk table removing the comp and secID properties (in order to "clean" the section, since the existing breakers might not work within the new section properties
                             await querySql("UPDATE " + database + "." + dbConfig.submittal_breaker_table + " SET " +
                                 "comp = ?, secID = ? WHERE secID = ?", [null, null, row.secID]);
                         }
+
+                        //sorry dood, i have no clue whats going on here but im pretty sure it works
                         if (row.compType == null) {
                             await querySql("UPDATE " + database + "." + dbConfig.submittal_sections_table + " SET " +
                                 "compType = JSON_OBJECT('A', ?, 'B', ?, 'C', ?, 'D', ?), secType = ?, brkType = ?, secAmp = ?, secPoles = ?, secHeight = ?, secWidth = ?, secDepth = ? WHERE layoutID = ? AND sectionNum = ?",
@@ -1113,31 +1391,46 @@ exports.layoutSectionProperties = function(req, res) {
                         }
                     })
                     .catch(err => {
+                        //if an error occurs at anytime at any point in the above code, log it to the console
                         console.log(err);
                     });
             }
             return null
         })
         .then(async function() {
+            //if pbRowData exists
             if (pbRowData.length != 0) {
+                //for each section in applyToArr
                 for (let i = 0; i < applyToArr.length; i++) {
+                    //lookup submittalSection table in the row referenced by layoutID and sectionNum
                     const section = await querySql("SELECT * FROM " + database + "." + dbConfig.submittal_sections_table + " WHERE layoutID = ? AND sectionNum = ?", [layoutID, applyToArr[i]]);
+                    //set secID
                     let secID = section[0].secID;
-                    let secType = section[0].secType;
 
+                    //lookup submittalPanelBrk rows referenced by secID
                     const pbBreakers = await querySql("SELECT * FROM " + database + "." + dbConfig.submittal_panel_breakers + " WHERE secID = ?", secID);
+                    //if pbBreakers exist
                     if (pbBreakers.length != 0) {
+                        //for each breaker
                         for (let j = 0; j < pbRowData.length; j++) {
+                            //if the configuration is SINGLE
                             if (pbRowData[j].configuration == 'SINGLE') {
+                                //check if single breaker exists by looking up submittalPanelBrk rows referenced by secID and panelRow
                                 const doesSingleBreakerExist = await querySql("SELECT * FROM " + database + "." + dbConfig.submittal_panel_breakers + " WHERE secID = ? AND panelRow = ?", [secID, pbRowData[j].row]);
                                 if (doesSingleBreakerExist.length != 0) {
+                                    //if exists, set the panelBrkID
                                     let panelBrkID = doesSingleBreakerExist[0].panelBrkID;
+                                    //update the submittalPanelBrk table with the pbRowData in the row referenced by panelBrkID
                                     await querySql("UPDATE " + database + "." + dbConfig.submittal_panel_breakers + " SET configuration = ?, mounting = ?, frame = ? WHERE panelBrkID = ?", [pbRowData[j].configuration, pbRowData[j].mounting, pbRowData[j].frame, panelBrkID]);
                                 } else {
+                                    //insert new row into submittalPanelBrk table with pbRowData and secID
                                     await querySql("INSERT INTO " + database + "." + dbConfig.submittal_panel_breakers + " SET secID = ?, panelRow = ?, configuration = ?, mounting = ?, frame = ?", [secID, pbRowData[j].row, pbRowData[j].configuration, pbRowData[j].mounting, pbRowData[j].frame]);
                                 }
                             } else if (pbRowData[j].configuration == 'DUAL') {
+                            //if the configuration is DUAL
+                                //check if dual breaker exists by looking up submittalPanelBrk rows referenced by secID and panelRow
                                 const doesDualBreakerExist = await querySql("SELECT * FROM " + database + "." + dbConfig.submittal_panel_breakers + " WHERE secID = ? AND panelRow = ?", [secID, pbRowData[j].row]);
+                                ///if exists, set the panelBrkArr as the array of both breakers details
                                 if (doesDualBreakerExist.length != 0) {
                                     let panelBrkArr = [{
                                         panelBrkID: doesDualBreakerExist[0].panelBrkID,
@@ -1150,11 +1443,14 @@ exports.layoutSectionProperties = function(req, res) {
                                         mounting: pbRowData[j+1].mounting,
                                         frame: pbRowData[j+1].frame
                                     }];
+                                    //for each breaker in panelBrkArr
                                     for (let panelBrk of panelBrkArr) {
+                                        //update the submittalPanelBrk table with the details
                                         await querySql("UPDATE " + database + "." + dbConfig.submittal_panel_breakers + " SET configuration = ?, mounting = ?, frame = ? WHERE panelBrkID = ?", [panelBrk.configuration, panelBrk.mounting, panelBrk.frame, panelBrk.panelBrkID]);
                                     }
                                     j += 1;
                                 } else {
+                                    //set panelBrkArr with pbRowData
                                     let panelBrkArr = [{
                                         secID: secID,
                                         panelRow: pbRowData[j].row,
@@ -1168,24 +1464,27 @@ exports.layoutSectionProperties = function(req, res) {
                                         mounting: pbRowData[j+1].mounting,
                                         frame: pbRowData[j+1].frame
                                     }];
+                                    //for each breaker
                                     for (let panelBrk of panelBrkArr) {
+                                        //insert new row into submittalPanelBrk table
                                         await querySql("INSERT INTO " + database + "." + dbConfig.submittal_panel_breakers + " SET ?", panelBrk);
                                     }
-
                                     j += 1;
-
-
                                 }
                             }
                         }
 
+                        //for each breaker in pbBreakers
                         for (let row of pbBreakers) {
+                            //filter pbRowData by panelRow, and if no entries exist, then delete row from submittalPanelBrk table
                             if (pbRowData.filter(e => e.row == row.panelRow).length == 0) {
                                 await querySql("DELETE FROM " + database + "." + dbConfig.submittal_panel_breakers + " WHERE panelBrkID = ?", row.panelBrkID);
                             }
                         }
                     } else {
+                        //for each row in pbRowData
                         for (let row of pbRowData) {
+                            //insert new row into submittalPanelBrk table with row data
                             await querySql("INSERT INTO " + database + "." + dbConfig.submittal_panel_breakers + " SET secID = ?, panelRow = ?, configuration = ?, mounting = ?, frame = ?", [secID, row.row, row.configuration, row.mounting, row.frame]);
                         }
                     }
@@ -1194,22 +1493,33 @@ exports.layoutSectionProperties = function(req, res) {
             }
         })
         .then(() => {
+            //redirect to searchSubmittal page
             res.locals = {title: 'Add Section'};
             res.redirect('../searchSubmittal/?subID='+jobRelease+"_"+subID);
             return null
         })
         .catch((err) => {
+            //if an error occurs at anytime at any point in the above code, log it to the console
             return Promise.reject(err);
         });
 
 };
 
 
+
+
+
+
+
+
+
+
 /***********************************************
  BREAKERS IN SUBMITTAL
  ***********************************************/
-//CREATE BREAKER IN MBOM
+//addBrk function
 exports.addBrk = function(req, res) {
+    //initialize/set variables
     let jobRelease = req.body.jobRelease;
     let accOpts = req.body.accOpts;
     let jobNum = jobRelease.slice(0, jobRelease.length - 1);
@@ -1235,18 +1545,27 @@ exports.addBrk = function(req, res) {
         }
     }
 
+
+    //initialize variables
     let platform, devType, devMfg, devFrame, frameAmp;
+    //if breaker being added is an ICCB
     if (req.body.iccbPlatform.length != 0) {
+        //set variables
         platform = req.body.iccbPlatform;
         devType = 'ICCB';
         devMfg = 'ALL';
         devFrame = 'ALL';
         frameAmp = parseInt(req.body.devFrameSet.slice(0,req.body.devFrameSet.length - 1));
     } else if (req.body.mccbPlatform.length != 0) {
+    //if breaker being added in an MCCB
+        //         //get the selected platform
         platform = req.body.mccbPlatform;
+        //if SQD
         if (platform == 'SQUARE D POWERPACT') {
+            //set static variables
             devType = 'MCCB';
             devMfg = 'SQUARE D';
+            //run a switch on the frame amperage to determine the frame
             switch (parseInt(req.body.devFrameSet.slice(0,req.body.devFrameSet.length - 1))) {
                 case 150:
                     devFrame = 'H';
@@ -1274,8 +1593,11 @@ exports.addBrk = function(req, res) {
                     break;
             }
         } else if (platform == 'ABB TMAX') {
+        //if ABB TMAX
+            //set static variables
             devType = 'MCCB';
             devMfg = 'ABB';
+            //run a switch on the frame amperage to determine the frame
             switch (parseInt(req.body.devFrameSet.slice(0,req.body.devFrameSet.length - 1))) {
                 case 125:
                     devFrame = 'XT2';
@@ -1300,24 +1622,27 @@ exports.addBrk = function(req, res) {
             }
         }
     } else if (req.body.vcbPlatform.length != 0) {
+    //if breaker being added is a VCB (i.e. mv breakers), set selected platform
         platform = req.body.vcbPlatform;
     }
 
 
+    //lookup the submittalSum table row referenced by job num and release
     querySql("SELECT * FROM "+database+"."+dbConfig.submittal_summary_table+" WHERE (jobNum, releaseNum) = (?,?)",[jobNum, releaseNum])
         .then(async function(sub) {
+            //set the subID
             subID = sub[0].subID;
+            //lookup the submittalLayout table row referenced by subID
             return await querySql("SELECT * FROM "+database+"."+dbConfig.submittal_layout_table+" WHERE subID = ?",subID);
         })
         .then(async function(layout) {
+            //set the layoutID
             layoutID = layout[0].layoutID;
+            //for each breaker designation
             for(let row of designationArrayFinal) {
-                console.log(devType)
-                console.log(devMfg)
-                console.log(devFrame)
-                console.log(frameAmp)
+                //lookup the brkLugLanding table row corresponding with the breaker details
                 const lugInfo = await querySql("SELECT * FROM "+database+"."+dbConfig.brk_lugLanding_table+" WHERE (devType, devMfg, devFrame, frameAmp) = (?,?,?,?)",[devType, devMfg, devFrame, frameAmp]);
-                console.log(lugInfo);
+                //push to data
                 data.push({
                     layoutID: layoutID,
                     devDesignation: row.toUpperCase(),
@@ -1349,20 +1674,29 @@ exports.addBrk = function(req, res) {
             return null
         })
         .then(async function() {
+            //initialize temp variable
             let temps = [];
+            //for each breaker in data
             for (let row of data) {
+                //insert row into the submittalBrk table
                 await querySql("INSERT INTO " +  database + "." + dbConfig.submittal_breaker_table + " SET ? ", row)
                     .then(rows => {
+                        //push to temps
                         temps.push(rows.insertId);
                     });
             }
             return temps
         })
         .then(async function(temps) {
+            //lookup everything in the brkAccOptions table
             const accOptions = await querySql("SELECT * FROM " + database + "." + dbConfig.brkAcc_options_table);
+            //for each breaker in temps
             for (let temp of temps) {
+                //initialize accData
                 let accData = [];
+                //for each acc option
                 for (let i = 0; i < accOptions.length; i++) {
+                    //if 1, then push to accData
                     if (accOpts[i] == 1) {
                         accData.push({
                             devID: temp,
@@ -1370,23 +1704,36 @@ exports.addBrk = function(req, res) {
                         });
                     }
                 }
+                //for each acc in accData
                 for (let j = 0; j < accData.length; j++) {
+                    //insert new row into the submittalBrkAcc table
                     await querySql("INSERT INTO " +  database + "." + dbConfig.submittal_brkAcc_table + " SET ? ", accData[j])
                 }
             }
         })
         .then(() => {
+            //redirect to searchSubmittal page
             res.locals = {title: 'Submittal'};
             res.redirect('../searchSubmittal/?subID='+jobNum+releaseNum+"_"+subID);
             return null;
         })
         .catch(err => {
+            //if an error occurs at anytime at any point in the above code, log it to the console
             return Promise.reject(err);
         });
 
 };
 
+
+
+
+
+
+
+
+//copyBrk function
 exports.copyBrk = function(req, res) {
+    //initialize/set variables
     let urlObj = url.parse(req.originalUrl);
     urlObj.protocol = req.protocol;
     urlObj.host = req.get('host');
@@ -1399,17 +1746,24 @@ exports.copyBrk = function(req, res) {
     let newBrkData = [];
     let newAccData = [];
 
+    //getCopyBrkData async function definition
     async function getCopyBrkData() {
+        //lookup submittalBrk table in the row referenced by copied devID
         return await querySql("SELECT * FROM "+database+"."+dbConfig.submittal_breaker_table+" WHERE devID = ?", copiedDevID);
     }
 
+    //getCopyAccData async function definition
     async function getCopyAccData() {
+        //lookup submittalBrkAcc table in the row referenced by copied devID
         return await querySql("SELECT * FROM "+database+"."+dbConfig.submittal_brkAcc_table+" WHERE devID = ?", copiedDevID);
     }
 
+    //execute getCopyBrkData function
     getCopyBrkData()
         .then(async function(brkData) {
+            //for each breaker in returned brkData
             for (let breaker of brkData) {
+                //push to newBrkData
                 await newBrkData.push({
                     layoutID: layoutID,
                     devDesignation: breaker.devDesignation,
@@ -1439,36 +1793,54 @@ exports.copyBrk = function(req, res) {
                 });
             }
 
+            //for each new breaker
             for (let newBreaker of newBrkData) {
+                //insert a row into the submittalBrk table with newBreaker data
                 const brkInsert = await querySql("INSERT INTO "+database+"."+dbConfig.submittal_breaker_table+" SET ?", newBreaker);
+                //also get the id using the .insertId property of an sql INSERT query
                 newDevID = brkInsert.insertId;
             }
+            //execute getCopyAccData
             return getCopyAccData();
         })
         .then(async function(accData) {
+            //for each acc
             for (let acc of accData) {
+                //push to newAccData
                 newAccData.push({
                     brkAccDropdownID: acc.brkAccDropdownID,
                     devID: newDevID
                 });
             }
+            //for each new acc
             for (let newAcc of newAccData) {
+                //insert new row into submittalBrkAcc table with newAcc data
                 await querySql("INSERT INTO "+database+"."+dbConfig.submittal_brkAcc_table+" SET ?", newAcc);
             }
             return null;
         })
         .then(() => {
+            //redirect to searchSubmittal page
             res.locals = {title: 'Submittal'};
             res.redirect('../searchSubmittal/?subID='+jobRelease+"_"+subID);
             return null;
         })
         .catch(err => {
+            //if an error occurs at anytime at any point in the above code, log it to the console
             return Promise.reject(err);
         });
 
 };
 
+
+
+
+
+
+
+//editBrk function
 exports.editBrk = function(req, res) {
+    //initialize/set variables
     let urlObj = url.parse(req.originalUrl);
     urlObj.protocol = req.protocol;
     urlObj.host = req.get('host');
@@ -1477,20 +1849,28 @@ exports.editBrk = function(req, res) {
     let subID = qs.subID.split('_')[1];
     let layoutID = qs.layoutID;
     let devID = qs.devID;
-
     let newAccOpts = req.body.accOpts;
+
+    //initialize variables
     let platform, devType, devMfg, devFrame, frameAmp;
+    //if breaker being added is an ICCB
     if (req.body.iccbPlatform.length != 0) {
+        //set variables
         platform = req.body.iccbPlatform;
         devType = 'ICCB';
         devMfg = 'ALL';
         devFrame = 'ALL';
         frameAmp = parseInt(req.body.devFrameSet.slice(0,req.body.devFrameSet.length - 1));
     } else if (req.body.mccbPlatform.length != 0) {
+    //if breaker being added in an MCCB
+        //get the selected platform
         platform = req.body.mccbPlatform;
+        //if SQD
         if (platform == 'SQUARE D POWERPACT') {
+            //set static variables
             devType = 'MCCB';
             devMfg = 'SQUARE D';
+            //run a switch on the frame amperage to determine the frame
             switch (parseInt(req.body.devFrameSet.slice(0,req.body.devFrameSet.length - 1))) {
                 case 150:
                     devFrame = 'H';
@@ -1518,8 +1898,11 @@ exports.editBrk = function(req, res) {
                     break;
             }
         } else if (platform == 'ABB TMAX') {
+        //if ABB TMAX
+            //set static variables
             devType = 'MCCB';
             devMfg = 'ABB';
+            //run a switch on the frame amperage to determine the frame
             switch (parseInt(req.body.devFrameSet.slice(0,req.body.devFrameSet.length - 1))) {
                 case 125:
                     devFrame = 'XT2';
@@ -1548,11 +1931,14 @@ exports.editBrk = function(req, res) {
             }
         }
     } else if (req.body.vcbPlatform.length != 0) {
+    //if breaker being added is a VCB (i.e. mv breakers), set selected platform
         platform = req.body.vcbPlatform;
     }
 
+    //lookup the brkLugLanding table row using the breaker details
     querySql("SELECT * FROM "+database+"."+dbConfig.brk_lugLanding_table+" WHERE (devType, devMfg, devFrame, frameAmp) = (?,?,?,?)",[devType, devMfg, devFrame, frameAmp])
         .then(async function(lugInfo) {
+            //initialize/set newBrkData
             let newBrkData = {
                 layoutID: layoutID,
                 devDesignation: req.body.devDesignation,
@@ -1581,13 +1967,18 @@ exports.editBrk = function(req, res) {
                 devLugSize: lugInfo[0].lugSize
             };
 
+            //update submittalBrk table with newBrkData in the row referenced by devID
             await querySql("UPDATE "+database+"."+dbConfig.submittal_breaker_table+" SET ? WHERE devID = ?", [newBrkData, devID]);
             return null
         })
         .then(async function() {
+            //lookup everything in the brkAccOptions table
             const accOptions = await querySql("SELECT * FROM " + database + "." + dbConfig.brkAcc_options_table);
+            //initialize accData
             let accData = [];
+            //for each option in accOptions
             for (let i = 0; i < accOptions.length; i++) {
+                //if 1, then push to accData
                 if (newAccOpts[i] == 1) {
                     accData.push({
                         devID: devID,
@@ -1596,24 +1987,38 @@ exports.editBrk = function(req, res) {
                 }
             }
 
+            //delete row from submittalBrkAcc table corresponding with devID
             await querySql("DELETE FROM " + database + "." + dbConfig.submittal_brkAcc_table + " WHERE devID = ?",devID);
 
+            //for each acc in accData
             for (let j = 0; j < accData.length; j++) {
+                //insert new row into submittalBrkAcc table
                 await querySql("INSERT INTO " +  database + "." + dbConfig.submittal_brkAcc_table + " SET ? ", accData[j])
             }
 
         })
         .then(() => {
+            //redirect to seaerchSubmittal page
             res.locals = {title: 'Submittal'};
             res.redirect('../searchSubmittal/?subID='+jobRelease+"_"+subID);
             return null;
         })
         .catch(err => {
+            //if an error occurs at anytime at any point in the above code, log it to the console
             return Promise.reject(err);
         });
 };
 
+
+
+
+
+
+
+
+//deleteBrk function
 exports.deleteBrk = function(req, res) {
+    //initialize/set variables
     let urlObj = url.parse(req.originalUrl);
     urlObj.protocol = req.protocol;
     urlObj.host = req.get('host');
@@ -1622,48 +2027,58 @@ exports.deleteBrk = function(req, res) {
     let subID = qs.subID.split('_')[1];
     let devID = qs.devID;
 
+    //delete row from submittalBrk table corresponding to devID
     querySql("DELETE FROM "+database+"."+dbConfig.submittal_breaker_table+" WHERE devID = ?", devID)
         .then(() => {
+            //redirect to searchSubmittal page
             res.locals = {title: 'Submittal'};
             res.redirect('../searchSubmittal/?subID='+jobRelease+"_"+subID);
             return null;
         })
         .catch(err => {
+            //if an error occurs at anytime at any point in the above code, log it to the console
             return Promise.reject(err);
         });
 };
+
+
+
+
+
+
+
+
 
 
 /***********************************************
  CREOSON SUBMITTAL
  ***********************************************/
 
-//Set Working Directory POST request
+//setWD function
 exports.setWD = function(req, res) {
+    //initialize/set variables
     let urlObj = url.parse(req.originalUrl);
     urlObj.protocol = req.protocol;
     urlObj.host = req.get('host');
     let qs = queryString.parse(urlObj.search);
     let jobRelease = qs.subID.split('_')[0];
     let subID = qs.subID.split('_')[1];
-    //let message = null;
-    let layoutAsm = req.body.layoutAsm;
-    let oneLineAsm = req.body.oneLineAsm;
-    let layoutDrw = req.body.layoutDrw;
-    let outputPDF = req.body.outputPDF;
 
     creoWorkingDir = req.body.workingDir;
-    //let outputDir = workingDir + '/_outputDir';
     creoStandardLib = req.body.standardLib;
 
+    //cdAndCreateOutputDir async function definition
     async function cdAndCreateOutputDir() {
+        //pass the current creo wd to dir variable
         let dir = await creo(sessionId, {
             command: "creo",
             function: "pwd",
             data: {}
         });
 
+        //if dir.data exists
         if (dir.data != undefined) {
+            //if the current directory is not creoWorkingDir, then set it
             if (dir.data.dirname != creoWorkingDir) {
                 await creo(sessionId, {
                     command: "creo",
@@ -1677,20 +2092,30 @@ exports.setWD = function(req, res) {
         return null
     }
 
+    //execute cdAndCreateOutputDir
     cdAndCreateOutputDir()
         .then(() => {
+            //redirect to searchSubmittal page
             res.locals = {title: 'Submittal'};
             res.redirect('../searchSubmittal/?subID='+jobRelease+"_"+subID);
             return null;
         })
         .catch(err => {
+            //if an error occurs at anytime at any point in the above code, log it to the console
             return Promise.reject(err);
         });
 };
 
+
+
+
+
+
+
+//generateSubmittal function
 exports.generateSubmittal = function(req, res) {
-    req.setTimeout(0); //no timeout
-    //initialize variables
+    req.setTimeout(0); //no timeout (this is needed to prevent error due to page taking a long time to load)
+    //initialize/set variables
     let urlObj = url.parse(req.originalUrl);
     urlObj.protocol = req.protocol;
     urlObj.host = req.get('host');
@@ -1715,33 +2140,45 @@ exports.generateSubmittal = function(req, res) {
     let creoPanelData = [];
     let message = null;
 
+    //checkWorkingDirAndStandardLib async function definition
     async function checkWorkingDirAndStandardLib() {
+        //if either workingDir or standard library is null
         if (creoWorkingDir == null || creoStandardLib == null) {
+            //set message
             message = {
                 location: 2,
                 text: 'Please set the location of the Working Directory as well as the Standard Library'
             };
+            //execute the searchSubmittalRoutine function (defined at beginning of file)
             await searchSubmittalRoutine(subID, res, message);
+            //exit
             return 'STOP';
         } else {
             return null
         }
     }
+
+    //getSectionDetails async function definition
     async function getSectionDetails() {
+        //lookup submittalLayout table row referenced by subID
         const layouts = await querySql("SELECT * FROM " + database + "." + dbConfig.submittal_layout_table + " WHERE subID = ?", subID);
+        //for each layout
         for (let layout of layouts) {
             layoutID = layout.layoutID;
         }
+        //lookup submittalSection table rows referenced by layoutID
         const sections = await querySql("SELECT * FROM "+ database + "." +dbConfig.submittal_sections_table + " WHERE layoutID = ?", layoutID);
 
+        //for each section
         for (let section of sections) {
+            //initialize/set sectionNum with leading zeros accordingly
             let sectionNum;
             if (layoutNum < 10 && section.sectionNum < 10) {
                 sectionNum = layoutNum.toString() + "0" + section.sectionNum.toString();
             } else if (layoutNum >= 10 || section.sectionNum >= 10) {
                 sectionNum = layoutNum.toString() + section.sectionNum.toString();
-
             }
+            //push to sectionData
             sectionData.push({
                 secID: section.secID,
                 layoutID: layoutID,
@@ -1758,10 +2195,15 @@ exports.generateSubmittal = function(req, res) {
         }
         return null
     }
+
+    //getBreakerDetails function
     async function getBreakerDetails() {
+        //lookup submittalBrk table rows referenced by layoutID
         const breakers = await querySql("SELECT * FROM " + database + "." + dbConfig.submittal_breaker_table + " WHERE layoutID = ?", layoutID);
 
+        //for each breaker
         for (let breaker of breakers) {
+            //push to breakerData
             breakerData.push({
                 devID: breaker.devID,
                 layoutID: breaker.layoutID,
@@ -1795,16 +2237,27 @@ exports.generateSubmittal = function(req, res) {
         }
         return null;
     }
+
+    //getPanelDetails async function definition
     async function getPanelDetails() {
-        const sections = await querySql("SELECT * FROM " +database + "." + dbConfig.submittal_sections_table + " WHERE layoutID = ?",[layoutID]);
+        //lookup submittalSection table row referenced by layoutID
+        const sections = await querySql("SELECT * FROM " + database + "." + dbConfig.submittal_sections_table + " WHERE layoutID = ?", [layoutID]);
+        //for each section
         for (let section of sections) {
             if (section.secType.includes(' - ') == true) {
+                //if secType is PANELBOARD
                 if (section.secType.split(' - ')[0] == 'PANELBOARD') {
+                    //initialize panelData
                     let panelData = [];
+                    //lookup submittalPanelBrk table rows referenced by secID
                     let panels = await querySql("SELECT * FROM " + database + "." + dbConfig.submittal_panel_breakers + " WHERE secID = ?", [section.secID]);
+
+                    //if panels exist (panels => rows on a panel board => single or double breakers)
                     if (panels.length > 0) {
                         let panelType = section.secType.split(' - ')[1];
+                        //for each row
                         for (let panel of panels) {
+                            //push to panelData
                             panelData.push({
                                 panelBrkID: panel.panelBrkID,
                                 secID: panel.secID,
@@ -1815,12 +2268,17 @@ exports.generateSubmittal = function(req, res) {
                                 frame: panel.frame
                             });
                         }
+                        //initialize maxRow
                         let maxRow = 0;
+                        //for each panel row
                         for (let row of panelData) {
                             if (row.panelRow > maxRow) {
+                                //overwrite maxRow
                                 maxRow = row.panelRow;
                             }
                         }
+
+                        //initialize/set mainLug
                         let mainLug;
                         switch (panelType) {
                             case 'MAIN LUG (T)':
@@ -1834,7 +2292,9 @@ exports.generateSubmittal = function(req, res) {
                                 break;
                         }
 
+                        //if panelData exists
                         if (panelData.length > 0) {
+                            //push to creoPanelData
                             creoPanelData.push({
                                 secID: panelData[0].secID,
                                 mainLug: mainLug,
@@ -1842,9 +2302,12 @@ exports.generateSubmittal = function(req, res) {
                             });
                         }
 
+                        //for each row
                         for (let i = 0; i < maxRow; i++) {
+                            //set rowData
                             let rowData = panelData.filter(e => e.panelRow == i + 1);
 
+                            //if multiple entries, then push each to creoPanelData
                             if (rowData.length == 2) {
                                 creoPanelData.filter(e => e.secID == rowData[0].secID)[0].rows.push({
                                     panelRow: rowData[0].panelRow,
@@ -1861,6 +2324,7 @@ exports.generateSubmittal = function(req, res) {
                                 });
 
                             } else if (rowData.length == 1) {
+                                //if single entry, then push to creoPanelData
                                 creoPanelData.filter(e => e.secID == rowData[0].secID)[0].rows.push({
                                     panelRow: rowData[0].panelRow,
                                     configuration: rowData[0].configuration,
@@ -1878,13 +2342,17 @@ exports.generateSubmittal = function(req, res) {
         }
         return null
     }
+
+    //getCreoData async function definition
     async function getCreoData() {
 
+        //pass the workingDir to dir
         let dir = await creo(sessionId, {
             command: "creo",
             function: "pwd",
             data: {}
         });
+        //if no dir.data then set wd
         if (dir.data == undefined) {
             await creo(sessionId, {
                 command: "creo",
@@ -1894,6 +2362,7 @@ exports.generateSubmittal = function(req, res) {
                 }
             });
         } else {
+        //if dirnames dont match, then set it
             if (dir.data.dirname != creoWorkingDir) {
                 await creo(sessionId, {
                     command: "creo",
@@ -1904,13 +2373,17 @@ exports.generateSubmittal = function(req, res) {
                 });
             }
         }
+        //push to creoData
         creoData.push({
             workingDir: creoWorkingDir,
             standardLib: creoStandardLib
         });
         return null
     }
+
+    //saveStandardFrame async function defintion
     async function saveStandardFrame(mainFramePN, secData) {
+        //open frame generic in standard library
         await creo(sessionId, {
             command: "file",
             function: "open",
@@ -1922,6 +2395,9 @@ exports.generateSubmittal = function(req, res) {
             }
         });
 
+
+        //****************VERY IMPORTANT********************
+        //save as, but with a variable name mapkey
         await creo(sessionId, {
             command: "interface",
             function: "mapkey",
@@ -1939,6 +2415,7 @@ exports.generateSubmittal = function(req, res) {
             }
         });
 
+        //open the mainFramePN asm
         await creo(sessionId, {
             command: "file",
             function: "open",
@@ -1947,6 +2424,7 @@ exports.generateSubmittal = function(req, res) {
             }
         });
 
+        //set the SEC_HEIGHT parameter
         await creo(sessionId, {
             command: "parameter",
             function: "set",
@@ -1958,6 +2436,7 @@ exports.generateSubmittal = function(req, res) {
             }
         });
 
+        //set the SEC_WIDTH parameter
         await creo(sessionId, {
             command: "parameter",
             function: "set",
@@ -1969,6 +2448,7 @@ exports.generateSubmittal = function(req, res) {
             }
         });
 
+        //set the SEC_DEPTH parameter
         await creo(sessionId, {
             command: "parameter",
             function: "set",
@@ -1980,33 +2460,46 @@ exports.generateSubmittal = function(req, res) {
             }
         });
 
+        //execute the regenAndSave helper function
         await regenAndSave(sessionId, mainFramePN+".asm");
         return null
     }
-    async function assembleUniqueBaseFrameAndCornerPost() {
-        let baseFrames = await querySql("SELECT * FROM " + database + "." + dbConfig.baseFrame_table);
 
+    //assembleUniqueBaseFrameAndCornerPost async function definition
+    async function assembleUniqueBaseFrameAndCornerPost() {
+        //lookupp everything from the baseFrames table and write it to baseFrames
+        let baseFrames = await querySql("SELECT * FROM " + database + "." + dbConfig.baseFrame_table);
+        //lookup everything from the cornerPosts table and write it to cornerPosts
         let cornerPosts = await querySql("SELECT * FROM " + database + "." + dbConfig.cornerPost_table);
 
+        //for each unique section
         for (let uniqueSection of uniqueSections) {
+            //initialize variables
             let uniqueBaseFrame;
             let uniqueFrontCPost;
             let uniqueRearCPost;
+            //for each baseFrame
             for (let baseFrame of baseFrames) {
+                //if width and depth match, then set uniqueBaseFrame
                 if (baseFrame.frameWidth == uniqueSection.secData.secWidth && baseFrame.frameDepth == uniqueSection.secData.secDepth ) {
                     uniqueBaseFrame = baseFrame.frameAsm;
                 }
             }
 
+            //if unique section type is SWITCHBOARD - UL891
             if (uniqueSection.secData.secType == 'SWITCHBOARD - UL891') {
+                //if unique section's breaker type is MASTERPACT NW (SQUARE D) - DRAWOUT
                 if (uniqueSection.secData.brkType == 'MASTERPACT NW (SQUARE D) - DRAWOUT') {
+                    //for each corenerPost
                     for (let cornerPost of cornerPosts) {
+                        //if the heights match and CPostType is NW DRAWOUT, then set uniqueFrontCPost
                         if (cornerPost.CPostHeight == uniqueSection.secData.secHeight && cornerPost.CPostType == 'NW DRAWOUT' ) {
                             uniqueFrontCPost = {
                                 generic: cornerPost.partGeneric,
                                 instance: cornerPost.partInstance
                             }
                         }
+                        //if the heights match and CPostType is SHORT, then set uniqueFrontCPost
                         if (cornerPost.CPostHeight == uniqueSection.secData.secHeight && cornerPost.CPostType == 'SHORT' ) {
                             uniqueRearCPost = {
                                 generic: cornerPost.partGeneric,
@@ -2015,13 +2508,17 @@ exports.generateSubmittal = function(req, res) {
                         }
                     }
                 } else if (uniqueSection.secData.brkType == 'MASTERPACT NW (SQUARE D) - FIXED') {
+                //if unique section's breaker type is MASTERPACT NW (SQUARE D) - FIXED
+                    //for each cornerPost
                     for (let cornerPost of cornerPosts) {
+                        //if the heights match and CPostType is NW FIXED, then set uniqueFrontCPost
                         if (cornerPost.CPostHeight == uniqueSection.secData.secHeight && cornerPost.CPostType == 'NW FIXED' ) {
                             uniqueFrontCPost = {
                                 generic: cornerPost.partGeneric,
                                 instance: cornerPost.partInstance
                             }
                         }
+                        //if the heights match and CPostType is SHORT, then set uniqueFrontCPost
                         if (cornerPost.CPostHeight == uniqueSection.secData.secHeight && cornerPost.CPostType == 'SHORT' ) {
                             uniqueRearCPost = {
                                 generic: cornerPost.partGeneric,
@@ -2030,13 +2527,17 @@ exports.generateSubmittal = function(req, res) {
                         }
                     }
                 } else if (uniqueSection.secData.brkType == 'EMAX2 (ABB) - DRAWOUT') {
+                //if unique section's breaker type is EMAX2 (ABB) - DRAWOUT
+                    //for each cornerPost
                     for (let cornerPost of cornerPosts) {
+                        //if the heights match and CPostType is EMAX2 DRAWOUT, then set uniqueFrontCPost
                         if (cornerPost.CPostHeight == uniqueSection.secData.secHeight && cornerPost.CPostType == 'EMAX2 DRAWOUT') {
                             uniqueFrontCPost = {
                                 generic: cornerPost.partGeneric,
                                 instance: cornerPost.partInstance
                             }
                         }
+                        //if the heights match and CPostType is SHORT, then set uniqueFrontCPost
                         if (cornerPost.CPostHeight == uniqueSection.secData.secHeight && cornerPost.CPostType == 'SHORT') {
                             uniqueRearCPost = {
                                 generic: cornerPost.partGeneric,
@@ -2045,13 +2546,17 @@ exports.generateSubmittal = function(req, res) {
                         }
                     }
                 } else if (uniqueSection.secData.brkType == 'EMAX2 (ABB) - FIXED') {
+                //if unique section's breaker type is EMAX2 (ABB) - FIXED
+                    //for each cornerPost
                     for (let cornerPost of cornerPosts) {
+                        //if the heights match and CPostType is EMAX2 FIXED, then set uniqueFrontCPost
                         if (cornerPost.CPostHeight == uniqueSection.secData.secHeight && cornerPost.CPostType == 'EMAX2 FIXED') {
                             uniqueFrontCPost = {
                                 generic: cornerPost.partGeneric,
                                 instance: cornerPost.partInstance
                             }
                         }
+                        //if the heights match and CPostType is SHORT, then set uniqueFrontCPost
                         if (cornerPost.CPostHeight == uniqueSection.secData.secHeight && cornerPost.CPostType == 'SHORT') {
                             uniqueRearCPost = {
                                 generic: cornerPost.partGeneric,
@@ -2061,13 +2566,17 @@ exports.generateSubmittal = function(req, res) {
                     }
                 }
             } else if (uniqueSection.secData.secType == 'PANELBOARD - MAIN LUG (T)' || uniqueSection.secData.secType == 'PANELBOARD - MAIN LUG (B)' || uniqueSection.secData.secType == 'PANELBOARD - NO MAIN LUG') {
+            //if unique section type is either PANELBOARD - MAIN LUG (T), PANELBOARD - MAIN LUG (B), or PANELBOARD - NO MAIN LUG
+                //for each corenerPost
                 for (let cornerPost of cornerPosts) {
+                    //if the heights match and CPostType is SHORT, then set uniqueFrontCPost
                     if (cornerPost.CPostHeight == uniqueSection.secData.secHeight && cornerPost.CPostType == 'SHORT' ) {
                         uniqueFrontCPost = {
                             generic: cornerPost.partGeneric,
                             instance: cornerPost.partInstance
                         }
                     }
+                    //if the heights match and CPostType is SHORT, then set uniqueFrontCPost
                     if (cornerPost.CPostHeight == uniqueSection.secData.secHeight && cornerPost.CPostType == 'SHORT' ) {
                         uniqueRearCPost = {
                             generic: cornerPost.partGeneric,
@@ -2076,16 +2585,20 @@ exports.generateSubmittal = function(req, res) {
                     }
                 }
             } else if (uniqueSection.secData.secType == 'CONTROL') {
+            //if unique section type is CONTROL AND brkType is n/a
                 if (uniqueSection.secData.brkType == 'N/A') {
-                    console.log(uniqueSection.secData);
+                   //if secDepth > 20
                     if (uniqueSection.secData.secDepth > 20) {
+                        //for each corenerPost
                         for (let cornerPost of cornerPosts) {
+                            //if the heights match and CPostType is NW DRAWOUT, then set uniqueFrontCPost
                             if (cornerPost.CPostHeight == uniqueSection.secData.secHeight && cornerPost.CPostType == 'NW DRAWOUT' ) {
                                 uniqueFrontCPost = {
                                     generic: cornerPost.partGeneric,
                                     instance: cornerPost.partInstance
                                 }
                             }
+                            //if the heights match and CPostType is SHORT, then set uniqueFrontCPost
                             if (cornerPost.CPostHeight == uniqueSection.secData.secHeight && cornerPost.CPostType == 'SHORT' ) {
                                 uniqueRearCPost = {
                                     generic: cornerPost.partGeneric,
@@ -2094,13 +2607,17 @@ exports.generateSubmittal = function(req, res) {
                             }
                         }
                     } else {
+                    //if secDepth =< 20
+                        //for each cornerPost
                         for (let cornerPost of cornerPosts) {
+                            //if the heights match and CPostType is NW FIXED, then set uniqueFrontCPost
                             if (cornerPost.CPostHeight == uniqueSection.secData.secHeight && cornerPost.CPostType == 'NW FIXED' ) {
                                 uniqueFrontCPost = {
                                     generic: cornerPost.partGeneric,
                                     instance: cornerPost.partInstance
                                 }
                             }
+                            //if the heights match and CPostType is SHORT, then set uniqueFrontCPost
                             if (cornerPost.CPostHeight == uniqueSection.secData.secHeight && cornerPost.CPostType == 'SHORT' ) {
                                 uniqueRearCPost = {
                                     generic: cornerPost.partGeneric,
@@ -2113,6 +2630,7 @@ exports.generateSubmittal = function(req, res) {
                 }
             }
 
+            //open main frame file
             await creo(sessionId, {
                 command: "file",
                 function: "open",
@@ -2121,6 +2639,7 @@ exports.generateSubmittal = function(req, res) {
                 }
             });
 
+            //assemble the unique base frame into the main frame (bottom) using csys (coord. sys)
             await creo(sessionId, {
                 command: "file",
                 function: "assemble",
@@ -2135,6 +2654,7 @@ exports.generateSubmittal = function(req, res) {
                 }
             });
 
+            //assemble the unique base frame into the main frame (top) using csys (coord. sys)
             await creo(sessionId, {
                 command: "file",
                 function: "assemble",
@@ -2149,6 +2669,7 @@ exports.generateSubmittal = function(req, res) {
                 }
             });
 
+            //assemble the unique front corner post into the main frame (front right) using csys
             await creo(sessionId, {
                 command: "file",
                 function: "assemble",
@@ -2164,6 +2685,7 @@ exports.generateSubmittal = function(req, res) {
                 }
             });
 
+            //assemble the unique front corner post into the main frame (front left) using csys
             await creo(sessionId, {
                 command: "file",
                 function: "assemble",
@@ -2179,6 +2701,7 @@ exports.generateSubmittal = function(req, res) {
                 }
             });
 
+            //assemble the unique front corner post into the main frame (back right) using csys
             await creo(sessionId, {
                 command: "file",
                 function: "assemble",
@@ -2194,6 +2717,7 @@ exports.generateSubmittal = function(req, res) {
                 }
             });
 
+            //assemble the unique front corner post into the main frame (back left) using csys
             await creo(sessionId, {
                 command: "file",
                 function: "assemble",
@@ -2209,11 +2733,15 @@ exports.generateSubmittal = function(req, res) {
                 }
             });
 
+            //execute regenAndSave helper function
             await regenAndSave(sessionId,uniqueSection.mainFramePN+".asm")
         }
         return null
     }
+
+    //generateDistinctSections async function definition
     async function generateDistinctSections(section) {
+        //open standard start section asm
         await creo(sessionId, {
             command: "file",
             function: "open",
@@ -2224,6 +2752,7 @@ exports.generateSubmittal = function(req, res) {
             }
         });
 
+        //save as with variable name mapkey
         await creo(sessionId, {
             command: "interface",
             function: "mapkey",
@@ -2241,6 +2770,7 @@ exports.generateSubmittal = function(req, res) {
             }
         });
 
+        //close section file
         await creo(sessionId, {
             command: "file",
             function: "close",
@@ -2250,8 +2780,9 @@ exports.generateSubmittal = function(req, res) {
         });
 
         return null
-
     }
+
+    //resizeSectionParamsAndAssembleFrame async function definition
     async function resizeSectionParamsAndAssembleFrame(section) {
         await creo(sessionId, {
             command: "file",

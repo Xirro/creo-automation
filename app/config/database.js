@@ -1,6 +1,12 @@
+//fs import (file-server built-in npm module, read more about it)
 const fs = require('fs');
 
+//using module.exports here exports everything within the curly braces
 module.exports = {
+    //*****************************************************
+    //IN PRODUCTION ENVIRONMENT UN-COMMENT THIS PORTION
+    //IN DEVELOPMENT ENVIRONMENT COMMENT THIS PORTION
+    //******************************************************
     "connection": {
         'user': 'doadmin',
         'password': 'xaikjabounn01k3i',
@@ -25,7 +31,15 @@ module.exports = {
             }
         },
     },
+    //*******************************************************
 
+
+
+
+    //*****************************************************
+    //IN PRODUCTION ENVIRONMENT COMMENT THIS PORTION
+    //IN DEVELOPMENT ENVIRONMENT UN-COMMENT THIS PORTION
+    //******************************************************
     /*'connection': {
         'host': 'localhost',
         'user': 'root',
@@ -34,14 +48,14 @@ module.exports = {
         'password': 'E5i5wks15',
         'multipleStatements': true
     },*/
+    //*******************************************************
 
-    //Database
+
+    //DATABASE (sai_test if DEVELOPMENT ENVIRONMENT and saidb if PRODUCTION ENVIRONMENT)
     'database': 'saidb',
-    /*'creoDatabase': 'creoDB',
-    /*'creoDatabase': 'creoDB',
-    'database2': 'quotePricing',
-    'masterDatabase': 'saidb',*/
 
+
+    //TABLE NAMES
     //Pre-loaded Static Tables (Shared b/w apps)
     'permissions_table': 'userPermissions',
     'jobscope_codes_table': 'jobscopeCatCodes',
@@ -264,5 +278,4 @@ module.exports = {
     'salesforce_section_table': 'SF_sections',
     'salesforce_breaker_table': 'SF_breakers',
     'salesforce_control_table': 'SF_controls'
-
 };

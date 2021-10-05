@@ -9,7 +9,16 @@ const Excel = require('exceljs');
 //DATABASE INFORMATION (TABLE NAMES)
 const dbConfig = require('../config/database.js');
 const database = dbConfig.database;
-const creoDB = database;
+
+//Database interaction function (querySql)
+//querySql takes 2 arguments, query (the sql string to be passed)
+//and params (if there are ?'s in the query, these values will be inserted in their place)
+//second argument params is optional, you only need to include it if you need to insert values into the string
+//querySql returns the result of the sql query
+const DB = require('../config/db.js');
+const querySql = DB.querySql;
+const Promise = require('bluebird');
+
 
 //Creoson Connection
 const reqPromise = require('request-promise');
@@ -36,7 +45,7 @@ reqPromise(connectOptions)
                 "command": "creo",
                 "function": "set_creo_version",
                 "data": {
-                    "version": "7"
+                    "version": "3"
                 }
             },
             json: true
@@ -45,6 +54,12 @@ reqPromise(connectOptions)
     .catch(err => {
         console.log('there was an error:' + err)
     });
+
+
+
+
+//IN ANY OF THESE FUNCTIONS IF YOU WANT TO DEBUG OR ANALYZE THE BEHAVIOR
+//THE BEST THING TO DO IS console.log WHATEVER VARIABLE, OBJECT, ARRAY, PROPERTY, ETC. THAT YOU ARE TRYING TO STUDY
 
 
 function creo(sessionId, functionData) {
@@ -120,12 +135,6 @@ async function regenSaveAndClose(sessionId, filename) {
     }
     return null
 }
-
-
-
-const DB = require('../config/db.js');
-const querySql = DB.querySql;
-const Promise = require('bluebird');
 
 exports = {};
 module.exports = exports;

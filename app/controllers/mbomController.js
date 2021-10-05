@@ -1,3 +1,4 @@
+//needed to export all the functions found next to "exports."
 exports = {};
 module.exports = exports;
 
@@ -20,6 +21,15 @@ const Promise = require('bluebird');
 
 //Excel Connection
 const Excel = require('exceljs');
+
+
+
+//IN ANY OF THESE FUNCTIONS IF YOU WANT TO DEBUG OR ANALYZE THE BEHAVIOR
+//THE BEST THING TO DO IS console.log WHATEVER VARIABLE, OBJECT, ARRAY, PROPERTY, ETC. THAT YOU ARE TRYING TO STUDY
+
+/***********************************************
+   MAIN MBOM
+ ***********************************************/
 
 //main MBOM function
 exports.MBOM = function(req, res) {
@@ -59,6 +69,9 @@ exports.MBOM = function(req, res) {
             return Promise.reject(err);
         });
 };
+
+
+
 
 
 //createMBOM function
@@ -126,6 +139,10 @@ exports.createMBOM = function(req, res) {
             console.log('there was an error:' + err);
         });
 };
+
+
+
+
 
 //copyMBOM function
 exports.copyMBOM = function(req, res) {
@@ -414,6 +431,10 @@ exports.copyMBOM = function(req, res) {
         });
 };
 
+
+
+
+
 //editMBOM function
 exports.editMBOM = function(req, res) {
     req.setTimeout(0);  //no timeout (this is needed to prevent error due to page taking a long time to load)
@@ -453,6 +474,11 @@ exports.editMBOM = function(req, res) {
             console.log('there was an error:' + err);
         });
 };
+
+
+
+
+
 
 
 /***********************************************
@@ -529,6 +555,12 @@ exports.addBreakerAcc = function(req, res) {
     res.redirect('searchMBOM/?bomID=' + mbomData.jobNum + mbomData.releaseNum + "_" + mbomID);
 };
 
+
+
+
+
+
+
 //Initialize editBrkDataObj (outside of the function - this is important)
 let editBrkDataObj;
 
@@ -568,6 +600,12 @@ exports.editBreakerAcc = function(req, res){
     res.redirect('../searchMBOM/?bomID=' + jobNum + releaseNum + '_' + mbomID);
 };
 
+
+
+
+
+
+
 //deleteBreakerAcc function
 exports.deleteBreakerAcc = function(req, res){
     req.setTimeout(0);  //no timeout (this is needed to prevent error due to page taking a long time to load)
@@ -600,6 +638,12 @@ exports.deleteBreakerAcc = function(req, res){
     //redirect to the searchMBOM page
     res.redirect('searchMBOM/?bomID=' + mbomData.jobNum + mbomData.releaseNum + "_" + mbomID);
 };
+
+
+
+
+
+
 
 /***********************************************
  BRK ACC FROM EDIT
@@ -682,6 +726,12 @@ exports.addBrkAccFromEdit = function(req, res) {
         });
 };
 
+
+
+
+
+
+
 //editBrkAccFromEdit function
 exports.editBrkAccFromEdit = function(req, res) {
     req.setTimeout(0); //no timeout (this is needed to prevent error due to page taking a long time to load)
@@ -756,6 +806,13 @@ exports.editBrkAccFromEdit = function(req, res) {
         });
 };
 
+
+
+
+
+
+
+
 //deleteBrkAccFromEdit function
 exports.deleteBrkAccFromEdit = function(req, res) {
     req.setTimeout(0); //no timeout (this is needed to prevent error due to page taking a long time to load)
@@ -822,10 +879,14 @@ exports.deleteBrkAccFromEdit = function(req, res) {
 };
 
 
+
+
+
+
+
 /***********************************************
  MAIN MBOM VIEW
  ***********************************************/
-
 //searchMBOMGet function (handles the GET request to searchMBOM page)
 exports.searchMBOMGet = function(req, res) {
     req.setTimeout(0); //no timeout (this is needed to prevent error due to page taking a long time to load)
@@ -932,6 +993,12 @@ exports.searchMBOMGet = function(req, res) {
 };
 
 
+
+
+
+
+
+
 /***********************************************
  COM ITEM TABLE
  ***********************************************/
@@ -987,6 +1054,14 @@ exports.createComItemTableGET = function(req, res) {
         });
 };
 
+
+
+
+
+
+
+
+
 //createComItemTablePOST function (handles the POST request to createComItemTable)
 exports.createComItemTablePOST = function(req, res) {
     req.setTimeout(0); //no timeout (this is needed to prevent error due to page taking a long time to load)
@@ -1035,6 +1110,14 @@ exports.createComItemTablePOST = function(req, res) {
             console.log('there was an error:' + err);
         });
 };
+
+
+
+
+
+
+
+
 
 //editComItemTableGET function (handles the GET request to editComItemTable)
 exports.editComItemTableGET = function(req, res) {
@@ -1112,6 +1195,13 @@ exports.editComItemTableGET = function(req, res) {
         });
 };
 
+
+
+
+
+
+
+
 //editComItemTablePOST function (handles the POST request of editComItemTable)
 exports.editComItemTablePOST = function(req, res) {
     req.setTimeout(0); //no timeout (this is needed to prevent error due to page taking a long time to load)
@@ -1157,6 +1247,12 @@ exports.editComItemTablePOST = function(req, res) {
             console.log('there was an error:' + err);
         });
 };
+
+
+
+
+
+
 
 
 /***********************************************
@@ -1219,6 +1315,11 @@ exports.addComItem = function(req, res) {
             console.log('there was an error:' + err);
         });
 };
+
+
+
+
+
 
 //editComItem function
 exports.editComItem = function(req, res) {
@@ -1293,6 +1394,13 @@ exports.editComItem = function(req, res) {
         });
 };
 
+
+
+
+
+
+
+
 //editComItemSave function
 exports.editComItemSave = function(req, res) {
     req.setTimeout(0); //no timeout (this is needed to prevent error due to page taking a long time to load)
@@ -1345,6 +1453,11 @@ exports.editComItemSave = function(req, res) {
             console.log('there was an error:' + err);
         });
 };
+
+
+
+
+
 
 
 /***********************************************
@@ -1461,6 +1574,12 @@ exports.createUserItem = function(req, res) {
         });
 };
 
+
+
+
+
+
+
 //editUserItem function
 exports.editUserItem = function(req, res) {
     req.setTimeout(0); //no timeout (this is needed to prevent error due to page taking a long time to load)
@@ -1552,6 +1671,12 @@ exports.editUserItem = function(req, res) {
             console.log('there was an error:' + err);
         });
 };
+
+
+
+
+
+
 
 //editUserItemSave function
 exports.editUserItemSave = function(req, res) {
@@ -1664,6 +1789,10 @@ exports.editUserItemSave = function(req, res) {
 };
 
 
+
+
+
+
 /***********************************************
  COM AND USER ITEM IN MBOM
  ***********************************************/
@@ -1708,6 +1837,12 @@ exports.copyItem = function(req, res) {
             console.log('there was an error:' + err);
         });
 };
+
+
+
+
+
+
 
 //deleteItem function
 exports.deleteItem = function(req, res) {
@@ -1761,6 +1896,12 @@ exports.deleteItem = function(req, res) {
             console.log('there was an error:' + err);
         });
 };
+
+
+
+
+
+
 
 
 /***********************************************
@@ -1870,6 +2011,12 @@ exports.addBrk = function(req, res) {
         });
 };
 
+
+
+
+
+
+
 //copyBreaker function
 exports.copyBreaker = function(req, res) {
     req.setTimeout(0); //no timeout (this is needed to prevent error due to page taking a long time to load)
@@ -1956,6 +2103,12 @@ exports.copyBreaker = function(req, res) {
         });
 };
 
+
+
+
+
+
+
 //editBreaker function
 exports.editBreaker = function(req, res) {
     req.setTimeout(0); //no timeout (this is needed to prevent error due to page taking a long time to load)
@@ -2012,6 +2165,12 @@ exports.editBreaker = function(req, res) {
         });
 };
 
+
+
+
+
+
+
 //editBreakerSave function
 exports.editBreakerSave = function(req, res) {
     req.setTimeout(0); //no timeout (this is needed to prevent error due to page taking a long time to load)
@@ -2049,6 +2208,12 @@ exports.editBreakerSave = function(req, res) {
             console.log('there was an error:' + err);
         });
 };
+
+
+
+
+
+
 
 //deleteBreaker function
 exports.deleteBreaker = function(req, res) {
@@ -2089,6 +2254,12 @@ exports.deleteBreaker = function(req, res) {
 };
 
 
+
+
+
+
+
+
 /***********************************************
  SECTION CONFIGURE IN MBOM
  ***********************************************/
@@ -2125,6 +2296,12 @@ exports.mbomAddSection = function(req, res) {
             console.log('there was an error:' + err);
         });
 };
+
+
+
+
+
+
 
 //mbomResetSection function
 exports.mbomResetSection = function(req, res) {
@@ -2164,6 +2341,13 @@ exports.mbomResetSection = function(req, res) {
             console.log('there was an error:' + err);
         });
 };
+
+
+
+
+
+
+
 
 //mbomDeleteSection function
 exports.mbomDeleteSection = function(req, res) {
@@ -2248,6 +2432,14 @@ exports.mbomDeleteSection = function(req, res) {
         });
 };
 
+
+
+
+
+
+
+
+
 //sectionConfigure function
 exports.sectionConfigure = function(req, res) {
     req.setTimeout(0); //no timeout (this is needed to prevent error due to page taking a long time to load)
@@ -2329,6 +2521,14 @@ exports.sectionConfigure = function(req, res) {
             console.log('there was an error:' + err);
         });
 };
+
+
+
+
+
+
+
+
 
 //generateMBOM function
 exports.generateMBOM = function (req, res) {
@@ -2550,7 +2750,7 @@ exports.generateMBOM = function (req, res) {
                                     }
                                 }
                             } else {
-                                //if userItemID is null
+                                //if userItemID is null (i.e. item is a common item)
                                 //for each common item in mbomComItem
                                 for (let item of mbomComItem) {
                                     //if comItemID's match push to itemArr
@@ -2910,7 +3110,8 @@ exports.generateMBOM = function (req, res) {
                     }
                 }
 
-                //**********for ship loose items*********//
+                //**********for ship loose/spare parts items*********//
+                //add first row in SP bom - this shows up for every mbom regardless
                 sheet.addRow({
                     assemblyNum: mbomData.jobNum + mbomData.releaseNum + '-MBOM-SP',
                     seqNum: null,
@@ -2931,12 +3132,17 @@ exports.generateMBOM = function (req, res) {
                     deviceDes: null,
                     deviceClass: null
                 });
+                //initialize count and shipLooseItems array
                 let count = 1;
                 let shipLooseItems = [];
 
+                //for each item in mbomItemData
                 for (let row of mbomItemData) {
+                    //if ship loose
                     if (row.shipLoose == 'Y') {
+                        //if userItemID exists
                         if (row.userItemID != null) {
+                            //for each item in mbomUserItem if userItemID matches,then push to shipLooseItems
                             for (let item of mbomUserItem) {
                                 if (item.userItemID == row.userItemID) {
                                     shipLooseItems.push({
@@ -2953,6 +3159,8 @@ exports.generateMBOM = function (req, res) {
                                 }
                             }
                         } else {
+                        //item is a com item
+                            //for each item in mbomComItem if comItemID matches, then push to shipLooseItems
                             for (let item of mbomComItem) {
                                 if (item.comItemID == row.comItemID) {
                                     shipLooseItems.push({
@@ -2972,22 +3180,33 @@ exports.generateMBOM = function (req, res) {
                     }
                 }
 
+                //initialize totalSLQty and SLobj
                 let totalSLQty = [];
                 let SLobj = null;
+                //for each item in shipLooseItems
                 for (let f = 0; f < shipLooseItems.length; f++) {
+                    //write object to SLobj
                     SLobj = shipLooseItems[f];
+                    //if totalSLQty does not have an element for the itemID yet, then create it
                     if (!totalSLQty[SLobj.itemID]) {
                         totalSLQty[SLobj.itemID] = SLobj;
                     } else {
+                    //if totalSLQty itemID element already exists, then increment the qty
                         totalSLQty[SLobj.itemID].qty += SLobj.qty;
                         totalSLQty[SLobj.itemID].itemDesc = SLobj.itemDesc;
                     }
                 }
+
+                //initialize totalSLQtyResults
                 let totalSLQtyResults = [];
+                //for each prop in totalSLQty array (this is not typically advised -- read more about "for-in" loops with arrays instead of objects)
                 for (let prop in totalSLQty)
+                    //push to results array
                     totalSLQtyResults.push(totalSLQty[prop]);
 
+                //for each item in totalSLQtyResults array
                 for (let row of totalSLQtyResults) {
+                    //initialize/set variables
                     let seqNum;
                     if (count < 10)
                         seqNum = '00' + count;
@@ -3012,13 +3231,8 @@ exports.generateMBOM = function (req, res) {
                         itemPN = itemPN.slice(0, 20);
                         partNumCount++;
                     }
-                    /*let mfgPartNum = null;
-                    if(itemPN.length > 20){
-                        mfgPartNum = itemPN;
-                        itemPN = mbomData.jobNum + mbomData.releaseNum + '-' + partNumCount + '-ITEM';
-                        partNumCount++;
-                    }*/
 
+                    //add row to the sheet
                     sheet.addRow({
                         assemblyNum: mbomData.jobNum + mbomData.releaseNum + '-MBOM-SP',
                         seqNum: seqNum.toString(),
@@ -3042,7 +3256,9 @@ exports.generateMBOM = function (req, res) {
                     count++;
                 }
 
+
                 //**********mbom summary*********//
+                //add first row to the bom msummary portion of the mbom - this always appears regardless
                 sheet.addRow({
                     assemblyNum: mbomData.jobNum + mbomData.releaseNum + '-MBOM',
                     seqNum: null,
@@ -3064,7 +3280,9 @@ exports.generateMBOM = function (req, res) {
                     deviceClass: null
                 });
 
+                //for each assembly number (i.e. section) in mbomAssemNumArr
                 for (let i = 0; i < mbomAssemNumArr.length; i++) {
+                    //initialize/set variables
                     let seqNum;
                     if ((i + 1) < 10)
                         seqNum = '00' + (i + 1);
@@ -3073,6 +3291,7 @@ exports.generateMBOM = function (req, res) {
                     else
                         seqNum = (i + 1);
 
+                    //add a row to the sheet
                     sheet.addRow({
                         assemblyNum: mbomData.jobNum + mbomData.releaseNum + '-MBOM',
                         seqNum: seqNum.toString(),
@@ -3094,6 +3313,7 @@ exports.generateMBOM = function (req, res) {
                         deviceDes: null,
                         deviceClass: null
                     });
+                    //if this is the last section in the mbom, then afterwards add the additional ship loose bom SP
                     if (i + 1 == mbomAssemNumArr.length) {
                         seqNum = parseInt(seqNum) + 1;
                         if (seqNum < 10)
@@ -3126,18 +3346,14 @@ exports.generateMBOM = function (req, res) {
                     }
                 }
 
-                /*sheet.getColumn(3).eachCell(function(cell){
-                    if(cell.value != 'Component Part Number:' && cell.value.includes(mbomData.jobNum + mbomData.releaseNum + '-') &&
-                        !cell.value.includes(mbomData.jobNum + mbomData.releaseNum + '-MBOM')){
-                        cell.fill = {type: 'pattern', pattern:'solid', fgColor:{argb:'FFFF9999'}};
-                        cell.alignment = {wrapText: true};
-                    }
-                });*/
+                //further column formatting
                 sheet.getColumn(4).eachCell(function (cell) {
                     cell.alignment = {wrapText: true};
                 });
 
 
+                //write workbook to a file located "temporarily" in the uploads folder of the app.
+                //Afterwards send that file to the client's downloads folder via the built-in res.download node.js function
                 workbook.xlsx.writeFile('uploads/' + mbomData.jobNum + mbomData.releaseNum + ' MBOM.xlsx').then(function () {
                     const remoteFilePath = 'uploads/';
                     const remoteFilename = mbomData.jobNum + mbomData.releaseNum + ' MBOM.xlsx';
@@ -3146,9 +3362,12 @@ exports.generateMBOM = function (req, res) {
 
                 return null;
             } else {
+            //if this is a "no-section" MBOM (needed for cases where we ship parts or items without any sections)
+                //initialize/set variables
                 let assemblyNum = mbomData.jobNum + mbomData.releaseNum + '-MBOM';
                 let count = 1;
 
+                //add first row to the sheet - this is required on every mbom
                 sheet.addRow({
                     assemblyNum: assemblyNum,
                     seqNum: null,
@@ -3170,11 +3389,17 @@ exports.generateMBOM = function (req, res) {
                     deviceClass: null
                 });
 
-                //FOR ITEMS
+                //**********for item calculations********//
+                //initialize itemArr
                 let itemArr = [];
+
+                //for each item in mbomItemData
                 for (let row of mbomItemData) {
+                    //if userItemID is not null
                     if (row.userItemID != null) {
+                        //for each user item in mbomUserItem
                         for (let item of mbomUserItem) {
+                            //if userItemID's match push to itemArr
                             if (item.userItemID == row.userItemID) {
                                 itemArr.push({
                                     itemID: item.userItemID,
@@ -3191,7 +3416,10 @@ exports.generateMBOM = function (req, res) {
                             }
                         }
                     } else {
+                        //if userItemID is null (i.e. item is a common item)
+                        //for each common item in mbomComItem
                         for (let item of mbomComItem) {
+                            //if comItemID's match push to itemArr
                             if (item.comItemID == row.comItemID) {
                                 itemArr.push({
                                     itemID: item.comItemID,
@@ -3209,23 +3437,33 @@ exports.generateMBOM = function (req, res) {
                         }
                     }
                 }
-
+                //initialize totalItemQty and itemObj
                 let totalItemQty = [];
                 let itemObj = null;
+                //for each item in itemArr
                 for (let f = 0; f < itemArr.length; f++) {
+                    //set itemObj to element f in itemArr
                     itemObj = itemArr[f];
+                    //if no totalItemQty (i.e. this is the first), then set it to itemObj
                     if (!totalItemQty[itemObj.itemID]) {
                         totalItemQty[itemObj.itemID] = itemObj;
                     } else {
+                    // totalItemQty exists, and all we need to do is increment qty and write the description
                         totalItemQty[itemObj.itemID].qty += itemObj.qty;
                         totalItemQty[itemObj.itemID].itemDesc = itemObj.itemDesc;
                     }
                 }
+
+                //initialize totalItemQtyResults
                 let totalItemQtyResults = [];
+                //for each property in totalItemQty JSON object
                 for (let prop in totalItemQty)
+                    //push the value into totalItemQtyResults
                     totalItemQtyResults.push(totalItemQty[prop]);
 
+                //for each row of totalItemQtyResults
                 for (let row of totalItemQtyResults) {
+                    //initialize/set variables
                     let seqNum;
                     if (count < 10)
                         seqNum = '00' + count;
@@ -3251,6 +3489,7 @@ exports.generateMBOM = function (req, res) {
                         itemPN = mbomData.jobNum + mbomData.releaseNum + '-' + partNumCount + '-ITEM';
                         partNumCount++;
                     }
+                    //once all variables are set, add a row to the sheet
                     sheet.addRow({
                         assemblyNum: assemblyNum,
                         seqNum: seqNum.toString(),
@@ -3274,16 +3513,21 @@ exports.generateMBOM = function (req, res) {
                     count++;
                 }
 
-                //FOR BREAKERS
+                //**********for breaker calculations*********//
+                //initialize brkArr and brkAccArr
                 let brkArr = [];
                 let brkAccArr = [];
 
+                //for each breaker in mbomBrkSum
                 for (let row of mbomBrkSum) {
+                    //for each accessory in mbomBrkAccSum
                     for (let el of mbomBrkAccSum) {
+                        //if the idDev's match push to brkAccArr
                         if (el.idDev == row.idDev) {
                             brkAccArr.push(el);
                         }
                     }
+                    //push to brkArr
                     brkArr.push({
                         idDev: [row.idDev],
                         brkPN: row.brkPN,
@@ -3297,21 +3541,28 @@ exports.generateMBOM = function (req, res) {
                     });
                 }
 
+                //initialize totalBrkQty and brkObj
                 let totalBrkQty = [];
                 let brkObj = null;
 
+                //for each breaker in brkArr
                 for (let f = 0; f < brkArr.length; f++) {
+                    //set brkObj to f'th element in brkArr
                     brkObj = brkArr[f];
+                    //if element does not exist in totalBrkQty array, then push to it
                     if (totalBrkQty.filter(e => e.brkPN == brkObj.brkPN).length == 0) {
                         totalBrkQty.push(brkObj);
                     } else {
+                        //if element already exists then increment the qty and add to devDesignation and idDev
                         totalBrkQty.filter(e => e.brkPN == brkObj.brkPN)[0].qty += brkObj.qty;
                         totalBrkQty.filter(e => e.brkPN == brkObj.brkPN)[0].devDesignation += ", " + brkObj.devDesignation;
                         totalBrkQty.filter(e => e.brkPN == brkObj.brkPN)[0].idDev.push(brkObj.idDev[0]);
                     }
                 }
 
+                //for each breaker in totalBrkQty
                 for (let row of totalBrkQty) {
+                    //initialize/set variables
                     let seqNum;
                     if (count < 10)
                         seqNum = '00' + count;
@@ -3331,6 +3582,7 @@ exports.generateMBOM = function (req, res) {
                     let idDev = row.idDev;
 
                     let brkMfgPartNum = null;
+                    //jobscope part number length restriction
                     if (brkPN.length > 20) {
                         brkMfgPartNum = brkPN;
                         brkPN = mbomData.jobNum + mbomData.releaseNum + "-" + partNumCount + "-BRK";
@@ -3338,12 +3590,14 @@ exports.generateMBOM = function (req, res) {
                     }
 
                     let crdMfgPartNum = null;
+                    //jobscope part number length restriction
                     if (crdPN.length > 20) {
                         crdMfgPartNum = crdPN;
                         crdPN = mbomData.jobNum + mbomData.releaseNum + "-" + partNumCount + "-CRA";
                         partNumCount++;
                     }
 
+                    //if breaker and cradle part numbers exist, add rows for both
                     if (brkPN != '' && crdPN != '') {
                         sheet.addRow({
                             assemblyNum: assemblyNum,
@@ -3393,6 +3647,7 @@ exports.generateMBOM = function (req, res) {
                             deviceClass: classCode
                         });
                     } else if (brkPN != '' && crdPN == '') {
+                        //if only a breaker pn exists, we assume it is a breaker
                         sheet.addRow({
                             assemblyNum: assemblyNum,
                             seqNum: seqNum.toString(),
@@ -3414,6 +3669,7 @@ exports.generateMBOM = function (req, res) {
                             deviceClass: classCode
                         });
                     } else if (brkPN == '' && crdPN != '') {
+                        //if only a cradle pn exists, we assume it is a cradle
                         sheet.addRow({
                             assemblyNum: assemblyNum,
                             seqNum: seqNum.toString(),
@@ -3436,11 +3692,16 @@ exports.generateMBOM = function (req, res) {
                         });
                     }
 
+                    //**********for breaker accessories*********//
+                    //initialize totalBrkAccQty
                     let totalBrkAccQty = [];
-                    //FOR BRK ACCESSORIES
+                    //for each id in idDev array
                     for (let dev of idDev) {
+                        //filter brkAccArr by idDev
                         if (brkAccArr.filter(e => e.idDev == dev).length != 0) {
+                            //for each element in filtered brkAccArr
                             for (let g = 0; g < brkAccArr.filter(e => e.idDev == dev).length; g++) {
+                                //filter further by the brkAccPN, if one does not exist then push, otherwise increment qty and update data
                                 if (totalBrkAccQty.filter(e => e.brkAccPN == brkAccArr.filter(e => e.idDev == dev)[g].brkAccPN).length == 0) {
                                     totalBrkAccQty.push({
                                         brkAccID: [brkAccArr.filter(e => e.idDev == dev)[g].brkAccID],
@@ -3460,6 +3721,7 @@ exports.generateMBOM = function (req, res) {
                             }
                         }
                     }
+                    //for each element in totalBrkAccQty
                     for (let el of totalBrkAccQty) {
                         count++;
                         let brkAccDesc = el.brkAccDesc;
@@ -3469,6 +3731,7 @@ exports.generateMBOM = function (req, res) {
                         let brkAccDesc4 = brkAccDesc.substring(120, 160);
                         let brkAccPN = el.brkAccPN;
                         let brkAccMfgPartNum = null;
+                        //jobscope part number restriction
                         if (brkAccPN.length > 20) {
                             brkAccMfgPartNum = brkAccPN;
                             brkAccPN = mbomData.jobNum + mbomData.releaseNum + '-' + partNumCount + '-BRKACC';
@@ -3481,6 +3744,7 @@ exports.generateMBOM = function (req, res) {
                         else
                             seqNum = count;
 
+                        //add row to the sheet
                         sheet.addRow({
                             assemblyNum: assemblyNum,
                             seqNum: seqNum.toString(),
@@ -3504,11 +3768,14 @@ exports.generateMBOM = function (req, res) {
                     }
                     count++;
                 }
+
+                //further column formatting
                 sheet.getColumn(4).eachCell(function (cell) {
                     cell.alignment = {wrapText: true};
                 });
 
-
+                //write workbook to a file located "temporarily" in the uploads folder of the app.
+                //Afterwards send that file to the client's downloads folder via the built-in res.download node.js function
                 workbook.xlsx.writeFile('uploads/' + mbomData.jobNum + mbomData.releaseNum + ' MBOM.xlsx').then(function () {
                     const remoteFilePath = 'uploads/';
                     const remoteFilename = mbomData.jobNum + mbomData.releaseNum + ' MBOM.xlsx';

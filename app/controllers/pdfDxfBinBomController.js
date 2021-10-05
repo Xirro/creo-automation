@@ -8,6 +8,14 @@ const Excel = require('exceljs');
 const dbConfig = require('../config/database.js');
 const database = dbConfig.database;
 
+//Database interaction function (querySql)
+//querySql takes 2 arguments, query (the sql string to be passed)
+//and params (if there are ?'s in the query, these values will be inserted in their place)
+//second argument params is optional, you only need to include it if you need to insert values into the string
+//querySql returns the result of the sql query
+const DB = require('../config/db.js');
+const querySql = DB.querySql;
+
 //Creoson Connection options
 const reqPromise = require('request-promise');
 let creoHttp = 'http://localhost:9056/creoson';
@@ -34,7 +42,7 @@ reqPromise(connectOptions)
                 "command": "creo",
                 "function": "set_creo_version",
                 "data": {
-                    "version": "7"
+                    "version": "3"
                 }
             },
             json: true
@@ -44,6 +52,9 @@ reqPromise(connectOptions)
         console.log('there was an error:' + err)
     });
 
+//creo function (used to remove some of the boilerplate thats involved with creoson http calls)
+//Inputs: creoson sessionId provided from above, and function data JSON object
+//Outputs: a POST request, formatted in Creoson JSON syntax in the form of a promise
 function creo(sessionId, functionData) {
     if (functionData.data.length != 0) {
         return reqPromise({
@@ -75,13 +86,15 @@ function creo(sessionId, functionData) {
 //*********************************MECHANICAL ENG. PORTAL*************************************//
 
 
-const DB = require('../config/db.js');
-const querySql = DB.querySql;
+
+//IN ANY OF THESE FUNCTIONS IF YOU WANT TO DEBUG OR ANALYZE THE BEHAVIOR
+//THE BEST THING TO DO IS console.log WHATEVER VARIABLE, OBJECT, ARRAY, PROPERTY, ETC. THAT YOU ARE TRYING TO STUDY
+
 
 exports = {};
 module.exports = exports;
 
-//Initial PDF-DXF-BIN BOM GET request
+//pdfDxfBinBom function (directs user to the main pdfDxfBinBom page)
 exports.pdfDxfBinBom = function(req, res) {
     //initialize variables
     let workingDir;
@@ -97,7 +110,7 @@ exports.pdfDxfBinBom = function(req, res) {
     });
 };
 
-//Set Working Directory POST request
+//setWD function (sets creo's working directory)
 exports.setWD = function(req, res) {
     //initialize variables
     let message = null;
@@ -105,15 +118,18 @@ exports.setWD = function(req, res) {
     let outputDir = workingDir + '/_outputDir';
     let topLevelAsmList = [];
 
-    //cdAndCreateOutputDir async function (sets the working directory and creates the _outputDir, updates message if it has a problem with either setting or creating)
+    //cdAndCreateOutputDir async function definition (sets the working directory and creates the _outputDir, updates message if it has a problem with either setting or creating)
     async function cdAndCreateOutputDir() {
+        //pass the current creo wd to dir
         let dir = await creo(sessionId, {
             command: "creo",
             function: "pwd",
             data: {}
         });
 
+        //if dir exists
         if (dir.data != undefined) {
+            //if dirname is not workingDir
             if (dir.data.dirname != workingDir) {
                 await creo(sessionId, {
                     command: "creo",
@@ -123,7 +139,7 @@ exports.setWD = function(req, res) {
                     }
                 });
 
-
+                //list the inner dirs that begin with _outputDir
                 let innerDirs = await creo(sessionId, {
                     command: "creo",
                     function: "list_dirs",
@@ -131,10 +147,11 @@ exports.setWD = function(req, res) {
                         "dirname": "_outputDir"
                     }
                 });
-
                 console.log(innerDirs);
 
+                //if no innerDirs already exist
                 if (innerDirs.data.dirlist.length == 0 || !innerDirs.data) {
+                    //make the _outputDir folder
                     await creo(sessionId, {
                         command: "creo",
                         function: "mkdir",
@@ -142,6 +159,7 @@ exports.setWD = function(req, res) {
                             "dirname": "_outputDir"
                         }
                     });
+                    //make the _outputDir/PDF folder
                     await creo(sessionId, {
                         command: "creo",
                         function: "mkdir",
@@ -149,6 +167,7 @@ exports.setWD = function(req, res) {
                             "dirname": "_outputDir\\PDF"
                         }
                     });
+                    //make the _outputDir/DXF folder
                     await creo(sessionId, {
                         command: "creo",
                         function: "mkdir",
@@ -156,6 +175,7 @@ exports.setWD = function(req, res) {
                             "dirname": "_outputDir\\DXF"
                         }
                     });
+                    //make the _outputDir/BIN BOMS folder
                     await creo(sessionId, {
                         command: "creo",
                         function: "mkdir",
@@ -163,6 +183,7 @@ exports.setWD = function(req, res) {
                             "dirname": "_outputDir\\BIN BOMS"
                         }
                     });
+                    //make the _outputDir/NAMEPLATES folder
                     await creo(sessionId, {
                         command: "creo",
                         function: "mkdir",
@@ -170,6 +191,7 @@ exports.setWD = function(req, res) {
                             "dirname": "_outputDir\\NAMEPLATES"
                         }
                     });
+                    //make the _outputDir/STEP folder
                     await creo(sessionId, {
                         command: "creo",
                         function: "mkdir",
@@ -178,10 +200,12 @@ exports.setWD = function(req, res) {
                         }
                     });
                 } else {
+                //if _outputDir already exists, then send a warning message to the user to remove it
                     message = "_outputDir already exists within the working directory. Please remove before continuing.";
                 }
-
             } else {
+            //if dirname is already matches workingDir
+                //list the innerDirs that match _outputDir
                 let innerDirs = await creo(sessionId, {
                     command: "creo",
                     function: "list_dirs",
@@ -192,7 +216,9 @@ exports.setWD = function(req, res) {
 
                 console.log(innerDirs);
 
+                //if no innerDirs exist
                 if (innerDirs.data.dirlist.length == 0 || !innerDirs.data) {
+                    //make the _outputDir folder
                     await creo(sessionId, {
                         command: "creo",
                         function: "mkdir",
@@ -200,6 +226,7 @@ exports.setWD = function(req, res) {
                             "dirname": "_outputDir"
                         }
                     });
+                    //make the _outputDir/PDF folder
                     await creo(sessionId, {
                         command: "creo",
                         function: "mkdir",
@@ -207,6 +234,7 @@ exports.setWD = function(req, res) {
                             "dirname": "_outputDir\\PDF"
                         }
                     });
+                    //make the _outputDir/DXF folder
                     await creo(sessionId, {
                         command: "creo",
                         function: "mkdir",
@@ -214,6 +242,7 @@ exports.setWD = function(req, res) {
                             "dirname": "_outputDir\\DXF"
                         }
                     });
+                    //make the _outputDir/BIN BOMS folder
                     await creo(sessionId, {
                         command: "creo",
                         function: "mkdir",
@@ -221,6 +250,7 @@ exports.setWD = function(req, res) {
                             "dirname": "_outputDir\\BIN BOMS"
                         }
                     });
+                    //make the _outputDir/NAMEPLATES folder
                     await creo(sessionId, {
                         command: "creo",
                         function: "mkdir",
@@ -228,6 +258,7 @@ exports.setWD = function(req, res) {
                             "dirname": "_outputDir\\NAMEPLATES"
                         }
                     });
+                    //make the _outputDir/STEP folder
                     await creo(sessionId, {
                         command: "creo",
                         function: "mkdir",
@@ -236,9 +267,9 @@ exports.setWD = function(req, res) {
                         }
                     });
                 } else {
+                    //if _outputDir already exists, then send a warning message to the user to remove it
                     message = "_outputDir already exists within the working directory. Please remove before continuing."
                 }
-
             }
         }
         return null
@@ -288,6 +319,7 @@ exports.setWD = function(req, res) {
                             topLevelAsmList.push(famTabExists.data.instances[j]+'<'+asmList[i].slice(0,15) +'>'+'.asm')
                         }
                     } else {
+                    //if there are no asm instances, then only push the generic
                         topLevelAsmList.push(asmList[i])
                     }
                 }
@@ -349,12 +381,14 @@ exports.loadDesign = function(req, res) {
 
     //cd async function definition
     async function cd() {
+        //pass current creo wd to dir
         let dir = await creo(sessionId, {
             command: "creo",
             function: "pwd",
             data: {}
         });
 
+        //if dirname isnt workingDir, then set wd
         if (dir.data.dirname != workingDir) {
             await creo(sessionId, {
                 command: "creo",
@@ -369,23 +403,28 @@ exports.loadDesign = function(req, res) {
 
     //listAllDwgs async function definition
     async function listAllDwgs(sessionId, drawings) {
+        //initialize drawingsList
         let drawingsList = [];
+        //list all .drw files in the wd
         const workingDirDwgs = await creo(sessionId, {
             command: "creo",
             function: "list_files",
             data: {
                 "filename":"*drw"
-
             }
         });
 
+        //for each drawing
         for (let drawing of drawings) {
+            //if workingDirDwgs has a record existing
             if (workingDirDwgs.data.filelist.includes(drawing) == true) {
+                //push to drwaingsList with success message
                 drawingsList.push({
                     drawing: drawing,
                     message: 'OK'
                 });
             } else {
+                //push to drwaingsList with failure message
                 drawingsList.push({
                     drawing: drawing,
                     message: 'Drawing does not exist'
@@ -393,13 +432,16 @@ exports.loadDesign = function(req, res) {
             }
         }
 
+        //for each drawing
         for (let drawing of drawingsList) {
+            //push to sortedCheckedDwgs
             sortedCheckedDwgs.push({
                 drawing: drawing.drawing,
                 message: drawing.message
             });
         }
 
+        //sort sortedCheckedDwgs in ascending order
         sortedCheckedDwgs.sort(function(a,b) {
             let intA = parseInt(a.drawing.slice(7,11)+a.drawing.slice(12,15));
             let intB = parseInt(b.drawing.slice(7,11)+b.drawing.slice(12,15));
@@ -411,10 +453,15 @@ exports.loadDesign = function(req, res) {
 
     //checkFlats async function definition
     async function checkFlats(sessionId, sortedCheckedDwgs) {
+        //initialize unmatchedParts
         let unmatchedParts = [];
+        //for each drawing
         for (let drawing of sortedCheckedDwgs) {
+            //if middle 4 digits begin with a 1, 2, or 3
             if (drawing.drawing.slice(7,8) == '1' || drawing.drawing.slice(7,8) == '2' || drawing.drawing.slice(7,8) == '3' ) {
+                //initialize message as 'OK'
                 let message = 'OK';
+                //open drawing
                 let openDwg = await creo(sessionId, {
                     command: "file",
                     function: "open",
@@ -424,9 +471,11 @@ exports.loadDesign = function(req, res) {
                         "activate": true
                     }
                 });
+                //if there was an error in opening the drawing, update the message accordingly
                 if (openDwg.status.error == true) {
                     message = 'Unable to open drawing'
                 } else {
+                //if no error in opening the drawing, then list the models associated with the drawing
                     const listModels = await creo(sessionId, {
                         command: "drawing",
                         function: "list_models",
@@ -435,13 +484,16 @@ exports.loadDesign = function(req, res) {
                         }
                     });
                     let drawingModels = listModels.data.files;
+                    //for each model
                     for (let i = 0; i < drawingModels.length; i++) {
+                        //if the last 3 digits dont match, then update the message accordingly
                         if (drawingModels[i].slice(12, 15) != drawing.drawing.slice(12,15)) {
                             message = 'Drawing models do not match'
                         }
                     }
                 }
 
+                //if message is not OK, then push it to unmatchedParts
                 if (message != 'OK') {
                     unmatchedParts.push({
                         part: drawing.drawing,
@@ -450,8 +502,11 @@ exports.loadDesign = function(req, res) {
                 }
             }
         }
+        //for each unmatched part
         for (let unmatchedPart of unmatchedParts) {
+            //for each drawing
             for (let sortedCheckedDwg of sortedCheckedDwgs) {
+                //if the full part number doesnt match, then update the sortedCheckDwg message as well
                 if (sortedCheckedDwg.drawing.slice(0, 15) == unmatchedPart.part.slice(0, 15)) {
                     sortedCheckedDwg.message = unmatchedPart.message
                 }
@@ -462,66 +517,34 @@ exports.loadDesign = function(req, res) {
 
     //getNameplateParams async function definition
     async function getNameplateParams(sessionId, part, qty, NP) {
+        //initialize TEMPLATE
         let TEMPLATE = 'NULL';
-        //let TYPE = 'NULL';
-        /*let templateExists = await creo(sessionId, {
+        
+        //list the NAMEPLATE_TYPE param of the part and write it to typeParam
+        const typeParam = await creo(sessionId, {
             command: "parameter",
-            function: "exists",
+            function: "list",
             data: {
                 "file": part,
-                "name": "NAMEPLATE_TEMPLATE"
+                "name": "NAMEPLATE_TYPE"
             }
-        });*/
-        /*if (templateExists.data.exists == true) {
-            const templateParam = await creo(sessionId, {
-                command: "parameter",
-                function: "list",
-                data: {
-                    "file": part,
-                    "name": "NAMEPLATE_TEMPLATE"
-                }
-            });
-            console.log(templateParam.data.paramlist[0].value);
-            if (templateParam.data.paramlist[0].value != '' && templateParam.data.paramlist[0].value != 'NULL') {
-                TEMPLATE = templateParam.data.paramlist[0].value;
-            }
-        }*/
-        /*let typeExists = await creo(sessionId, {
-            command: "parameter",
-            function: "exists",
-            data: {
-                file: part,
-                name: "NAMEPLATE_TYPE"
-            }
-        });*/
-        //if (typeExists.data.exists == true) {
-            const typeParam = await creo(sessionId, {
-                command: "parameter",
-                function: "list",
-                data: {
-                    "file": part,
-                    "name": "NAMEPLATE_TYPE"
-                }
-            });
+        });
 
-            //console.log(typeParam);
-            //console.log(typeParam.data.paramlist[0].value);
+        if (typeParam.data.paramlist[0].value == 1 || typeParam.data.paramlist[0].value == 2) {
+        //if NAMEPLATE_TYPE is either 1 or 2, then TEMPLATE is A
+            TEMPLATE = 'A';
+        } else if (typeParam.data.paramlist[0].value == 3) {
+        //if NAMEPLATE_TYPE is 3, then TEMPLATE is B
+            TEMPLATE = 'B';
+        } else if (typeParam.data.paramlist[0].value == 4 || typeParam.data.paramlist[0].value == 5) {
+        //if NAMEPLATE_TYPE is either 4 or 5, then TEMPLATE is C
+            TEMPLATE = 'C';
+        } else if (typeParam.data.paramlist[0].value == 6) {
+        //if NAMEPLATE_TYPE is 6, then TEMPLATE is D
+            TEMPLATE = 'D';
+        }
 
-            if (typeParam.data.paramlist[0].value == 1 || typeParam.data.paramlist[0].value == 2) {
-                TEMPLATE = 'A';
-            } else if (typeParam.data.paramlist[0].value == 3) {
-                TEMPLATE = 'B';
-            } else if (typeParam.data.paramlist[0].value == 4 || typeParam.data.paramlist[0].value == 5) {
-                TEMPLATE = 'C';
-            } else if (typeParam.data.paramlist[0].value == 6) {
-                TEMPLATE = 'D';
-            }
-
-            /*if (typeParam.data.paramlist[0].value == 1 && typeParam.data.paramlist[0].value != 'NULL') {
-                TEMPLATE = typeParam.data.paramlist[0].value;
-            }*/
-        //}
-
+        //initialize/set TEXT_ROW1 to empty string, then check if the parameter exists, if yes, then update TEXT_ROW1
         let TEXT_ROW1 = '';
         let textRow1Exists = await creo(sessionId, {
             command: "parameter",
@@ -543,6 +566,7 @@ exports.loadDesign = function(req, res) {
             TEXT_ROW1 = textRow1.data.paramlist[0].value;
         }
 
+        //initialize/set TEXT_ROW2 to empty string, then check if the parameter exists, if yes, then update TEXT_ROW2
         let TEXT_ROW2 = '';
         let textRow2Exists = await creo(sessionId, {
             command: "parameter",
@@ -564,6 +588,7 @@ exports.loadDesign = function(req, res) {
             TEXT_ROW2 = textRow2.data.paramlist[0].value;
         }
 
+        //initialize/set TEXT_ROW3 to empty string, then check if the parameter exists, if yes, then update TEXT_ROW3
         let TEXT_ROW3 = '';
         let textRow3Exists = await creo(sessionId, {
             command: "parameter",
@@ -585,7 +610,9 @@ exports.loadDesign = function(req, res) {
             TEXT_ROW3 = textRow3.data.paramlist[0].value;
         }
 
+        //for 0 to qty
         for (let i = 0; i < qty; i++) {
+            //push to NP
             NP.push({
                 part: part,
                 template: TEMPLATE,
@@ -599,8 +626,9 @@ exports.loadDesign = function(req, res) {
 
     //listParameters async function definition
     async function listParameters(sessionId, parts, partBinInfo) {
+        //for each part
         for (let part of parts) {
-            //get BIN parameter
+            //initialize/set BIN to NULL, then check if the parameter exists, if yes, then update BIN
             let BIN = 'NULL';
             let binExists = await creo(sessionId, {
                 command: "parameter",
@@ -624,7 +652,7 @@ exports.loadDesign = function(req, res) {
             }
 
 
-            //get TITLE parameter
+            //initialize/set TITLE to empty string, then check if the parameter exists, if yes, then update TITLE
             let TITLE = '';
             let titleExists = await creo(sessionId, {
                 command: "parameter",
@@ -647,7 +675,7 @@ exports.loadDesign = function(req, res) {
             }
 
 
-            //get PART_NO parameter
+            //initialize/set PART_NO to empty string, then check if the parameter exists, if yes, then update PART_NO
             let PART_NO = '';
             let partNumExists = await creo(sessionId, {
                 command: "parameter",
@@ -670,7 +698,7 @@ exports.loadDesign = function(req, res) {
             }
 
 
-            //get WEIGHT parameter
+            //initialize/set WEIGHT to empty string, then check if the parameter exists, if yes, then update WEIGHT
             let WEIGHT = '';
             let weightExists = await creo(sessionId, {
                 command: "parameter",
@@ -694,7 +722,7 @@ exports.loadDesign = function(req, res) {
                 }
             }
 
-            //get MATERIAL parameter
+            //initialize/set MATERIAL to empty string, then check if the parameter exists, if yes, then update MATERIAL
             let MATERIAL = '';
             let materialExists = await creo(sessionId, {
                 command: "parameter",
@@ -716,7 +744,7 @@ exports.loadDesign = function(req, res) {
                 MATERIAL = materialParam.data.paramlist[0].value;
             }
 
-            //get GAUGE parameter
+            //initialize/set GAUGE to empty string, then check if the parameter exists, if yes, then update GAUGE
             let GAUGE = '';
             let gaugeExists = await creo(sessionId, {
                 command: "parameter",
@@ -738,7 +766,7 @@ exports.loadDesign = function(req, res) {
                 GAUGE = gaugeParam.data.paramlist[0].value;
             }
 
-            //get FINISH parameter
+            //initialize/set FINISH to empty string, then check if the parameter exists, if yes, then update FINISH
             let FINISH = '';
             let finishExists = await creo(sessionId, {
                 command: "parameter",
@@ -760,7 +788,7 @@ exports.loadDesign = function(req, res) {
                 FINISH = finishParam.data.paramlist[0].value;
             }
 
-            //get CUT_LENGTH parameter
+            //initialize/set CUT_LENGTH to empty string, then check if the parameter exists, if yes, then update CUT_LENGTH
             let CUT_LENGTH = '';
             let cutLengthExists = await creo(sessionId, {
                 command: "parameter",
@@ -782,17 +810,7 @@ exports.loadDesign = function(req, res) {
                 CUT_LENGTH = cutLengthParam.data.paramlist[0].value;
             }
 
-            /*console.log({
-                part: part,
-                partNum: PART_NO,
-                partDesc: TITLE,
-                bin: BIN,
-                material: MATERIAL,
-                gauge: GAUGE,
-                cutLength: CUT_LENGTH,
-                weight: WEIGHT
-            });*/
-
+            //push part and all obtained parameters to partBinInfo
             partBinInfo.push({
                 part: part,
                 partNum: PART_NO,
@@ -808,22 +826,28 @@ exports.loadDesign = function(req, res) {
         return null
     }
 
-    //asmToPart async function definition
+    //asmToPart async function definition (this function is also recursive)
     function asmToPart(arr, parts) {
+        //for each item
         for (let item of arr) {
+            //if no children
             if (!item.children) {
+                //filter parts by item, and if record already exists, then increment qty
                 if (parts.filter(e => e.part === item.file).length > 0) {
                     parts.filter(e => e.part === item.file)[0].qty += 1;
                 } else {
+                //if no prior record exists, then push to parts
                     parts.push({
                         part: item.file,
                         qty: 1
                     })
                 }
             } else {
+            //if children exist, execute asmToPart function recursively feeding it the children data one level deeper, and then current parts array
                 asmToPart(item.children, parts)
             }
         }
+        //finally return parts array
         return parts
     }
 
@@ -869,7 +893,7 @@ exports.loadDesign = function(req, res) {
                         "file": asm
                     }
                 });
-                //if not
+                //if asm is not open
                 if (isAsmOpen.data.active != true) {
                     //open asm
                     await creo(sessionId, {
@@ -922,9 +946,12 @@ exports.loadDesign = function(req, res) {
                 });
                 //for each section
                 for (let data of sectionData.data.children.children) {
+                    //initialize/set parts and section variables
                     let parts = [];
                     let section = data.file;
+                    //if not a prt file (this gets rid of layout-level items like transformers,etc. and leaves behind only the asms (sections))
                     if (section.slice(section.length - 4, section.length) != '.PRT') {
+                        //push to sections
                         sections.push(section.slice(12,15));
                         //open section
                         await creo(sessionId, {
@@ -946,6 +973,7 @@ exports.loadDesign = function(req, res) {
                             }
                         });
 
+                        //send component hierarchy to the asmToPart function which returns an array of parts and qtys
                         const secParts = asmToPart(comps.data.children.children, parts);
                         //push data to secPartData
                         secPartData.push({
@@ -965,6 +993,8 @@ exports.loadDesign = function(req, res) {
         })
         .then(async function (secPartData) {
             console.log('Completed: Parts extracted from all sections within selected layouts');
+
+            //initialize globallyCommonParts
             let globallyCommonParts = [];
             //calculate the globally common (i.e. unique) parts
             for (let i = 0; i < secPartData.length; i++) {
@@ -974,12 +1004,10 @@ exports.loadDesign = function(req, res) {
                     }
                 }
             }
-
             console.log('Completed: Unique parts identified');
 
             //execute the listParameters function on the globallyCommonParts array to create partBinInfo
             await listParameters(sessionId, globallyCommonParts, partBinInfo);
-
             console.log('Completed: Applicable Parameters extracted from all unique parts');
 
             //initiate the standalone panels check
@@ -1017,7 +1045,7 @@ exports.loadDesign = function(req, res) {
             let sectionMatBoms = [];
             //for each section
             for (let m = 0; m < secPartData.length; m++) {
-                //initialize the bom's
+                //initialize the bom variables
                 let SS = [];
                 let AL = [];
                 let GA_7 = [];
@@ -1228,7 +1256,6 @@ exports.loadDesign = function(req, res) {
                                     });
                                 }
                             }
-
                         }
                     }
                 }
@@ -1450,7 +1477,6 @@ exports.loadDesign = function(req, res) {
             return null
         })
         .then(async function () {
-
             console.log("Completed: All SS, AL, LEXAN, 7GA, NP, and BIN BOMs calculated");
 
             //initialize all of the similar boms arrays (used for creating the BIN_TRACKER)
@@ -1475,12 +1501,15 @@ exports.loadDesign = function(req, res) {
 
             //areJSONArraysEqual function definition
             function areJSONArraysEqual (jsonArray1, jsonArray2) {
+                //1st check - if the lengths of the arrays are not equal, the array's cannot be equal
                 if (jsonArray1.length !== jsonArray2.length) return false;
+                //declare ser, which takes an object and returns a stringified representation where each key is mapped to an array of [key, value]
                 const ser = o => JSON.stringify(Object.keys(o).sort().map( k => [k, o[k]] ));
+                //update jsonArray1 to be a new set which represents the mapped json array using ser as the mapping function
                 jsonArray1 = new Set(jsonArray1.map(ser));
+                //check every object in jsonArray2 and see if it is included in jsonArray1 (this makes it so order doesnt matter) - if all yes, then return true
                 return jsonArray2.every( o => jsonArray1.has(ser(o)) );
             }
-
 
             //for each binBom
             for (let binBom of binBoms) {
@@ -1495,7 +1524,6 @@ exports.loadDesign = function(req, res) {
                 outBOMS.push(binBom.OUT);
             }
 
-
             //for each section
             for (let i = 0; i < sections.length; i++) {
                 //set current boms
@@ -1508,14 +1536,22 @@ exports.loadDesign = function(req, res) {
                 let currentSclBom = sclBOMS[i];
                 let currentOutBom = outBOMS[i];
 
-                //check PUR bom equality
+                //if currentPurBom has data
                 if (currentPurBom.length != 0) {
+                    //for each bom in purBOMs collection
                     for (let k = i + 1; k < purBOMS.length; k++) {
+                        //check if the JSON arrays are equal using function defined above
                         if (areJSONArraysEqual(currentPurBom, purBOMS[k]) == true ) {
+                            //filter similarPURs by conditionally checking if the children includes section,
+                            //and if the filtered array is empty
                             if (similarPURs.filter(e => e.children.includes(sections[i]) == true).length == 0) {
+                                //if the parent section already exists in the similarPURs array
                                 if (similarPURs.filter(e => e.parent === sections[i]).length > 0) {
+                                    //update children by pushing section to its array
                                     similarPURs.filter(e => e.parent === sections[i])[0].children.push(sections[k]);
                                 } else {
+                                //if the parent section does not exist in the similarPURs array
+                                    //push to similarPURs
                                     similarPURs.push({
                                         parent: sections[i],
                                         children: [sections[k]]
@@ -1525,14 +1561,23 @@ exports.loadDesign = function(req, res) {
                         }
                     }
                 }
-                //check STR bom equality
+
+                //if currentStrBom has data
                 if (currentStrBom.length != 0) {
+                    //for each bom in strBOMs collection
                     for (let k = i + 1; k < strBOMS.length; k++) {
+                        //check if the JSON arrays are equal using function defined above
                         if (areJSONArraysEqual(currentStrBom, strBOMS[k]) == true ) {
+                            //filter similarSTRs by conditionally checking if the children includes section,
+                            //and if the filtered array is empty
                             if (similarSTRs.filter(e => e.children.includes(sections[i]) == true).length == 0) {
+                                //if the parent section already exists in the similarSTRs array
                                 if (similarSTRs.filter(e => e.parent === sections[i]).length > 0) {
+                                    //update children by pushing section to its array
                                     similarSTRs.filter(e => e.parent === sections[i])[0].children.push(sections[k]);
                                 } else {
+                                //if the parent section does not exist in the similarSTRs array
+                                    //push to similarSTRs
                                     similarSTRs.push({
                                         parent: sections[i],
                                         children: [sections[k]]
@@ -1542,14 +1587,22 @@ exports.loadDesign = function(req, res) {
                         }
                     }
                 }
-                //check PNL bom equality
+
+                //if currentPnlBom has data
                 if (currentPnlBom.length != 0) {
+                    //for each bom in pnlBOMS collection
                     for (let k = i + 1; k < pnlBOMS.length; k++) {
+                        //check if the JSON arrays are equal using function defined above
                         if (areJSONArraysEqual(currentPnlBom, pnlBOMS[k]) == true ) {
+                            //filter similarPNLs by conditionally checking if the children includes section,
+                            //and if the filtered array is empty
                             if (similarPNLs.filter(e => e.children.includes(sections[i]) == true).length == 0) {
+                                //if the parent section already exists in the similarPNLs array
                                 if (similarPNLs.filter(e => e.parent === sections[i]).length > 0) {
                                     similarPNLs.filter(e => e.parent === sections[i])[0].children.push(sections[k]);
                                 } else {
+                                //if the parent section does not exist in the similarPNLs array
+                                    //push to similarPNLs
                                     similarPNLs.push({
                                         parent: sections[i],
                                         children: [sections[k]]
@@ -1559,14 +1612,22 @@ exports.loadDesign = function(req, res) {
                         }
                     }
                 }
-                //check CTL bom equality
+
+                //if currentCtlBom has data
                 if (currentCtlBom.length != 0) {
+                    //for each bom in ctlBOMS collection
                     for (let k = i + 1; k < ctlBOMS.length; k++) {
+                        //check if the JSON arrays are equal using function defined above
                         if (areJSONArraysEqual(currentCtlBom, ctlBOMS[k]) == true ) {
+                        //filter similarCTLs by conditionally checking if the children includes section,
+                            //and if the filtered array is empty
                             if (similarCTLs.filter(e => e.children.includes(sections[i]) == true).length == 0) {
+                                //if the parent section already exists in the similarCTLs array
                                 if (similarCTLs.filter(e => e.parent === sections[i]).length > 0) {
                                     similarCTLs.filter(e => e.parent === sections[i])[0].children.push(sections[k]);
                                 } else {
+                                //if the parent section does not exist in the similarCTLs array
+                                    //push to similarCTLs
                                     similarCTLs.push({
                                         parent: sections[i],
                                         children: [sections[k]]
@@ -1576,14 +1637,22 @@ exports.loadDesign = function(req, res) {
                         }
                     }
                 }
-                //check INT bom equality
+
+                //if currentIntBom has data
                 if (currentIntBom.length != 0 ) {
+                    //for each bom in intBOMS collection
                     for (let k = i + 1; k < intBOMS.length; k++) {
+                        //check if the JSON arrays are equal using function defined above
                         if (areJSONArraysEqual(currentIntBom, intBOMS[k]) == true ) {
+                            //filter similarINTs by conditionally checking if the children includes section,
+                            //and if the filtered array is empty
                             if (similarINTs.filter(e => e.children.includes(sections[i]) == true).length == 0) {
+                                //if the parent section already exists in the similarINTs array
                                 if (similarINTs.filter(e => e.parent === sections[i]).length > 0) {
                                     similarINTs.filter(e => e.parent === sections[i])[0].children.push(sections[k]);
                                 } else {
+                                //if the parent section does not exist in the similarINTs array
+                                    //push to similarINTs
                                     similarINTs.push({
                                         parent: sections[i],
                                         children: [sections[k]]
@@ -1593,14 +1662,22 @@ exports.loadDesign = function(req, res) {
                         }
                     }
                 }
-                //check EXT bom equality
+
+                //if currentExtBom has data
                 if (currentExtBom.length != 0 ) {
+                    //for each bom in extBOMS collection
                     for (let k = i + 1; k < extBOMS.length; k++) {
+                        //check if the JSON arrays are equal using function defined above
                         if (areJSONArraysEqual(currentExtBom, extBOMS[k]) == true ) {
+                            //filter similarEXTs by conditionally checking if the children includes section,
+                            //and if the filtered array is empty
                             if (similarEXTs.filter(e => e.children.includes(sections[i]) == true).length == 0) {
+                                //if the parent section already exists in the similarEXTs array
                                 if (similarEXTs.filter(e => e.parent === sections[i]).length > 0) {
                                     similarEXTs.filter(e => e.parent === sections[i])[0].children.push(sections[k]);
                                 } else {
+                                //if the parent section does not exist in the similarEXTs array
+                                    //push to similarEXTs
                                     similarEXTs.push({
                                         parent: sections[i],
                                         children: [sections[k]]
@@ -1610,14 +1687,22 @@ exports.loadDesign = function(req, res) {
                         }
                     }
                 }
-                //check SCL bom equality
+
+                //if currentSclBom has data
                 if (currentSclBom.length != 0 ) {
+                    //for each bom in sclBOMS collection
                     for (let k = i + 1; k < sclBOMS.length; k++) {
+                        //check if the JSON arrays are equal using function defined above
                         if (areJSONArraysEqual(currentSclBom, sclBOMS[k]) == true ) {
+                            //filter similarSCLs by conditionally checking if the children includes section,
+                            //and if the filtered array is empty
                             if (similarSCLs.filter(e => e.children.includes(sections[i]) == true).length == 0) {
+                                //if the parent section already exists in the similarSCLs array
                                 if (similarSCLs.filter(e => e.parent === sections[i]).length > 0) {
                                     similarSCLs.filter(e => e.parent === sections[i])[0].children.push(sections[k]);
                                 } else {
+                                //if the parent section does not exist in the similarSCLs array
+                                    //push to similarSCLs
                                     similarSCLs.push({
                                         parent: sections[i],
                                         children: [sections[k]]
@@ -1627,14 +1712,22 @@ exports.loadDesign = function(req, res) {
                         }
                     }
                 }
-                //check OUT bom equality
+
+                //if currentOutBom has data
                 if (currentOutBom.length != 0) {
+                    //for each bom in outBOMS collection
                     for (let k = i + 1; k < outBOMS.length; k++) {
+                        //check if the JSON arrays are equal using function defined above
                         if (areJSONArraysEqual(currentOutBom, outBOMS[k]) == true) {
+                            //filter similarOUTs by conditionally checking if the children includes section,
+                            //and if the filtered array is empty
                             if (similarOUTs.filter(e => e.children.includes(sections[i]) == true).length == 0) {
+                                //if the parent section already exists in the similarOUTs array
                                 if (similarOUTs.filter(e => e.parent === sections[i]).length > 0) {
                                     similarOUTs.filter(e => e.parent === sections[i])[0].children.push(sections[k]);
                                 } else {
+                                //if the parent section does not exist in the similarOUTs array
+                                    //push to similarOUTs
                                     similarOUTs.push({
                                         parent: sections[i],
                                         children: [sections[k]]
@@ -1646,59 +1739,90 @@ exports.loadDesign = function(req, res) {
                 }
             }
 
-            //mark the BIN_TRACKER for PUR boms
+            //for each similarPUR
             for (let similarPUR of similarPURs) {
+                //set parent section
                 let parent = similarPUR.parent;
+                //for each child section
                 for (let child of similarPUR.children) {
+                    //filter binBoms to child and set the PUR value as the parent section
                     binBoms.filter(e => e.section === child)[0].PUR = parent
                 }
             }
-            //mark the BIN_TRACKER for STR boms
+
+            //for each similarSTR
             for (let similarSTR of similarSTRs) {
+                //set parent section
                 let parent = similarSTR.parent;
+                //for each child section
                 for (let child of similarSTR.children) {
+                    //filter binBoms to child and set the STR value as the parent section
                     binBoms.filter(e => e.section === child)[0].STR = parent
                 }
             }
-            //mark the BIN_TRACKER for PNL boms
+
+            //for each similarPNL
             for (let similarPNL of similarPNLs) {
+                //set parent section
                 let parent = similarPNL.parent;
+                //for each child section
                 for (let child of similarPNL.children) {
+                    //filter binBoms to child and set the PNL value as the parent section
                     binBoms.filter(e => e.section === child)[0].PNL = parent
                 }
             }
-            //mark the BIN_TRACKER for CTL boms
+
+            //for each similarCTL
             for (let similarCTL of similarCTLs) {
+                //set parent section
                 let parent = similarCTL.parent;
+                //for each child section
                 for (let child of similarCTL.children) {
+                    //filter binBoms to child and set the CTL value as the parent section
                     binBoms.filter(e => e.section === child)[0].CTL = parent
                 }
             }
-            //mark the BIN_TRACKER for INT boms
+
+            //for each similarINT
             for (let similarINT of similarINTs) {
+                //set parent section
                 let parent = similarINT.parent;
+                //for each child section
                 for (let child of similarINT.children) {
+                    //filter binBoms to child and set the INT value as the parent section
                     binBoms.filter(e => e.section === child)[0].INT = parent
                 }
             }
-            //mark the BIN_TRACKER for EXT boms
+
+            //for each similarEXT
             for (let similarEXT of similarEXTs) {
+                //set parent section
                 let parent = similarEXT.parent;
+                //for each child section
                 for (let child of similarEXT.children) {
+                    //filter binBoms to child and set the EXT value as the parent section
                     binBoms.filter(e => e.section === child)[0].EXT = parent
                 }
             }
-            //mark the BIN_TRACKER for SCL boms
+
+            //for each similarSCL
             for (let similarSCL of similarSCLs) {
+                //set parent section
                 let parent = similarSCL.parent;
+                //for each child section
                 for (let child of similarSCL.children) {
+                    //filter binBoms to child and set the SCL value as the parent section
                     binBoms.filter(e => e.section === child)[0].SCL = parent
                 }
             }
-            //mark the BIN_TRACKER for OUT boms
+
+            //for each similarOUT
             for (let similarOUT of similarOUTs) {
+                //set parent section
                 let parent = similarOUT.parent;
+                //for each child section
                 for (let child of similarOUT.children) {
+                    //filter binBoms to child and set the OUT value as the parent section
                     binBoms.filter(e => e.section === child)[0].OUT = parent
                 }
             }
@@ -1748,7 +1872,7 @@ exports.loadDesign = function(req, res) {
             });
         })
         .catch(err => {
-            //if an error occurs at anythime at any point in the above code, log it to the console
+            //if an error occurs at anytime at any point in the above code, log it to the console
             console.log(err);
         });
 };
@@ -2085,12 +2209,17 @@ exports.generateAll = function(req, res) {
         }
     }
 
-    //loop through the existent layout boms and push values obtained via the HTML element (i.e. using req.body.[*elementName*]) to the corresponding bom arrays
+    //for each existingLayoutBom
     for (let existingLayoutBom of existingLayoutBoms) {
+        //if existingLayoutBOM is SS
         if (existingLayoutBom.slice(existingLayoutBom.length - 2, existingLayoutBom.length) == 'SS') {
+            //initialize ss
             let ss = [];
+            //if HTML element value (obtained from req.body[*elementName*]) is array
             if (Array.isArray(req.body['qty_' + existingLayoutBom]) == true) {
+                //for each item in array
                 for (let i = 0; i < req.body['qty_' + existingLayoutBom].length; i++) {
+                    //push to ss
                     ss.push({
                         qty: req.body['qty_' + existingLayoutBom][i],
                         partDesc: req.body['partDesc_' + existingLayoutBom][i],
@@ -2098,23 +2227,30 @@ exports.generateAll = function(req, res) {
                     })
                 }
             } else {
+            //if HTML value is not an array
+                //push single item to ss
                 ss.push({
                     qty: req.body['qty_' + existingLayoutBom],
                     partDesc: req.body['partDesc_' + existingLayoutBom],
                     part: req.body['part_' + existingLayoutBom]
                 })
             }
-
+            //push ss to SS
             SS.push({
                 bom: existingLayoutBom,
                 data: ss
             });
         }
 
+        //if existingLayoutBOM is OUT
         if (existingLayoutBom.slice(existingLayoutBom.length - 3, existingLayoutBom.length) == 'OUT') {
+            //initialize out
             let out = [];
+            //if HTML element value (obtained from req.body[*elementName*]) is array
             if (Array.isArray(req.body['qty_' + existingLayoutBom]) == true) {
+                //for each item in array
                 for (let i = 0; i < req.body['qty_' + existingLayoutBom].length; i++) {
+                    //push to out
                     out.push({
                         qty: req.body['qty_' + existingLayoutBom][i],
                         partDesc: req.body['partDesc_' + existingLayoutBom][i],
@@ -2127,6 +2263,8 @@ exports.generateAll = function(req, res) {
                     })
                 }
             } else {
+            //if HTML value is not an array
+                //push single item to out
                 out.push({
                     qty: req.body['qty_' + existingLayoutBom],
                     partDesc: req.body['partDesc_' + existingLayoutBom],
@@ -2138,18 +2276,22 @@ exports.generateAll = function(req, res) {
                     weight: req.body['weight_' + existingLayoutBom],
                 })
             }
-
+            //push out to OUT_L
             OUT_L.push({
                 bom: existingLayoutBom,
                 data: out
             });
         }
 
-
+        //if existingLayoutBOM is AL
         if (existingLayoutBom.slice(existingLayoutBom.length - 2, existingLayoutBom.length) == 'AL') {
+            //initialize al
             let al = [];
+            //if HTML element value (obtained from req.body[*elementName*]) is array
             if (Array.isArray(req.body['qty_' + existingLayoutBom]) == true) {
+                //for each item in array
                 for (let i = 0; i < req.body['qty_' + existingLayoutBom].length; i++) {
+                    //push to al
                     al.push({
                         qty: req.body['qty_' + existingLayoutBom][i],
                         partDesc: req.body['partDesc_' + existingLayoutBom][i],
@@ -2157,23 +2299,30 @@ exports.generateAll = function(req, res) {
                     });
                 }
             } else {
+            //if HTML value is not an array
+                //push single item to al
                 al.push({
                     qty: req.body['qty_' + existingLayoutBom],
                     partDesc: req.body['partDesc_' + existingLayoutBom],
                     part: req.body['part_' + existingLayoutBom]
                 })
             }
-
+            //push al to AL
             AL.push({
                 bom: existingLayoutBom,
                 data: al
             });
         }
 
+        //if existingLayoutBOM is 7GA
         if (existingLayoutBom.slice(existingLayoutBom.length - 3, existingLayoutBom.length) == '7GA') {
+            //initialize ga_7
             let ga_7 = [];
+            //if HTML element value (obtained from req.body[*elementName*]) is array
             if (Array.isArray(req.body['qty_' + existingLayoutBom]) == true) {
+                //for each item in array
                 for (let i = 0; i < req.body['qty_' + existingLayoutBom].length; i++) {
+                    //push to ga_7
                     ga_7.push({
                         qty: req.body['qty_' + existingLayoutBom][i],
                         partDesc: req.body['partDesc_' + existingLayoutBom][i],
@@ -2181,22 +2330,30 @@ exports.generateAll = function(req, res) {
                     })
                 }
             } else {
+            //if HTML value is not an array
+                //push single item to ga_7
                 ga_7.push({
                     qty: req.body['qty_' + existingLayoutBom],
                     partDesc: req.body['partDesc_' + existingLayoutBom],
                     part: req.body['part_' + existingLayoutBom]
                 })
             }
+            //push ga_7 to GA_7
             GA_7.push({
                 bom: existingLayoutBom,
                 data: ga_7
             });
         }
 
+        //if existingLayoutBOM is LEXAN
         if (existingLayoutBom.slice(existingLayoutBom.length - 5, existingLayoutBom.length) == 'LEXAN') {
+            //initialize lexan
             let lexan = [];
+            //if HTML element value (obtained from req.body[*elementName*]) is array
             if (Array.isArray(req.body['qty_' + existingLayoutBom]) == true) {
+                //for each item in array
                 for (let i = 0; i < req.body['qty_' + existingLayoutBom].length; i++) {
+                    //push to lexan
                     lexan.push({
                         qty: req.body['qty_' + existingLayoutBom][i],
                         partDesc: req.body['partDesc_' + existingLayoutBom][i],
@@ -2204,23 +2361,30 @@ exports.generateAll = function(req, res) {
                     })
                 }
             } else {
+            //if HTML value is not an array
+                //push single item to lexan
                 lexan.push({
                     qty: req.body['qty_' + existingLayoutBom],
                     partDesc: req.body['partDesc_' + existingLayoutBom],
                     part: req.body['part_' + existingLayoutBom]
                 })
             }
-
+            //push lexan to LEXAN
             LEXAN.push({
                 bom: existingLayoutBom,
                 data: lexan
             });
         }
 
+        //if existingLayoutBOM is A
         if (existingLayoutBom.slice(existingLayoutBom.length - 1, existingLayoutBom.length) == 'A') {
+            //initialize npA
             let npA = [];
+            //if HTML element value (obtained from req.body[*elementName*]) is array
             if (Array.isArray(req.body['part_' + existingLayoutBom]) == true) {
+                //for each item in array
                 for (let i = 0; i < req.body['part_' + existingLayoutBom].length; i++) {
+                    //push to npA
                     npA.push({
                         part: req.body['part_' + existingLayoutBom][i],
                         text_row1: req.body['text_row1_' + existingLayoutBom][i],
@@ -2229,6 +2393,8 @@ exports.generateAll = function(req, res) {
                     })
                 }
             } else {
+            //if HTML value is not an array
+                //push single item to ss
                 npA.push({
                     part: req.body['part_' + existingLayoutBom],
                     text_row1: req.body['text_row1_' + existingLayoutBom],
@@ -2236,17 +2402,22 @@ exports.generateAll = function(req, res) {
                     text_row3: req.body['text_row3_' + existingLayoutBom]
                 })
             }
-
+            //push npA to NP_A
             NP_A.push({
                 bom: existingLayoutBom,
                 data: npA
             })
         }
 
+        //if existingLayoutBOM is B
         if (existingLayoutBom.slice(existingLayoutBom.length - 1, existingLayoutBom.length) == 'B') {
+            //initialize npB
             let npB = [];
+            //if HTML element value (obtained from req.body[*elementName*]) is array
             if (Array.isArray(req.body['part_' + existingLayoutBom]) == true) {
+                //for each item in array
                 for (let i = 0; i < req.body['part_' + existingLayoutBom].length; i++) {
+                    //push to npB
                     npB.push({
                         part: req.body['part_' + existingLayoutBom][i],
                         text_row1: req.body['text_row1_' + existingLayoutBom][i],
@@ -2255,6 +2426,8 @@ exports.generateAll = function(req, res) {
                     })
                 }
             } else {
+            //if HTML value is not an array
+                //push single item to npB
                 npB.push({
                     part: req.body['part_' + existingLayoutBom],
                     text_row1: req.body['text_row1_' + existingLayoutBom],
@@ -2262,16 +2435,22 @@ exports.generateAll = function(req, res) {
                     text_row3: req.body['text_row3_' + existingLayoutBom]
                 })
             }
+            //push npB to NP_B
             NP_B.push({
                 bom: existingLayoutBom,
                 data: npB
             })
         }
 
+        //if existingLayoutBOM is C
         if (existingLayoutBom.slice(existingLayoutBom.length - 1, existingLayoutBom.length) == 'C') {
+            //initialize npC
             let npC = [];
+            //if HTML element value (obtained from req.body[*elementName*]) is array
             if (Array.isArray(req.body['part_' + existingLayoutBom]) == true) {
+                //for each item in array
                 for (let i = 0; i < req.body['part_' + existingLayoutBom].length; i++) {
+                    //push to npC
                     npC.push({
                         part: req.body['part_' + existingLayoutBom][i],
                         text_row1: req.body['text_row1_' + existingLayoutBom][i],
@@ -2280,6 +2459,8 @@ exports.generateAll = function(req, res) {
                     })
                 }
             } else {
+            //if HTML value is not an array
+                //push single item to npC
                 npC.push({
                     part: req.body['part_' + existingLayoutBom],
                     text_row1: req.body['text_row1_' + existingLayoutBom],
@@ -2287,16 +2468,22 @@ exports.generateAll = function(req, res) {
                     text_row3: req.body['text_row3_' + existingLayoutBom]
                 })
             }
+            //push npC to NP_C
             NP_C.push({
                 bom: existingLayoutBom,
                 data: npC
             })
         }
 
+        //if existingLayoutBOM is D
         if (existingLayoutBom.slice(existingLayoutBom.length - 1, existingLayoutBom.length) == 'D') {
+            //initialize npD
             let npD = [];
+            //if HTML element value (obtained from req.body[*elementName*]) is array
             if (Array.isArray(req.body['part_' + existingLayoutBom]) == true) {
+                //for each item in array
                 for (let i = 0; i < req.body['part_' + existingLayoutBom].length; i++) {
+                    //push to npD
                     npD.push({
                         part: req.body['part_' + existingLayoutBom][i],
                         text_row1: req.body['text_row1_' + existingLayoutBom][i],
@@ -2305,6 +2492,8 @@ exports.generateAll = function(req, res) {
                     })
                 }
             } else {
+            //if HTML value is not an array
+                //push single item to npD
                 npD.push({
                     part: req.body['part_' + existingLayoutBom],
                     text_row1: req.body['text_row1_' + existingLayoutBom],
@@ -2312,7 +2501,7 @@ exports.generateAll = function(req, res) {
                     text_row3: req.body['text_row3_' + existingLayoutBom]
                 })
             }
-
+            //push npD to NP_D
             NP_D.push({
                 bom: existingLayoutBom,
                 data: npD
@@ -2320,11 +2509,17 @@ exports.generateAll = function(req, res) {
         }
     }
 
+    //for each existingSectionBom
     for (let existingSectionBom of existingSectionBoms) {
+        //if existingSectionBom is OUT
         if (existingSectionBom.slice(existingSectionBom.length - 3, existingSectionBom.length) == 'OUT') {
+            //initialize out
             let out = [];
+            //if HTML element value (obtained from req.body[*elementName*]) is array
             if (Array.isArray(req.body['qty_' + existingSectionBom]) == true) {
+                //for each item in array
                 for (let i = 0; i < req.body['qty_' + existingSectionBom].length; i++) {
+                    //push to out
                     out.push({
                         qty: req.body['qty_' + existingSectionBom][i],
                         partDesc: req.body['partDesc_' + existingSectionBom][i],
@@ -2337,6 +2532,8 @@ exports.generateAll = function(req, res) {
                     })
                 }
             } else {
+            //if HTML value is not an array
+                //push single item to out
                 out.push({
                     qty: req.body['qty_' + existingSectionBom],
                     partDesc: req.body['partDesc_' + existingSectionBom],
@@ -2348,15 +2545,22 @@ exports.generateAll = function(req, res) {
                     weight: req.body['weight_' + existingSectionBom],
                 })
             }
+            //push out to OUT
             OUT.push({
                 bom: existingSectionBom,
                 data: out
             });
         }
+
+        //if existingSectionBom is PUR
         if (existingSectionBom.slice(existingSectionBom.length - 3, existingSectionBom.length) == 'PUR') {
+            //initialize pur
             let pur = [];
+            //if HTML element value (obtained from req.body[*elementName*]) is array
             if (Array.isArray(req.body['qty_' + existingSectionBom]) == true) {
+                //for each item in array
                 for (let i = 0; i < req.body['qty_' + existingSectionBom].length; i++) {
+                    //push to pur
                     pur.push({
                         qty: req.body['qty_' + existingSectionBom][i],
                         partDesc: req.body['partDesc_' + existingSectionBom][i],
@@ -2365,6 +2569,8 @@ exports.generateAll = function(req, res) {
                     })
                 }
             } else {
+            //if HTML value is not an array
+                //push single item to pur
                 pur.push({
                     qty: req.body['qty_' + existingSectionBom],
                     partDesc: req.body['partDesc_' + existingSectionBom],
@@ -2372,16 +2578,22 @@ exports.generateAll = function(req, res) {
                     weight: req.body['weight_' + existingSectionBom],
                 })
             }
-
+            //push pur to PUR
             PUR.push({
                 bom: existingSectionBom,
                 data: pur
             });
         }
+
+        //if existingSectionBom is STR
         if (existingSectionBom.slice(existingSectionBom.length - 3, existingSectionBom.length) == 'STR') {
+            //initialize str
             let str = [];
+            //if HTML element value (obtained from req.body[*elementName*]) is array
             if (Array.isArray(req.body['qty_' + existingSectionBom]) == true) {
+                //for each item in array
                 for (let i = 0; i < req.body['qty_' + existingSectionBom].length; i++) {
+                    //push to str
                     str.push({
                         qty: req.body['qty_' + existingSectionBom][i],
                         partDesc: req.body['partDesc_' + existingSectionBom][i],
@@ -2390,6 +2602,8 @@ exports.generateAll = function(req, res) {
                     })
                 }
             } else {
+            //if HTML value is not an array
+                //push single item to str
                 str.push({
                     qty: req.body['qty_' + existingSectionBom],
                     partDesc: req.body['partDesc_' + existingSectionBom],
@@ -2397,16 +2611,22 @@ exports.generateAll = function(req, res) {
                     weight: req.body['weight_' + existingSectionBom],
                 })
             }
-
+            //push out to STR
             STR.push({
                 bom: existingSectionBom,
                 data: str
             });
         }
+
+        //if existingSectionBom is PNL
         if (existingSectionBom.slice(existingSectionBom.length - 3, existingSectionBom.length) == 'PNL') {
+            //initialize pnl
             let pnl = [];
+            //if HTML element value (obtained from req.body[*elementName*]) is array
             if (Array.isArray(req.body['qty_' + existingSectionBom]) == true) {
+                //for each item in array
                 for (let i = 0; i < req.body['qty_' + existingSectionBom].length; i++) {
+                    //push to pnl
                     pnl.push({
                         qty: req.body['qty_' + existingSectionBom][i],
                         partDesc: req.body['partDesc_' + existingSectionBom][i],
@@ -2415,6 +2635,8 @@ exports.generateAll = function(req, res) {
                     })
                 }
             } else {
+            //if HTML value is not an array
+                //push single item to pnl
                 pnl.push({
                     qty: req.body['qty_' + existingSectionBom],
                     partDesc: req.body['partDesc_' + existingSectionBom],
@@ -2422,15 +2644,21 @@ exports.generateAll = function(req, res) {
                     weight: req.body['weight_' + existingSectionBom],
                 })
             }
+            //push pnl to PNL
             PNL.push({
                 bom: existingSectionBom,
                 data: pnl
             });
         }
+        //if existingSectionBom is CTL
         if (existingSectionBom.slice(existingSectionBom.length - 3, existingSectionBom.length) == 'CTL') {
+            //initialize ctl
             let ctl = [];
+            //if HTML element value (obtained from req.body[*elementName*]) is array
             if (Array.isArray(req.body['qty_' + existingSectionBom]) == true) {
+                //for each item in array
                 for (let i = 0; i < req.body['qty_' + existingSectionBom].length; i++) {
+                    //push to ctl
                     ctl.push({
                         qty: req.body['qty_' + existingSectionBom][i],
                         partDesc: req.body['partDesc_' + existingSectionBom][i],
@@ -2439,6 +2667,8 @@ exports.generateAll = function(req, res) {
                     })
                 }
             } else {
+            //if HTML value is not an array
+                //push single item to ctl
                 ctl.push({
                     qty: req.body['qty_' + existingSectionBom],
                     partDesc: req.body['partDesc_' + existingSectionBom],
@@ -2446,17 +2676,23 @@ exports.generateAll = function(req, res) {
                     weight: req.body['weight_' + existingSectionBom],
                 })
             }
-            //console.log(existingSectionBom);
 
+            //push ctl to CTL
             CTL.push({
                 bom: existingSectionBom,
                 data: ctl
             });
         }
+
+        //if existingSectionBom is INT
         if (existingSectionBom.slice(existingSectionBom.length - 3, existingSectionBom.length) == 'INT') {
+            //initialize int
             let int = [];
+            //if HTML element value (obtained from req.body[*elementName*]) is array
             if (Array.isArray(req.body['qty_' + existingSectionBom]) == true) {
+                //for each item in array
                 for (let i = 0; i < req.body['qty_' + existingSectionBom].length; i++) {
+                    //push to int
                     int.push({
                         qty: req.body['qty_' + existingSectionBom][i],
                         partDesc: req.body['partDesc_' + existingSectionBom][i],
@@ -2465,6 +2701,8 @@ exports.generateAll = function(req, res) {
                     })
                 }
             } else {
+            //if HTML value is not an array
+                //push single item to out
                 int.push({
                     qty: req.body['qty_' + existingSectionBom],
                     partDesc: req.body['partDesc_' + existingSectionBom],
@@ -2473,15 +2711,22 @@ exports.generateAll = function(req, res) {
                 })
             }
 
+            //push int to INT
             INT.push({
                 bom: existingSectionBom,
                 data: int
             });
         }
+
+        //if existingSectionBom is EXT
         if (existingSectionBom.slice(existingSectionBom.length - 3, existingSectionBom.length) == 'EXT') {
+            //initialize ext
             let ext = [];
+            //if HTML element value (obtained from req.body[*elementName*]) is array
             if (Array.isArray(req.body['qty_' + existingSectionBom]) == true) {
+                //for each item in array
                 for (let i = 0; i < req.body['qty_' + existingSectionBom].length; i++) {
+                    //push to ext
                     ext.push({
                         qty: req.body['qty_' + existingSectionBom][i],
                         partDesc: req.body['partDesc_' + existingSectionBom][i],
@@ -2490,6 +2735,8 @@ exports.generateAll = function(req, res) {
                     })
                 }
             } else {
+            //if HTML value is not an array
+                //push single item to ext
                 ext.push({
                     qty: req.body['qty_' + existingSectionBom],
                     partDesc: req.body['partDesc_' + existingSectionBom],
@@ -2497,16 +2744,22 @@ exports.generateAll = function(req, res) {
                     weight: req.body['weight_' + existingSectionBom],
                 })
             }
-
+            //push ext to EXT
             EXT.push({
                 bom: existingSectionBom,
                 data: ext
             });
         }
+
+        //if existingSectionBom is SCL
         if (existingSectionBom.slice(existingSectionBom.length - 3, existingSectionBom.length) == 'SCL') {
+            //initialize scl
             let scl = [];
+            //if HTML element value (obtained from req.body[*elementName*]) is array
             if (Array.isArray(req.body['qty_' + existingSectionBom]) == true) {
+                //for each item in array
                 for (let i = 0; i < req.body['qty_' + existingSectionBom].length; i++) {
+                    //push to scl
                     scl.push({
                         qty: req.body['qty_' + existingSectionBom][i],
                         partDesc: req.body['partDesc_' + existingSectionBom][i],
@@ -2516,6 +2769,8 @@ exports.generateAll = function(req, res) {
                     })
                 }
             } else {
+            //if HTML value is not an array
+                //push single item to out
                 scl.push({
                     qty: req.body['qty_' + existingSectionBom],
                     partDesc: req.body['partDesc_' + existingSectionBom],
@@ -2525,6 +2780,7 @@ exports.generateAll = function(req, res) {
                 })
             }
 
+            //push scl to SCL
             SCL.push({
                 bom: existingSectionBom,
                 data: scl
@@ -2532,51 +2788,78 @@ exports.generateAll = function(req, res) {
         }
     }
 
-    //for each layout, create the secBinTrackingData based on HTML elements (using req.body[*elementName*])
+    //for each layout
     for (let layout of layouts) {
+        //initialize secBinTrackingData and bom variables
         let secBinTrackingData = [];
         let pur, str, pnl, ctl, int, ext, scl, out;
+        //for each section
         for (let section of layout.sections.split(',')) {
+            //if OUT binTracker HTML element exists
             if (req.body['binTracker_OUT_' + layout.layout.slice(0,7) + section] != undefined) {
+                //write to out
                 out = req.body['binTracker_OUT_' + layout.layout.slice(0,7) + section];
             } else {
+            //if OUT binTracker HTML element does not exist, set out to N/A
                 out = 'N/A';
             }
+            //if PUR binTracker HTML element exists
             if (req.body['binTracker_PUR_' + layout.layout.slice(0, 7) + section] != undefined) {
+                //write to pur
                 pur = req.body['binTracker_PUR_' + layout.layout.slice(0, 7) + section];
             } else {
+            //if PUR binTracker HTML element does not exist, set pur to N/A
                 pur = 'N/A';
             }
+            //if STR binTracker HTML element exists
             if (req.body['binTracker_STR_' + layout.layout.slice(0, 7) + section] != undefined) {
+                //write to str
                 str = req.body['binTracker_STR_' + layout.layout.slice(0, 7) + section];
             } else {
+            //if STR binTracker HTML element does not exist, set str to N/A
                 str = 'N/A';
             }
+            //if PNL binTracker HTML element exists
             if (req.body['binTracker_PNL_' + layout.layout.slice(0, 7) + section] != undefined) {
+                //write to pnl
                 pnl = req.body['binTracker_PNL_' + layout.layout.slice(0, 7) + section];
             } else {
+            //if PNL binTracker HTML element does not exist, set pnl to N/A
                 pnl = 'N/A';
             }
+            //if CTL binTracker HTML element exists
             if (req.body['binTracker_CTL_' + layout.layout.slice(0, 7) + section] != undefined) {
+                //write to ctl
                 ctl = req.body['binTracker_CTL_' + layout.layout.slice(0, 7) + section];
             } else {
+            //if CTL binTracker HTML element does not exist, set ctl to N/A
                 ctl = 'N/A';
             }
+            //if INT binTracker HTML element exists
             if (req.body['binTracker_INT_' + layout.layout.slice(0, 7) + section] != undefined) {
+                //write to int
                 int = req.body['binTracker_INT_' + layout.layout.slice(0, 7) + section];
             } else {
+            //if INT binTracker HTML element does not exist, set int to N/A
                 int = 'N/A';
             }
+            //if EXT binTracker HTML element exists
             if (req.body['binTracker_EXT_' + layout.layout.slice(0, 7) + section] != undefined) {
+                //write to ext
                 ext = req.body['binTracker_EXT_' + layout.layout.slice(0, 7) + section];
             } else {
+            //if EXT binTracker HTML element does not exist, set ext to N/A
                 ext = 'N/A';
             }
+            //if SCL binTracker HTML element exists
             if (req.body['binTracker_SCL_' + layout.layout.slice(0, 7) + section] != undefined) {
+                //write to scl
                 scl = req.body['binTracker_SCL_' + layout.layout.slice(0, 7) + section];
             } else {
+            //if SCL binTracker HTML element does not exist, set scl to N/A
                 scl = 'N/A';
             }
+            //push to secBinTrackingData
             secBinTrackingData.push({
                 section: section,
                 data: {
@@ -2591,11 +2874,51 @@ exports.generateAll = function(req, res) {
                 }
             });
         }
+        //push secBinTrackingData to BIN_TRACKER
         BIN_TRACKER.push({
             layout: layout.layout,
             data: secBinTrackingData
         });
     }
+
+    //logging all bom data to the console (use console.dir with null depth in order to print whole contents of javascript object)
+    console.log('SS BOM (LAYOUT):');
+    console.dir(SS, { depth: null });
+    console.log('AL BOM (LAYOUT):');
+    console.dir(AL, { depth: null });
+    console.log('GA_7 BOM (LAYOUT):');
+    console.dir(GA_7, { depth: null });
+    console.log('LEXAN BOM (LAYOUT):');
+    console.dir(LEXAN, { depth: null });
+    console.log('NP_A BOM (LAYOUT):');
+    console.dir(NP_A, { depth: null });
+    console.log('NP_B BOM (LAYOUT):');
+    console.dir(NP_B, { depth: null });
+    console.log('NP_C BOM (LAYOUT):');
+    console.dir(NP_C, { depth: null });
+    console.log('NP_D BOM (LAYOUT):');
+    console.dir(NP_D, { depth: null });
+    console.log('OUT_L BOM (LAYOUT):');
+    console.dir(OUT_L, { depth: null });
+    console.log('PUR BOM: (SECTION)');
+    console.dir(PUR, { depth: null });
+    console.log('STR BOM: (SECTION)');
+    console.dir(STR, { depth: null });
+    console.log('PNL BOM: (SECTION)');
+    console.dir(PNL, { depth: null });
+    console.log('CTL BOM: (SECTION)');
+    console.dir(CTL, { depth: null });
+    console.log('INT BOM: (SECTION)');
+    console.dir(INT, { depth: null });
+    console.log('EXT BOM: (SECTION)');
+    console.dir(EXT, { depth: null });
+    console.log('SCL BOM: (SECTION)');
+    console.dir(SCL, { depth: null });
+    console.log('OUT BOM: (SECTION)');
+    console.dir(OUT, { depth: null });
+    console.log('BIN_TRACKER BOM:');
+    console.dir(BIN_TRACKER, { depth: null });
+
 
     //if SS has data
     if (SS.length != 0) {
@@ -3501,9 +3824,13 @@ exports.generateAll = function(req, res) {
                     if (secSTR != 'N/A') {
                         //filter STR
                         let filterSTR = STR.filter(e => e.bom == secSTR);
+                        //if filter has data in it
                         if (filterSTR.length != 0) {
+                            //for each item of data
                             for (let item of filterSTR[0].data) {
+                                //if part matches the drawing name
                                 if (item.part == drawing.name.slice(0,drawing.name.length - 4)) {
+                                    //if no record currently exists in outsource, push to it
                                     if (outsource.data.filter(e => e.part == item.part).length == 0) {
                                         outsource.data.push({
                                             qty: parseInt(item.qty),
@@ -3512,6 +3839,7 @@ exports.generateAll = function(req, res) {
                                             weight: item.weight
                                         });
                                     } else {
+                                    //if record exists then just increment the qty
                                         outsource.data.filter(e => e.part == item.part)[0].qty += parseInt(item.qty);
                                     }
                                 }
@@ -3519,11 +3847,17 @@ exports.generateAll = function(req, res) {
                         }
                     }
 
+                    //if secPNL has data in it
                     if (secPNL != 'N/A') {
+                        //filter PNL
                         let filterPNL = PNL.filter(e => e.bom == secPNL);
+                        //if filter has data in it
                         if (filterPNL.length != 0) {
+                            //for each item in data
                             for (let item of filterPNL[0].data) {
+                                //if part matches the drawing name
                                 if (item.part == drawing.name.slice(0,drawing.name.length - 4)) {
+                                    //if no record currently exists in outsource, push to it
                                     if (outsource.data.filter(e => e.part == item.part).length == 0) {
                                         outsource.data.push({
                                             qty: parseInt(item.qty),
@@ -3532,6 +3866,7 @@ exports.generateAll = function(req, res) {
                                             weight: item.weight
                                         });
                                     } else {
+                                    //if record exists then just increment the qty
                                         outsource.data.filter(e => e.part == item.part)[0].qty += parseInt(item.qty);
                                     }
                                 }
@@ -3539,11 +3874,17 @@ exports.generateAll = function(req, res) {
                         }
                     }
 
+                    //if secCTL has data in it
                     if (secCTL != 'N/A') {
+                        //filter CTL
                         let filterCTL = CTL.filter(e => e.bom == secCTL);
+                        //if filter has data in it
                         if (filterCTL.length != 0) {
+                            //for each item in data
                             for (let item of filterCTL[0].data) {
+                                //if part matches the drawing name
                                 if (item.part == drawing.name.slice(0,drawing.name.length - 4)) {
+                                    //if no record currently exists in outsource, push to it
                                     if (outsource.data.filter(e => e.part == item.part).length == 0) {
                                         outsource.data.push({
                                             qty: parseInt(item.qty),
@@ -3552,6 +3893,7 @@ exports.generateAll = function(req, res) {
                                             weight: item.weight
                                         });
                                     } else {
+                                    //if record exists then just increment the qty
                                         outsource.data.filter(e => e.part == item.part)[0].qty += parseInt(item.qty);
                                     }
                                 }
@@ -3559,11 +3901,17 @@ exports.generateAll = function(req, res) {
                         }
                     }
 
+                    //if secINT has data in it
                     if (secINT != 'N/A') {
+                        //filter INT
                         let filterINT = INT.filter(e => e.bom == secINT);
+                        //if filter has data in it
                         if (filterINT.length != 0) {
+                            //for each item in data
                             for (let item of filterINT[0].data) {
+                                //if part matches the drawing name
                                 if (item.part == drawing.name.slice(0,drawing.name.length - 4)) {
+                                    //if no record currently exists in outsource, push to it
                                     if (outsource.data.filter(e => e.part == item.part).length == 0) {
                                         outsource.data.push({
                                             qty: parseInt(item.qty),
@@ -3572,6 +3920,7 @@ exports.generateAll = function(req, res) {
                                             weight: item.weight
                                         });
                                     } else {
+                                    //if record exists then just increment the qty
                                         outsource.data.filter(e => e.part == item.part)[0].qty += parseInt(item.qty);
                                     }
                                 }
@@ -3579,11 +3928,17 @@ exports.generateAll = function(req, res) {
                         }
                     }
 
+                    //if secEXT has data in it
                     if (secEXT != 'N/A') {
+                        //filter EXT
                         let filterEXT = EXT.filter(e => e.bom == secEXT);
+                        //if filter has data in it
                         if (filterEXT.length != 0) {
+                            //for each item in data
                             for (let item of filterEXT[0].data) {
+                                //if part matches the drawing name
                                 if (item.part == drawing.name.slice(0,drawing.name.length - 4)) {
+                                    //if no record currently exists in outsource, push to it
                                     if (outsource.data.filter(e => e.part == item.part).length == 0) {
                                         outsource.data.push({
                                             qty: parseInt(item.qty),
@@ -3592,6 +3947,7 @@ exports.generateAll = function(req, res) {
                                             weight: item.weight
                                         });
                                     } else {
+                                    //if record exists then just increment the qty
                                         outsource.data.filter(e => e.part == item.part)[0].qty += parseInt(item.qty);
                                     }
                                 }
@@ -3751,6 +4107,7 @@ exports.generateAll = function(req, res) {
             res.redirect('/PDF-DXF-BIN_BOM');
         })
         .catch(err => {
+            //if an error occurs at anytime at any point in the above code, log it to the console
             console.log(err);
         });
 };

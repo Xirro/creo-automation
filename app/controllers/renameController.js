@@ -1,10 +1,19 @@
-//loadash import
+//loadash import - lodash is a javascript utility library for common 
+//programming tasks involving arrays, numbers, objectcs, strings, etc.
 const _ = require('lodash');
 require('deepdash')(_);
 
 //database information (table and db names)
 const dbConfig = require('../config/database.js');
 const database = dbConfig.database;
+
+//Database interaction function (querySql)
+//querySql takes 2 arguments, query (the sql string to be passed)
+//and params (if there are ?'s in the query, these values will be inserted in their place)
+//second argument params is optional, you only need to include it if you need to insert values into the string
+//querySql returns the result of the sql query
+const DB = require('../config/db.js');
+const querySql = DB.querySql;
 
 //Creoson Connection options
 const reqPromise = require('request-promise');
@@ -32,7 +41,7 @@ reqPromise(connectOptions)
                 "command": "creo",
                 "function": "set_creo_version",
                 "data": {
-                    "version": "7"
+                    "version": "3"
                 }
             },
             json: true
@@ -73,12 +82,15 @@ function creo(sessionId, functionData) {
 }
 
 //*********************************MECHANICAL ENG. PORTAL*************************************//
-//Database information
-const DB = require('../config/db.js');
-const querySql = DB.querySql;
 
 exports = {};
 module.exports = exports;
+
+
+//IN ANY OF THESE FUNCTIONS IF YOU WANT TO DEBUG OR ANALYZE THE BEHAVIOR
+//THE BEST THING TO DO IS console.log WHATEVER VARIABLE, OBJECT, ARRAY, PROPERTY, ETC. THAT YOU ARE TRYING TO STUDY
+
+
 
 //renameMain function
 //brings user to the rendered rename page
@@ -106,11 +118,13 @@ exports.renameSetWD = function(req, res) {
 
     //cd async function definition
     async function cd() {
+        //pass current creo wd to dir
         let dir = await creo(sessionId, {
             command: "creo",
             function: "pwd",
             data: {}
         });
+        //if dir.data exists
         if (dir.data != undefined) {
             //if current creo wd is not equal to the users input, then set it
             if (dir.data.dirname != workingDir) {
@@ -126,10 +140,11 @@ exports.renameSetWD = function(req, res) {
         return null
     }
 
-    //executes the cd function
+
+    //execute the cd function
     cd()
         .then(async function() {
-            //list all asm's in the current creo wd
+            //list all asm's in the current creo wd and set it to asmList
             const listAsms = await creo(sessionId, {
                 command: "creo",
                 function: "list_files",
@@ -143,7 +158,7 @@ exports.renameSetWD = function(req, res) {
             for (let i = 0; i < asmList.length; i++) {
                 //if current asm is a top-level lineup
                 if (asmList[i].slice(7,11) == '0000') {
-                    //open layout
+                    //open lineup asm
                     await creo(sessionId, {
                         command: "file",
                         function: "open",
@@ -159,13 +174,14 @@ exports.renameSetWD = function(req, res) {
                             "file": asmList[i]
                         }
                     });
-                    //if one exists, then add the instances to the top-level asm list as well
+                    //if one exists, then add the generic as well as the instances to the top-level asm list
                     if (famTabExists.data.instances.length != 0) {
                         topLevelAsmList.push(asmList[i]);
                         for (let j = 0; j < famTabExists.data.instances.length; j++) {
                             topLevelAsmList.push(famTabExists.data.instances[j]+'<'+asmList[i].slice(0,15) +'>'+'.asm')
                         }
                     } else {
+                    //if no family table exists, then just push the generic
                         topLevelAsmList.push(asmList[i])
                     }
                 }
@@ -173,8 +189,8 @@ exports.renameSetWD = function(req, res) {
             return null;
         })
         .then(() => {
-            //render renameMain with message (if exists), workingDir, and asmList
             if (message == null) {
+                //if no warning message then render renameMain with workingDir and asmList
                 res.locals = {title: 'Rename Script'};
                 res.render('Rename/renameMain', {
                     message: null,
@@ -182,6 +198,7 @@ exports.renameSetWD = function(req, res) {
                     asmList: topLevelAsmList
                 });
             } else {
+                //if warning message, then render renameMain with message, workingDir and an empty array as asmList
                 res.locals = {title: 'Rename Script'};
                 res.render('Rename/renameMain', {
                     message: message,
@@ -224,12 +241,14 @@ exports.loadParts = function(req, res) {
 
     //cd async function definition
     async function cd() {
+        //pass current creo wd to dir
         let dir = await creo(sessionId, {
             command: "creo",
             function: "pwd",
             data: {}
         });
 
+        //if current creo wd is not equal to the users input, then set it
         if (dir.data.dirname != workingDir) {
             await creo(sessionId, {
                 command: "creo",
@@ -265,7 +284,7 @@ exports.loadParts = function(req, res) {
             }
         })
         .then(async function () {
-            //looks up all *.prt in the wd, and writes result to partsData
+            //looks up all .prt in the wd, and writes result to partsData
             const parts = await creo(sessionId, {
                 command: "creo",
                 function: "list_files",
@@ -276,7 +295,7 @@ exports.loadParts = function(req, res) {
             });
             let partsData = parts.data.filelist;
 
-            //looks up all the *.asm in the wd, and writes result to assembliesData
+            //looks up all the .asm in the wd, and writes result to assembliesData
             const assemblies = await creo(sessionId, {
                 command: "creo",
                 function: "list_files",
@@ -284,8 +303,8 @@ exports.loadParts = function(req, res) {
                     filename: "*.asm"
                 }
             });
-
             let assembliesData = assemblies.data.filelist;
+
 
             //loop through parts
             for (let part of partsData) {
@@ -323,8 +342,9 @@ exports.loadParts = function(req, res) {
                         //for each instance
                         for (let instance of instances.data.instances) {
                             let instanceText = instance.toString();
+                            //if part is not a 999999, 777777, 777999
                             if (instanceText.slice(0,6) != '999999' && instanceText.slice(0,6) != '777777' && instanceText.slice(0,6) != '777999') {
-                                //add to partsList if it is not a 999999, 777777, or 777999
+                                //add to partsList
                                 partList.push(instanceText+"<"+partText.slice(0,15)+">.prt");
                             }
                         }
@@ -338,8 +358,9 @@ exports.loadParts = function(req, res) {
                 //if asm is a generic
                 if (assembly.includes('<') == false) {
                     let assemblyText = assembly.toString();
+                    //if part is not a 999999, 777777, 777999
                     if (assemblyText.slice(0,6) != '999999' && assemblyText.slice(0,6) != '777777' && assemblyText.slice(0,6) != '777999') {
-                        //add to asmList if it is not a 999999, 777777, or 777999
+                        //add to asmList
                         asmList.push(assemblyText);
                     }
 
@@ -368,8 +389,9 @@ exports.loadParts = function(req, res) {
                         //for each instance
                         for (let instance of instances.data.instances) {
                             let instanceText = instance.toString();
+                            //if instance is not a 999999, 777777, 777999
                             if (instanceText.slice(0,6) != '999999' && instanceText.slice(0,6) != '777777' && instanceText.slice(0,6) != '777999') {
-                                //add to asmList if it is not a 999999, 777777, or 777999
+                                //add to asmList
                                 asmList.push(instanceText+"<"+assemblyText.slice(0,15)+">.asm");
                             }
                         }
@@ -408,7 +430,7 @@ exports.loadParts = function(req, res) {
 
 
                     if (doesDwgExist.data.filelist.length > 0 && doesBomDwgExist.data.filelist.length > 0) {
-                        //if drawing and bom.drawing
+                        //if drawing and bom.drawing, push to asmData
                         asmData.push({
                             currentName: asmInstance,
                             currentGeneric: asmGeneric,
@@ -420,7 +442,7 @@ exports.loadParts = function(req, res) {
                             message: 'OK'
                         });
                     } else if (doesDwgExist.data.filelist.length > 0 && doesBomDwgExist.data.filelist.length == 0) {
-                        //if drawing but no bom.drawing
+                        //if drawing but no bom.drawing, push to asmData
                         asmData.push({
                             currentName: asmInstance,
                             currentGeneric: asmGeneric,
@@ -432,7 +454,7 @@ exports.loadParts = function(req, res) {
                             message: 'OK'
                         });
                     } else if (doesDwgExist.data.filelist.length == 0 && doesBomDwgExist.data.filelist.length > 0) {
-                        //if no drawing but bom.drawing
+                        //if no drawing but bom.drawing, push to asmData
                         asmData.push({
                             currentName: asmInstance,
                             currentGeneric: asmGeneric,
@@ -444,7 +466,7 @@ exports.loadParts = function(req, res) {
                             message: 'OK'
                         });
                     } else {
-                        //if no drawing and no bom.drawing
+                        //if no drawing and no bom.drawing, push to asmData
                         asmData.push({
                             currentName: asmInstance,
                             currentGeneric: asmGeneric,
@@ -477,7 +499,7 @@ exports.loadParts = function(req, res) {
                     });
 
                     if (doesDwgExist.data.filelist.length > 0 && doesBomDwgExist.data.filelist.length > 0) {
-                        //if there is a drawing and bom.drawing
+                        //if there is a drawing and bom.drawing, push to asmData
                         asmData.push({
                             currentName: asm.slice(0,15),
                             currentGeneric: null,
@@ -489,7 +511,7 @@ exports.loadParts = function(req, res) {
                             message: 'OK'
                         });
                     } else if (doesDwgExist.data.filelist.length > 0 && doesBomDwgExist.data.filelist.length == 0) {
-                        //if there is a drawing and no bom.drawing
+                        //if there is a drawing and no bom.drawing, push to asmData
                         asmData.push({
                             currentName: asm.slice(0,15),
                             currentGeneric: null,
@@ -501,7 +523,7 @@ exports.loadParts = function(req, res) {
                             message: 'OK'
                         });
                     } else if (doesDwgExist.data.filelist.length == 0 && doesBomDwgExist.data.filelist.length > 0) {
-                        //if there is no drawing, but there is a bom.drawing
+                        //if there is no drawing, but there is a bom.drawing, push to asmData
                         asmData.push({
                             currentName: asm.slice(0,15),
                             currentGeneric: null,
@@ -513,7 +535,7 @@ exports.loadParts = function(req, res) {
                             message: 'OK'
                         });
                     } else {
-                        //if there is no drawing and no bom.drawing
+                        //if there is no drawing and no bom.drawing, push to asmData
                         asmData.push({
                             currentName: asm.slice(0,15),
                             currentGeneric: null,
@@ -528,7 +550,7 @@ exports.loadParts = function(req, res) {
                 }
             }
 
-            //sort asmData in ascending order based on last 7 digits
+            //sort asmData in ascending order based on last 7 digits (with '-' taken out)
             asmData.sort(function(a,b) {
                 let intA = parseInt(a.currentName.slice(7,11) + a.currentName.slice(12,15));
                 let intB = parseInt(b.currentName.slice(7,11) + b.currentName.slice(12,15));
@@ -597,6 +619,7 @@ exports.loadParts = function(req, res) {
                     //if part includes INST then do nothing with it
 
                     } else {
+                        //initialize/set variables
                         let partGeneric = prt.split('<')[1].slice(0,15);
                         let partInstance = prt.split('<')[0];
                         let partOffset = parseInt(partInstance.slice(12,15)) - parseInt(partGeneric.slice(12,15));
@@ -610,7 +633,7 @@ exports.loadParts = function(req, res) {
                             }
                         });
                         if (doesDwgExist.data.filelist.length > 0 && flatInstance.data.instances.length > 0) {
-                            //if drawing exists and flat instance exists
+                            //if drawing exists and flat instance exists, push to partData
                             partData.push({
                                 currentName: partInstance,
                                 currentGeneric: partGeneric,
@@ -622,7 +645,7 @@ exports.loadParts = function(req, res) {
                                 message: 'OK'
                             });
                         } else if (doesDwgExist.data.filelist.length > 0 && flatInstance.data.instances.length == 0) {
-                            //if drawing exists, but no flat instance
+                            //if drawing exists, but no flat instance, push to partData
                             partData.push({
                                 currentName: partInstance,
                                 currentGeneric: partGeneric,
@@ -634,7 +657,7 @@ exports.loadParts = function(req, res) {
                                 message: 'OK'
                             });
                         } else if (doesDwgExist.data.filelist.length == 0 && flatInstance.data.instances.length > 0) {
-                            //if no drawing exists, but a flat instance does
+                            //if no drawing exists, but a flat instance does, push to partData
                             partData.push({
                                 currentName: partInstance,
                                 currentGeneric: partGeneric,
@@ -646,7 +669,7 @@ exports.loadParts = function(req, res) {
                                 message: 'OK'
                             });
                         } else {
-                            //if no drawing and no flat instance exists
+                            //if no drawing and no flat instance exists, push to partData
                             partData.push({
                                 currentName: partInstance,
                                 currentGeneric: partGeneric,
@@ -670,6 +693,7 @@ exports.loadParts = function(req, res) {
                     });
 
                     if (doesDwgExist.data.filelist.length > 0 && flatInstance.data.instances.length > 0) {
+                        //if drawing and flat instance exists, push to partData
                         partData.push({
                             currentName: prt.slice(0,15),
                             currentGeneric: null,
@@ -681,8 +705,8 @@ exports.loadParts = function(req, res) {
                             message: 'OK'
                         });
 
-
                     } else if (doesDwgExist.data.filelist.length > 0 && flatInstance.data.instances.length == 0) {
+                        //if drawing exists and no flat instance exists, push to partData
                         partData.push({
                             currentName: prt.slice(0,15),
                             currentGeneric: null,
@@ -694,6 +718,7 @@ exports.loadParts = function(req, res) {
                             message: 'OK'
                         });
                     } else if (doesDwgExist.data.filelist.length == 0 && flatInstance.data.instances.length > 0) {
+                        //if no drawing exists but flat instance exists, push to partData
                         partData.push({
                             currentName: prt.slice(0,15),
                             currentGeneric: null,
@@ -705,6 +730,7 @@ exports.loadParts = function(req, res) {
                             message: 'OK'
                         });
                     } else {
+                        //if no drawing and no flat instance exists, push to partData
                         partData.push({
                             currentName: prt.slice(0,15),
                             currentGeneric: null,
@@ -729,7 +755,7 @@ exports.loadParts = function(req, res) {
             //initialize counter
             let count = 0;
 
-            //what is this for
+            //what is this for??
             for (let i = 0; i < asmData.length; i++) {
                 if (asmData[i].category == null && asmData[i].group == null) {
                     let foundParent = false;
@@ -767,11 +793,14 @@ exports.loadParts = function(req, res) {
 };
 
 
+
+
+
 //rename function
 //renames all the parts and asms based on user input from the loadParts page
 exports.rename = function(req, res) {
     req.setTimeout(0); //no timeout (this is needed to prevent error due to page taking a long time to load)
-    //initialize variables
+    //initialize/set variables
     let workingDir = req.body.CREO_workingDir;
     let asmName = req.body.asmName;
     let asmCount = req.body.renameAsmCount;
@@ -920,7 +949,6 @@ exports.rename = function(req, res) {
                     }
                 });
 
-
                 //list part instances
                 let instances = await creo(sessionId, {
                     command: "file",
@@ -935,7 +963,6 @@ exports.rename = function(req, res) {
                     generic: part,
                     instances:[]
                 });
-
 
                 //if instances exist
                 if (instances.data.files.length > 0) {
@@ -1035,7 +1062,6 @@ exports.rename = function(req, res) {
                         }
                     });
                 }
-
 
                 let renameData = renameAsmData.filter(e => e.currentName == asmData[i].generic.slice(0,15))[0];
                 let newName = renameData.newName;

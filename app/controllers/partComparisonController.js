@@ -1,20 +1,22 @@
-
-const path = require('path');
 const fs = require('fs').promises;
-const queryString = require('query-string');
-
 const math = require('mathjs');
 
 //Excel Connection
 const Excel = require('exceljs');
 
-
 //DATABASE INFORMATION (TABLE NAMES)
 const dbConfig = require('../config/database.js');
 const database = dbConfig.database;
-const creoDB = database;
 
-//Creoson Connection
+//Database interaction function (querySql)
+//querySql takes 2 arguments, query (the sql string to be passed)
+//and params (if there are ?'s in the query, these values will be inserted in their place)
+//second argument params is optional, you only need to include it if you need to insert values into the string
+//querySql returns the result of the sql query
+const DB = require('../config/db.js');
+const querySql = DB.querySql;
+
+//Creoson Connection options
 const reqPromise = require('request-promise');
 let creoHttp = 'http://localhost:9056/creoson';
 let sessionId = '';
@@ -28,10 +30,14 @@ let connectOptions = {
     json: true // Automatically stringifies the body to JSON
 };
 
+//inital creoson connection (needed to get the sessionId)
 reqPromise(connectOptions)
     .then(reqConnectBody => {
         // get the sessionId
         sessionId = reqConnectBody.sessionId;
+        //*******************************************/
+        //set creo verison function (super important)
+        //*******************************************/
         reqPromise({
             method: 'POST',
             uri: creoHttp,
@@ -40,7 +46,7 @@ reqPromise(connectOptions)
                 "command": "creo",
                 "function": "set_creo_version",
                 "data": {
-                    "version": "7"
+                    "version": "3"
                 }
             },
             json: true
@@ -50,6 +56,9 @@ reqPromise(connectOptions)
         console.log('there was an error:' + err)
     });
 
+//creo function (used to remove some of the boilerplate thats involved with creoson http calls)
+//Inputs: creoson sessionId provided from above, and function data JSON object
+//Outputs: a POST request, formatted in Creoson JSON syntax in the form of a promise
 function creo(sessionId, functionData) {
     if (functionData.data.length != 0) {
         return reqPromise({
@@ -80,9 +89,11 @@ function creo(sessionId, functionData) {
 
 //*********************************MECHANICAL ENG. PORTAL*************************************//
 
-const DB = require('../config/db.js');
-const querySql = DB.querySql;
-const Promise = require('bluebird');
+
+
+//IN ANY OF THESE FUNCTIONS IF YOU WANT TO DEBUG OR ANALYZE THE BEHAVIOR
+//THE BEST THING TO DO IS console.log WHATEVER VARIABLE, OBJECT, ARRAY, PROPERTY, ETC. THAT YOU ARE TRYING TO STUDY
+
 
 exports = {};
 module.exports = exports;

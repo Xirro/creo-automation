@@ -1,18 +1,20 @@
+//import the js functions from the renameController.js file and write them to a variable renameController
 const renameController = require('../controllers/renameController.js');
 
-
+//export a function of app (this exposes these functions to server.js
+//and completes the connection between server-router-controller-view)
 module.exports = function(app) {
 
-    //Rename Main GET request
+    //get request to /renameMain url => renameMain()
     app.get('/renameMain', renameController.renameMain);
 
-    //Set Working Directory POST request
+    //post request to /renameSetWD url => renameSetWD()
     app.post('/renameSetWD', renameController.renameSetWD);
 
-    //Load Parts GET request
+    //post request to /loadParts url => loadParts()
     app.post('/loadParts', renameController.loadParts);
 
-    //Rename POST request
+    //post request to /rename url => rename()
     app.post('/rename', renameController.rename);
 
 };

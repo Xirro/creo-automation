@@ -139,7 +139,7 @@
                         <div class="page-title-box">
                             <h4 class="page-title">Mechanical Engineering</h4>
 
-
+                            <!-- Current Design Section - Form that is used in setting Creo Working Dir -->
                             <div class="row justify-content-center">
                                 <div class="col-sm-12">
                                     <div class="card m-b-20">
@@ -176,7 +176,7 @@
                             </div>
 
 
-
+                            <!-- Only show the Selected Assemblies section when asmList and sortedCheckedDwgs have data -->
                             <% if (asmList.length != 0) { %>
                                 <div class="row" style="margin-top:2.5%;">
                                     <div class="col-sm-12">
@@ -193,8 +193,10 @@
                                                                 </tr>
                                                                 </thead>
                                                                 <tbody>
+                                                                <!-- Create table row for each asm in asmList -->
                                                                 <% for (var i = 0; i < asmList.length; i++) { %>
                                                                 <tr>
+                                                                    <!-- Use hidden input since we need the value in our controller, but the user doesn't need to see the asm twice -->
                                                                     <td><input type="text" name="asmName" value="<%=asmList[i]%>" hidden="hidden" /><%=asmList[i]%></td>
                                                                 </tr>
                                                                 <% } %>
@@ -204,14 +206,9 @@
                                                     </div>
                                                     <div class="row justify-content-center">
                                                         <div class="col-sm-6">
+                                                            <!-- button that sets the form action and submits on click -->
                                                             <input id="genButton" type="button" value="Generate All" class="btn btn-lg btn-outline-success waves-effect waves-light" onclick="document.getElementById('drawingAndBinBomForm').action = '../generateAll';document.getElementById('drawingAndBinBomForm').submit();" style="margin-bottom:1%;" />
                                                         </div>
-                                                        <!--<div class="col-sm-3">
-                                                            <input id="genButton" type="button" value="Generate BIN BOMs" class="btn btn-lg btn-outline-success waves-effect waves-light" onclick="document.getElementById('drawingAndBinBomForm').action = '../generateBinBoms';document.getElementById('drawingAndBinBomForm').submit();" style="margin-bottom:1%;" />
-                                                        </div>
-                                                        <div class="col-sm-3">
-                                                            <input id="genButton" type="button" value="Generate Drawings" class="btn btn-lg btn-outline-success waves-effect waves-light" onclick="document.getElementById('drawingAndBinBomForm').action = '../generateDrawings';document.getElementById('drawingAndBinBomForm').submit();" style="margin-bottom:1%;" />
-                                                        </div>-->
                                                     </div>
                                                 <% } %>
                                             </div>
@@ -220,7 +217,7 @@
                                 </div>
                             <% } %>
 
-
+                            <!-- Only show the bin bom and drawing lists if sortedCheckedDwgs and binBoms have data -->
                             <% if (sortedCheckedDwgs.length != 0 && binBoms.length != 0) { %>
                                 <form id="drawingAndBinBomForm" class="drawingAndBinBomForm" action="" method="POST">
                                 <div class="row" style="margin-top:2.5%;">
@@ -230,21 +227,28 @@
                                                 <h4 class="mt-0 header-title">BIN BOMs</h4>
                                                     <input type="text" name="CREO_workingDir" class="form-control" value="<%= workingDir %>" hidden="hidden" required/>
                                                     <input type="text" name="CREO_outputDir" class="form-control" value="<%= outputDir %>" hidden="hidden" required/>
-                                                    <!--<input id="genButton" type="submit" value="Generate" class="btn btn-lg btn-outline-success waves-effect waves-light" onclick="this.form.action='./generateBinBoms'" style="margin-bottom:1%;" />-->
 
+                                                    <!-- Initialize currentLayoutBom -->
                                                     <% let currentLayoutBom = 0; %>
+                                                    <!-- for each layoutBom -->
                                                     <% for (let layoutBom of layoutBoms) { %>
+                                                        <!-- increment currentLayoutBom -->
                                                         <% currentLayoutBom += 1; %>
                                                         <hr>
+                                                        <!-- Title Section with lineup name and hidden inputs needed in controller for layoutBom and layoutSections -->
                                                         <h5><%= layoutBom.lineup %></h5>
                                                         <input type="hidden" value="<%=layoutBom.lineup%>" name="layoutBom">
                                                         <input type="hidden" value="<%= layoutBom.sections%>" name="layoutSections">
+
+                                                        <!-- Data table for layout bin boms -->
                                                         <table id="datatable" class="table table-condensed table-bordered dt-responsive nowrap">
                                                             <thead>
                                                             </thead>
                                                             <tbody>
+                                                            <!-- if SS in an array and has data -->
                                                             <% if (Array.isArray(layoutBom.SS) == true) { %>
                                                                 <% if (layoutBom.SS.length != 0) { %>
+                                                                <!-- create a collapsable table row with the SS bom name-->
                                                                 <tr data-toggle="collapse" data-target="#SS_<%=currentLayoutBom%>" class="accordion-toggle">
                                                                     <td>
                                                                         <span class="dripicons-checkmark icon-success"></span>
@@ -253,6 +257,7 @@
                                                                         <i class="fas fa-angle-down rotate-icon"></i>
                                                                     </td>
                                                                 </tr>
+                                                                <!-- when row above is clicked, toggle this row which holds the SS bom detail table -->
                                                                 <tr>
                                                                     <td id="bomTD" colspan="6" class="hiddenRow">
                                                                         <div class="accordion-body collapse in no-transition" id="SS_<%=currentLayoutBom%>">
@@ -280,8 +285,11 @@
                                                                 </tr>
                                                                 <% } %>
                                                             <% } %>
+
+                                                            <!-- if OUT in an array and has data -->
                                                             <% if (Array.isArray(layoutBom.OUT) == true) { %>
                                                                 <% if (layoutBom.OUT.length != 0) { %>
+                                                                <!-- create a collapsable table row with the OUT bom name-->
                                                                 <tr data-toggle="collapse" data-target="#OUT_<%=currentLayoutBom%>" class="accordion-toggle">
                                                                     <td>
                                                                         <span class="dripicons-checkmark icon-success"></span>
@@ -290,6 +298,7 @@
                                                                         <i class="fas fa-angle-down rotate-icon"></i>
                                                                     </td>
                                                                 </tr>
+                                                                <!-- when row above is clicked, toggle this row which holds the OUT bom detail table -->
                                                                 <tr>
                                                                     <td id="bomTD" colspan="6" class="hiddenRow">
                                                                         <div class="accordion-body collapse in no-transition" id="OUT_<%=currentLayoutBom%>">
@@ -323,8 +332,10 @@
                                                                 <% } %>
                                                             <% } %>
 
+                                                            <!-- if AL in an array and has data -->
                                                             <% if (Array.isArray(layoutBom.AL) == true) { %>
                                                                 <% if (layoutBom.AL.length != 0) { %>
+                                                                <!-- create a collapsable table row with the AL bom name-->
                                                                 <tr data-toggle="collapse" data-target="#AL_<%=currentLayoutBom%>" class="accordion-toggle">
                                                                     <td>
                                                                         <span class="dripicons-checkmark icon-success"></span>
@@ -333,6 +344,7 @@
                                                                         <i class="fas fa-angle-down rotate-icon"></i>
                                                                     </td>
                                                                 </tr>
+                                                                <!-- when row above is clicked, toggle this row which holds the AL bom detail table -->
                                                                 <tr>
                                                                     <td id="bomTD" colspan="6" class="hiddenRow">
                                                                         <div class="accordion-body collapse in no-transition" id="AL_<%=currentLayoutBom%>">
@@ -361,8 +373,10 @@
                                                                 <% } %>
                                                             <% } %>
 
+                                                            <!-- if GA_7 in an array and has data -->
                                                             <% if (Array.isArray(layoutBom.GA_7) == true) { %>
                                                                 <% if (layoutBom.GA_7.length != 0) { %>
+                                                                <!-- create a collapsable table row with the GA_7 bom name-->
                                                                 <tr data-toggle="collapse" data-target="#GA_7_<%=currentLayoutBom%>" class="accordion-toggle">
                                                                     <td>
                                                                         <span class="dripicons-checkmark icon-success"></span>
@@ -371,6 +385,7 @@
                                                                         <i class="fas fa-angle-down rotate-icon"></i>
                                                                     </td>
                                                                 </tr>
+                                                                <!-- when row above is clicked, toggle this row which holds the GA_7 bom detail table -->
                                                                 <tr>
                                                                     <td id="bomTD" colspan="6" class="hiddenRow">
                                                                         <div class="accordion-body collapse in no-transition" id="GA_7_<%=currentLayoutBom%>">
@@ -399,8 +414,10 @@
                                                                 <% } %>
                                                             <% } %>
 
+                                                            <!-- if LEXAN in an array and has data -->
                                                             <% if (Array.isArray(layoutBom.LEXAN) == true) { %>
                                                                 <% if (layoutBom.LEXAN.length != 0) { %>
+                                                                <!-- create a collapsable table row with the LEXAN bom name-->
                                                                 <tr data-toggle="collapse" data-target="#LEXAN_<%=currentLayoutBom%>" class="accordion-toggle">
                                                                     <td>
                                                                         <span class="dripicons-checkmark icon-success"></span>
@@ -409,6 +426,7 @@
                                                                         <i class="fas fa-angle-down rotate-icon"></i>
                                                                     </td>
                                                                 </tr>
+                                                                <!-- when row above is clicked, toggle this row which holds the LEXAN bom detail table -->
                                                                 <tr>
                                                                     <td id="bomTD" colspan="6" class="hiddenRow">
                                                                         <div class="accordion-body collapse in no-transition" id="LEXAN_<%=currentLayoutBom%>">
@@ -437,8 +455,10 @@
                                                                 <% } %>
                                                             <% } %>
 
+                                                            <!-- if NP in an array and has data -->
                                                             <% if (Array.isArray(layoutBom.NP) == true) { %>
                                                                 <% if (layoutBom.NP.length != 0) { %>
+                                                                <!-- create a collapsable table row with the NP bom name-->
                                                                 <tr data-toggle="collapse" data-target="#NP_<%=currentLayoutBom%>" class="accordion-toggle">
                                                                     <td>
                                                                         <span class="dripicons-checkmark icon-success"></span>
@@ -446,6 +466,7 @@
                                                                         <i class="fas fa-angle-down rotate-icon"></i>
                                                                     </td>
                                                                 </tr>
+                                                                <!-- when row above is clicked, toggle this row which holds the NP bom detail tables for templates A, B, C, and D -->
                                                                 <tr>
                                                                     <td id="bomTD" colspan="6" class="hiddenRow">
                                                                         <div class="accordion-body collapse in no-transition" id="NP_<%=currentLayoutBom%>">
@@ -575,28 +596,39 @@
                                                             <% } %>
                                                             </tbody>
                                                         </table>
+
+
+                                                        <!-- Area for section-level bin boms -->
+                                                        <!-- Initialize currentBom -->
                                                         <% let currentBom = 0; %>
+                                                        <!-- for each bin bom -->
                                                         <% for (let binBom of binBoms) { %>
+                                                            <!-- check if the section is included in the layoutBom.sections array -->
                                                             <% if (layoutBom.sections.includes(binBom.section)) { %>
+                                                                <!-- if yes, then increment currentBom -->
                                                                 <% currentBom += 1; %>
+                                                                <!-- Title Section with section name and hidden inputs needed in controller for binBomSection -->
                                                                 <h5><%= 'SECTION ' + binBom.section %></h5>
                                                                 <input type="hidden" value="<%=layoutBom.lineup.slice(0,7) + binBom.section %>" name="binBomSection">
+
+                                                                <!-- Data table for section bin boms -->
                                                                 <table id="datatable" class="table table-condensed table-bordered dt-responsive nowrap">
                                                                     <thead>
                                                                     </thead>
                                                                     <tbody>
-
+                                                                    <!-- if OUT in an array and has data -->
                                                                     <% if (Array.isArray(binBom.OUT) == true) { %>
                                                                         <% if (binBom.OUT.length != 0) { %>
                                                                         <input type="text" hidden="hidden" name="binTracker_OUT_<%=layoutBom.lineup.slice(0,7) + binBom.section %>" value="<%=layoutBom.lineup.slice(0,7) + binBom.section + '-OUT' %>">
-
-                                                                        <tr data-toggle="collapse" data-target="#OUT_<%=currentLayoutBom%>_<%=currentBom%>" class="accordion-toggle">
+                                                                            <!-- create a collapsable table row with the OUT bom name-->
+                                                                            <tr data-toggle="collapse" data-target="#OUT_<%=currentLayoutBom%>_<%=currentBom%>" class="accordion-toggle">
                                                                                 <td>
                                                                                     <span class="dripicons-checkmark icon-success"></span>
                                                                                     <%= binBom.section + '-OUT'%>
                                                                                     <i class="fas fa-angle-down rotate-icon"></i>
                                                                                 </td>
                                                                             </tr>
+                                                                            <!-- when row above is clicked, toggle this row which holds the OUT bom detail table -->
                                                                             <tr>
                                                                                 <td id="bomTD" colspan="6" class="hiddenRow">
                                                                                     <div class="accordion-body collapse in no-transition" id="OUT_<%=currentLayoutBom%>_<%=currentBom%>">
@@ -631,6 +663,7 @@
                                                                             </tr>
                                                                         <% } %>
                                                                     <% } else { %>
+                                                                    <!-- if OUT is not an array (i.e. its a similar bom from the bin tracker, and is only a string of the similar bom name -->
                                                                     <tr style="background-color: #e8e8e8;">
                                                                         <td>
                                                                             <input type="text" hidden="hidden" name="binTracker_OUT_<%=layoutBom.lineup.slice(0,7) + binBom.section %>" value="<%= layoutBom.lineup.slice(0,7) +  binBom.OUT + '-OUT' %>">
@@ -1099,7 +1132,7 @@
 
 </div> <!-- content-page -->
 <footer class="footer">
-    © 2019 SAI, Advanced Power Solutions Inc.
+    © 2021 SAI, Advanced Power Solutions Inc.
 </footer>
 </div> <!-- wrapper -->
 

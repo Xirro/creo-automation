@@ -1,26 +1,21 @@
+//import the js functions from the pdfDxfBinBomController.js file and write them to a variable pdfDxfBinBomController
 const pdfDxfBinBomController = require('../controllers/pdfDxfBinBomController.js');
 
 
+//export a function of app (this exposes these functions to server.js
+//and completes the connection between server -> router -> controller -> view)
 module.exports = function(app) {
 
-    //PDF, DXF, BIN BOM Script GET request
+    //get request to /PDF-DXF-BIN_BOM url => pdfDxfBinBom()
     app.get('/PDF-DXF-BIN_BOM', pdfDxfBinBomController.pdfDxfBinBom);
 
-    //Set Working Directory POST request
+    //post request to /setWD url => setWD()
     app.post('/setWD', pdfDxfBinBomController.setWD);
 
-    //Load Drawings from current working directory
+    //post request to /loadDesign url => loadDesign()
     app.post('/loadDesign', pdfDxfBinBomController.loadDesign);
 
-    //Generate BIN BOMs and Drawings POST request
+    //post request to /generateAll url => generateAll()
     app.post('/generateAll', pdfDxfBinBomController.generateAll);
-
-    /*
-    //Generate Drawings POST request
-    app.post('/generateDrawings', pdfDxfBinBomController.generateDrawings);
-
-    //Generate BIN BOMS POST request
-    app.post('/generateBinBoms', pdfDxfBinBomController.generateBinBoms);
-    */
 
 };

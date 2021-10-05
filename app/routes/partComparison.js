@@ -1,21 +1,23 @@
+//import the js functions from the partComparisonController.js file and write them to a variable partComparisonController
 const partComparisonController = require('../controllers/partComparisonController.js');
 
 
+//export a function of app (this exposes these functions to server.js
+//and completes the connection between server-router-controller-view)
 module.exports = function(app) {
 
-    //Part Comparison GET request
+    //get request to /partComparison url => partComparison()
     app.get('/partComparison', partComparisonController.partComparison);
 
-    //Set Working Directory POST request
+    //post request to /compareSetWD url => setWD()
     app.post('/compareSetWD', partComparisonController.setWD);
 
-    //Set Part and Working Directory POST request
+    //post request to /compareSetPart url => setPart()
     app.post('/compareSetPart', partComparisonController.setPart);
 
-    //Part Comparison POST request
+    //post request to /compareParts url => compareParts()
     app.post('/compareParts', partComparisonController.compareParts);
 
-    //Part Comparison POST request
+    //post request to /compareSinglePart url => compareSinglePart()
     app.post('/compareSinglePart', partComparisonController.compareSinglePart);
-
 };
