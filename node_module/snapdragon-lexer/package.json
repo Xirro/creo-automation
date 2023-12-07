@@ -1,0 +1,111 @@
+{
+  "_from": "snapdragon-lexer@^2.0.0",
+  "_id": "snapdragon-lexer@2.0.0",
+  "_inBundle": false,
+  "_integrity": "sha512-S1qp6uEOUEcy1GPTBSY7lrmaTispXujU/ffp0fd1tEENB1hEYAvt9/o1C6eFSfKNaHi55EqHNHiLcntAL/iycQ==",
+  "_location": "/snapdragon-lexer",
+  "_phantomChildren": {},
+  "_requested": {
+    "type": "range",
+    "registry": true,
+    "raw": "snapdragon-lexer@^2.0.0",
+    "name": "snapdragon-lexer",
+    "escapedName": "snapdragon-lexer",
+    "rawSpec": "^2.0.0",
+    "saveSpec": null,
+    "fetchSpec": "^2.0.0"
+  },
+  "_requiredBy": [
+    "/permalinks"
+  ],
+  "_resolved": "https://registry.npmjs.org/snapdragon-lexer/-/snapdragon-lexer-2.0.0.tgz",
+  "_shasum": "c6b05182545697e3c967412e3b541b698f060bcb",
+  "_spec": "snapdragon-lexer@^2.0.0",
+  "_where": "C:\\Users\\john.ryan\\desktop\\creo-automation\\node_modules\\permalinks",
+  "author": {
+    "name": "Jon Schlinkert",
+    "url": "https://github.com/jonschlinkert"
+  },
+  "bugs": {
+    "url": "https://github.com/here-be/snapdragon-lexer/issues"
+  },
+  "bundleDependencies": false,
+  "dependencies": {
+    "kind-of": "^6.0.2",
+    "snapdragon-handlers": "^1.0.0",
+    "snapdragon-stack": "^1.0.1",
+    "snapdragon-token": "^3.0.1"
+  },
+  "deprecated": false,
+  "description": "Converts a string into an array of tokens, with useful methods for looking ahead and behind, capturing, matching, et cetera.",
+  "devDependencies": {
+    "define-property": "^2.0.0",
+    "gulp-format-md": "^1.0.0",
+    "mocha": "^3.5.3",
+    "nyc": "^11.4.1",
+    "snapdragon-position": "^2.0.2"
+  },
+  "engines": {
+    "node": ">=6"
+  },
+  "files": [
+    "index.js"
+  ],
+  "homepage": "https://github.com/here-be/snapdragon-lexer",
+  "keywords": [
+    "compile",
+    "compiler",
+    "convert",
+    "lexer",
+    "parse",
+    "parser",
+    "render",
+    "snapdragon",
+    "token",
+    "tokenizer",
+    "transform"
+  ],
+  "license": "MIT",
+  "main": "index.js",
+  "name": "snapdragon-lexer",
+  "nyc": {
+    "reporter": [
+      "lcov",
+      "text-summary"
+    ]
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/here-be/snapdragon-lexer.git"
+  },
+  "scripts": {
+    "test": "nyc mocha"
+  },
+  "verb": {
+    "toc": "collapsible",
+    "layout": "default",
+    "tasks": [
+      "readme"
+    ],
+    "plugins": [
+      "gulp-format-md"
+    ],
+    "lint": {
+      "reflinks": true
+    },
+    "related": {
+      "list": [
+        "snapdragon-node",
+        "snapdragon-position",
+        "snapdragon-token"
+      ]
+    },
+    "reflinks": [
+      "snapdragon-position",
+      "snapdragon-token",
+      "snapdragon-location",
+      "snapdragon-parser"
+    ]
+  },
+  "version": "2.0.0"
+}

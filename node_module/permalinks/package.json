@@ -1,0 +1,123 @@
+{
+  "_from": "permalinks@^2.0.0",
+  "_id": "permalinks@2.0.0",
+  "_inBundle": false,
+  "_integrity": "sha512-PBZrxcIFSSa+ux8+O9RXjXtaixty7X+xZRVOovgMt5Huz3SUvc7WVOPCqqdPBAJspDCNbrHCswst02798I8kuw==",
+  "_location": "/permalinks",
+  "_phantomChildren": {},
+  "_requested": {
+    "type": "range",
+    "registry": true,
+    "raw": "permalinks@^2.0.0",
+    "name": "permalinks",
+    "escapedName": "permalinks",
+    "rawSpec": "^2.0.0",
+    "saveSpec": null,
+    "fetchSpec": "^2.0.0"
+  },
+  "_requiredBy": [
+    "/"
+  ],
+  "_resolved": "https://registry.npmjs.org/permalinks/-/permalinks-2.0.0.tgz",
+  "_shasum": "30171089b928eb7422124fabd7dc943b86778114",
+  "_spec": "permalinks@^2.0.0",
+  "_where": "C:\\Users\\john.ryan\\desktop\\creo-automation",
+  "author": {
+    "name": "Jon Schlinkert",
+    "url": "https://github.com/jonschlinkert"
+  },
+  "bugs": {
+    "url": "https://github.com/permalinks/permalinks/issues"
+  },
+  "bundleDependencies": false,
+  "dependencies": {
+    "deep-bind": "^0.3.0",
+    "diacritics-map": "^0.1.0",
+    "extend-shallow": "^3.0.2",
+    "get-value": "^2.0.6",
+    "handlebars": "^4.0.11",
+    "kind-of": "^6.0.2",
+    "mixin-deep": "^1.3.0",
+    "parse-filepath": "^1.0.2",
+    "snapdragon-lexer": "^2.0.0",
+    "use": "^3.1.0",
+    "vinyl": "^2.1.0"
+  },
+  "deprecated": false,
+  "description": "Easily add powerful permalink or URL routing/URL rewriting capablities to any node.js project. Can be used in static site generators, build systems, web applications or anywhere you need to do path or URL transformation.",
+  "devDependencies": {
+    "gulp-format-md": "^1.0.0",
+    "mocha": "^3.5.3",
+    "moment": "^2.20.1",
+    "randomatic": "^3.0.0"
+  },
+  "engines": {
+    "node": ">=6"
+  },
+  "files": [
+    "index.js",
+    "lib"
+  ],
+  "homepage": "https://github.com/permalinks/permalinks",
+  "keywords": [
+    "blog entry",
+    "blog post",
+    "filepath",
+    "link",
+    "path",
+    "permalinks",
+    "permanent link",
+    "rewrite",
+    "rewriting",
+    "route",
+    "routes",
+    "routing",
+    "transformation",
+    "uri",
+    "url",
+    "URL rewriting",
+    "url-routing"
+  ],
+  "license": "MIT",
+  "main": "index.js",
+  "name": "permalinks",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/permalinks/permalinks.git"
+  },
+  "scripts": {
+    "test": "mocha"
+  },
+  "verb": {
+    "toc": true,
+    "layout": "default",
+    "tasks": [
+      "readme"
+    ],
+    "plugins": [
+      "gulp-format-md"
+    ],
+    "related": {
+      "list": [
+        "handlebars",
+        "parse-filepath",
+        "vinyl"
+      ]
+    },
+    "reflinks": [
+      "file",
+      "handlebars",
+      "handlebars-helpers",
+      "helpers",
+      "locals",
+      "parse-filepath",
+      "structure",
+      "template-helpers",
+      "vinyl"
+    ],
+    "lint": {
+      "reflinks": true
+    }
+  },
+  "version": "2.0.0"
+}
