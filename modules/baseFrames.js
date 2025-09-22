@@ -3,54 +3,29 @@
 //Excel Connection
 const xlsxFile = require('read-excel-file/node');
 
-//Creoson Connection
-const reqPromise = require('request-promise');
+//Creoson Connection (using axios instead of request-promise)
+const axios = require('axios');
 let creoHttp = 'http://localhost:9056/creoson';
 let sessionId;
-let connectOptions = {
-    method: 'POST',
-    uri: creoHttp,
-    body: {
-        "command": "connection",
-        "function": "connect"
-    },
-    json: true // Automatically stringifies the body to JSON
-};
-reqPromise(connectOptions)
-    .then(reqConnectBody => {
-        // get the sessionId
-        sessionId = reqConnectBody.sessionId;
-    })
-    .catch(err => {
-        console.log('there was an error:' + err)
-    });
 
+async function initCreoSession() {
+    try {
+        const resp = await axios.post(creoHttp, { command: 'connection', function: 'connect' });
+        if (resp && resp.data && resp.data.sessionId) sessionId = resp.data.sessionId;
+    } catch (err) {
+        console.log('there was an error:' + err);
+    }
+}
+
+// initialize session immediately
+initCreoSession();
 
 function creo(sessionId, functionData) {
-    if (functionData.data.length != 0) {
-        return reqPromise({
-            method: 'POST',
-            uri: creoHttp,
-            body: {
-                "sessionId": sessionId,
-                "command": functionData.command,
-                "function": functionData.function,
-                "data": functionData.data
-            },
-            json: true
-        });
-    } else {
-        return reqPromise({
-            method: 'POST',
-            uri: creoHttp,
-            body: {
-                "sessionId": sessionId,
-                "command": functionData.command,
-                "function": functionData.function
-            },
-            json: true
-        });
+    const payload = { sessionId: sessionId, command: functionData.command, function: functionData.function };
+    if (functionData.data && functionData.data.length !== undefined && functionData.data.length !== 0) {
+        payload.data = functionData.data;
     }
+    return axios.post(creoHttp, payload).then(r => r.data);
 }
 
 //END OF BOILERPLATE CODE

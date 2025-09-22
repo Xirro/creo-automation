@@ -16,45 +16,20 @@ const database = dbConfig.database;
 const DB = require('../config/db.js');
 const querySql = DB.querySql;
 
-//Creoson Connection options
-const reqPromise = require('request-promise');
+// Creoson Connection options using axios
+const axios = require('axios');
 let creoHttp = 'http://localhost:9056/creoson';
 let sessionId = '';
-let connectOptions = {
-    method: 'POST',
-    uri: creoHttp,
-    body: {
-        "command": "connection",
-        "function": "connect"
-    },
-    json: true // Automatically stringifies the body to JSON
-};
 
-//inital creoson connection (needed to get the sessionId)
-reqPromise(connectOptions)
+// initial creoson connection (needed to get the sessionId)
+axios.post(creoHttp, { command: 'connection', function: 'connect' })
     .then(reqConnectBody => {
-        // get the sessionId
-        sessionId = reqConnectBody.sessionId;
-        //*******************************************/
-        //set creo verison function (super important)
-        //*******************************************/
-        reqPromise({
-            method: 'POST',
-            uri: creoHttp,
-            body: {
-                "sessionId": reqConnectBody.sessionId,
-                "command": "creo",
-                "function": "set_creo_version",
-                "data": {
-                    "version": "3"
-                }
-            },
-            json: true
-        });
+        sessionId = reqConnectBody.data && reqConnectBody.data.sessionId;
+        // set creo version
+        axios.post(creoHttp, { sessionId: sessionId, command: 'creo', function: 'set_creo_version', data: { version: '3' } });
     })
     .catch(err => {
-        // If there is an error connecting to the Creoson server, log an appropriate message
-        if (err.cause && err.cause.code === 'ECONNREFUSED') {
+        if (err.code === 'ECONNREFUSED') {
             console.log('> Error in partComparisonController.js: Creoson server is not running or not reachable at http://localhost:9056/creoson');
         } else {
             console.log('> There was an error in partComparisonController.js: ', err);
@@ -65,30 +40,9 @@ reqPromise(connectOptions)
 //Inputs: creoson sessionId provided from above, and function data JSON object
 //Outputs: a POST request, formatted in Creoson JSON syntax in the form of a promise
 function creo(sessionId, functionData) {
-    if (functionData.data.length != 0) {
-        return reqPromise({
-            method: 'POST',
-            uri: creoHttp,
-            body: {
-                "sessionId": sessionId,
-                "command": functionData.command,
-                "function": functionData.function,
-                "data": functionData.data
-            },
-            json: true
-        });
-    } else {
-        return reqPromise({
-            method: 'POST',
-            uri: creoHttp,
-            body: {
-                "sessionId": sessionId,
-                "command": functionData.command,
-                "function": functionData.function
-            },
-            json: true
-        });
-    }
+    const payload = { sessionId: sessionId, command: functionData.command, function: functionData.function };
+    if (functionData.data && functionData.data.length !== undefined && functionData.data.length !== 0) payload.data = functionData.data;
+    return axios.post(creoHttp, payload).then(r => r.data);
 }
 
 
