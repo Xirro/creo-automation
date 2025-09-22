@@ -34,8 +34,12 @@ async function creoRequest(creoJSONFunction) {
             exports.creoResponse =  reqFunctionBody.data;
         })
         .catch(err => {
-            console.log(err);
-        });
+            if (err.cause && err.cause.code === 'ECONNREFUSED') {
+                console.log('Error: Creoson server is not running or not reachable at http://localhost:9056/creoson');
+            } else {
+                console.log('there was an error:', err);
+            }
+    });
 }
 
 module.exports.getCreoResponse = function(creoJSONFunction) {

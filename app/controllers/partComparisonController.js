@@ -53,7 +53,12 @@ reqPromise(connectOptions)
         });
     })
     .catch(err => {
-        console.log('there was an error:' + err)
+        // If there is an error connecting to the Creoson server, log an appropriate message
+        if (err.cause && err.cause.code === 'ECONNREFUSED') {
+            console.log('> Error in partComparisonController.js: Creoson server is not running or not reachable at http://localhost:9056/creoson');
+        } else {
+            console.log('> There was an error in partComparisonController.js: ', err);
+        }
     });
 
 //creo function (used to remove some of the boilerplate thats involved with creoson http calls)
