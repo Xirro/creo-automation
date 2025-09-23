@@ -1,0 +1,51 @@
+name: Build dist on Windows
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build-dist:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18.x'
+
+      - name: Install dependencies
+        run: npm ci --only=production
+
+      - name: Prepare dist
+        run: pwsh -File .\scripts\build-dist.ps1 -ProjectRoot ${{ github.workspace }}
+
+      - name: Upload dist artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: creo-automation-dist
+          path: dist
+
+      - name: Install Inno Setup (Chocolatey)
+        shell: powershell
+        run: |
+          Set-ExecutionPolicy Bypass -Scope Process -Force
+          iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))
+          choco feature enable -n allowGlobalConfirmation
+          choco install innosetup -y
+
+      - name: Compile Inno Setup installer
+        shell: powershell
+        run: |
+          $iscc = "C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
+          if (-not (Test-Path $iscc)) { Write-Error "ISCC.exe not found at $iscc"; exit 1 }
+          & $iscc ".\installer\setup.iss"
+
+      - name: Upload installer artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: creo-automation-installer
+          path: dist_installer
