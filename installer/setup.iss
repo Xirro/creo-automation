@@ -10,7 +10,7 @@ Compression=lzma
 [Files]
 ; Copy the dist folder contents into the installed program directory
 ; Using {src} to reference the script directory and a relative dist folder created by the build script
-Source: "{src}\..\dist\*"; DestDir: "{app}"; Flags: recursesubdirs createallsubdirs
+Source: "..\dist\*"; DestDir: "{app}"; Flags: recursesubdirs createallsubdirs
 
 [Icons]
 Name: "{group}\Creo Automation"; Filename: "{app}\bin\run-app.bat"
