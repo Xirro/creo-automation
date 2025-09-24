@@ -24,7 +24,7 @@ Filename: "{app}\bin\register-service.cmd"; Description: "Register CreoAutomatio
 
 [UninstallRun]
 ; Call the PowerShell helper to stop and remove the service during uninstall
-Filename: "{app}\bin\register-service.cmd"; Parameters: "remove"; Flags: runhidden uninsrun
+Filename: "{app}\bin\register-service.cmd"; Parameters: "remove"; Flags: runhidden
 
 [Code]
 function InitializeSetup(): Boolean;
