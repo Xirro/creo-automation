@@ -76,6 +76,13 @@ start "Creo-Automation" "%~dp0\..\node\node.exe" server.js
 # Create a simple wrapper that calls the PowerShell service helper to install the service
 $registerCmdPath = Join-Path $dist 'bin\register-service.cmd'
 $registerCmd = "@echo off`r`nREM Wrapper to call PowerShell service-helper`r`nset APPDIR=%~dp0..\`r`npowershell -NoProfile -ExecutionPolicy Bypass -File \"%APPDIR%\\scripts\\service-helper.ps1\" -Action install -AppDir \"%APPDIR%\" -ServiceName \"CreoAutomation\"`r`n"
+# Use a here-string to avoid PowerShell treating % or backslashes specially inside the string
+$registerCmd = @'
+@echo off
+REM Wrapper to call PowerShell service-helper
+set APPDIR=%~dp0..
+powershell -NoProfile -ExecutionPolicy Bypass -File "%APPDIR%\scripts\service-helper.ps1" -Action install -AppDir "%APPDIR%" -ServiceName "CreoAutomation"
+'@
 Set-Content -Path $registerCmdPath -Value $registerCmd -Encoding ASCII
 
 Write-Host "Including NSSM (service manager) in dist..."
