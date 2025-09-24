@@ -19,11 +19,12 @@ Name: "{group}\Creo Automation"; Filename: "{app}\bin\run-app.bat"
 ; Run the app (start once)
 Filename: "{app}\bin\run-app.bat"; Description: "Start Creo Automation"; Flags: nowait postinstall skipifsilent
 ; If service registration is desired, call the bundled PowerShell helper which will handle elevation and nssm logic
-Filename: "{sys}\WindowsPowerShell\v1.0\powershell.exe"; Parameters: "-NoProfile -ExecutionPolicy Bypass -File ""{app}\scripts\service-helper.ps1"" -Action install -AppDir ""{app}"" -ServiceName ""CreoAutomation"""; Flags: runhidden postinstall skipifsilent; StatusMsg: "Configuring Windows service (CreoAutomation)"
+; Prefer a small wrapper cmd to avoid complex quoting in Inno Parameters
+Filename: "{app}\bin\register-service.cmd"; Description: "Register CreoAutomation service"; Flags: runhidden postinstall skipifsilent; StatusMsg: "Configuring Windows service (CreoAutomation)"
 
 [UninstallRun]
 ; Call the PowerShell helper to stop and remove the service during uninstall
-Filename: "{sys}\WindowsPowerShell\v1.0\powershell.exe"; Parameters: "-NoProfile -ExecutionPolicy Bypass -File ""{app}\scripts\service-helper.ps1"" -Action remove -AppDir ""{app}"" -ServiceName ""CreoAutomation"""; Flags: runhidden uninsrun
+Filename: "{app}\bin\register-service.cmd"; Parameters: "remove"; Flags: runhidden uninsrun
 
 [Code]
 function InitializeSetup(): Boolean;
