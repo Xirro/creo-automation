@@ -73,6 +73,11 @@ cd /d "%~dp0.."
 start "Creo-Automation" "%~dp0\..\node\node.exe" server.js
 ' -Encoding ASCII
 
+# Create a simple wrapper that calls the PowerShell service helper to install the service
+$registerCmdPath = Join-Path $dist 'bin\register-service.cmd'
+$registerCmd = "@echo off`r`nREM Wrapper to call PowerShell service-helper`r`nset APPDIR=%~dp0..\`r`npowershell -NoProfile -ExecutionPolicy Bypass -File \"%APPDIR%\\scripts\\service-helper.ps1\" -Action install -AppDir \"%APPDIR%\" -ServiceName \"CreoAutomation\"`r`n"
+Set-Content -Path $registerCmdPath -Value $registerCmd -Encoding ASCII
+
 Write-Host "Including NSSM (service manager) in dist..."
 $nssmUrl = 'https://nssm.cc/release/nssm-2.24.zip'
 $tempZip = Join-Path $env:TEMP 'nssm.zip'
