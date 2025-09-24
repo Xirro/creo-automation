@@ -1,7 +1,7 @@
 [Setup]
 AppName=Creo Automation
 AppVersion=1.0.0
-DefaultDirName={pf64}\CreoAutomation
+DefaultDirName={commonpf64}\CreoAutomation
 DisableProgramGroupPage=yes
 OutputDir=..\dist_installer
 OutputBaseFilename=CreoAutomationInstaller
@@ -24,7 +24,7 @@ Filename: "{app}\bin\register-service.cmd"; Description: "Register CreoAutomatio
 
 [UninstallRun]
 ; Call the PowerShell helper to stop and remove the service during uninstall
-Filename: "{app}\bin\register-service.cmd"; Parameters: "remove"; Flags: runhidden
+Filename: "{app}\bin\register-service.cmd"; Parameters: "remove"; Flags: runhidden; RunOnceId: "UnregisterCreoAutomationService"
 
 [Code]
 function InitializeSetup(): Boolean;
