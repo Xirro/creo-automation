@@ -1,0 +1,50 @@
+name: Build Windows installer
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch: {}
+
+jobs:
+  build-installer:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install npm production deps
+        run: npm ci --only=production
+        shell: pwsh
+
+      - name: Prepare dist folder
+        run: pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\build-dist.ps1 -ProjectRoot $env:GITHUB_WORKSPACE
+        shell: pwsh
+
+      - name: Install Inno Setup
+        run: choco install innosetup -y
+        shell: pwsh
+
+      - name: Compile Inno Setup script
+        run: |
+          $iscc = (Get-Command ISCC -ErrorAction SilentlyContinue).Source
+          if (-not $iscc) { $iscc = 'C:\Program Files (x86)\Inno Setup 6\ISCC.exe' }
+          Write-Host "Using ISCC: $iscc"
+          & $iscc '.\installer\setup.iss'
+        shell: pwsh
+
+      - name: Upload installer artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: CreoAutomationInstaller
+          path: dist_installer/*.exe
+
+      - name: Upload dist folder
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist

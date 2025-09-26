@@ -1,30 +1,35 @@
 //fs import (file-server built-in npm module, read more about it)
 const fs = require('fs');
+const path = require('path');
 
-//using module.exports here exports everything within the curly braces
-module.exports = {
+// Load the repo default config, but allow an install-time override
+// by placing a file `app/config/database.local.js` next to this file.
+// The installer / post-install script will create that file with secrets
+// so repository-tracked defaults do not leak production credentials.
+
+let repoConfig = {
     //*****************************************************
     //IN PRODUCTION ENVIRONMENT UN-COMMENT THIS PORTION
     //IN DEVELOPMENT ENVIRONMENT COMMENT THIS PORTION
     //******************************************************
-    "connection": {
-        'user': 'doadmin',
-        'password': 'xaikjabounn01k3i',
-        'host': 'saidb-do-user-6679940-0.db.ondigitalocean.com',
-        'port': 25060,
-        'database': 'saidb',
-        'dialect': 'mysql',
-        'logging': true,
-        'force': false,
-        'timezone': '+00:00',
-        'pool': {
+    connection: {
+        user: 'doadmin',
+        password: 'xaikjabounn01k3i',
+        host: 'saidb-do-user-6679940-0.db.ondigitalocean.com',
+        port: 25060,
+        database: 'saidb',
+        dialect: 'mysql',
+        logging: true,
+        force: false,
+        timezone: '+00:00',
+        pool: {
             max: 100,
             min: 0,
             idle: 200000,
             acquire: 10000000,
         },
-        'ssl': true,
-        'dialectOptions': {
+        ssl: true,
+        dialectOptions: {
             ssl: {
                 ssl: true,
                 cert: fs.readFileSync('app/config/ca-certificate.crt')
@@ -52,7 +57,7 @@ module.exports = {
 
 
     //DATABASE (sai_test if DEVELOPMENT ENVIRONMENT and saidb if PRODUCTION ENVIRONMENT)
-    'database': 'saidb',
+    database: 'saidb',
 
 
     //TABLE NAMES
@@ -279,3 +284,44 @@ module.exports = {
     'salesforce_breaker_table': 'SF_breakers',
     'salesforce_control_table': 'SF_controls'
 };
+
+// Attempt to load a local override placed there by the installer or admin
+const localPath = path.join(__dirname, 'database.local.js');
+if (fs.existsSync(localPath)) {
+    try {
+        // eslint-disable-next-line global-require, import/no-dynamic-require
+        const local = require(localPath);
+        // Merge local over repo defaults (shallow merge is enough for our shape)
+        repoConfig = Object.assign({}, repoConfig, local);
+        console.log('Using local database override from app/config/database.local.js');
+    } catch (e) {
+        console.warn('Failed loading database.local.js, falling back to repo config:', e.message);
+    }
+}
+
+// If the local override didn't include a password, attempt to read an encrypted
+// password stored in app/config/db_pass.enc (DPAPI, LocalMachine scope).
+try {
+    const encPath = path.join(__dirname, 'db_pass.enc');
+    if ((!repoConfig.connection || !repoConfig.connection.password) && fs.existsSync(encPath)) {
+        try {
+            // Use the DPAPI helper to unprotect the password (requires PowerShell)
+            // eslint-disable-next-line global-require
+            const dpapi = require('../../lib/dpapi-unprotect');
+            const pw = dpapi.unprotectFile(encPath);
+            if (pw) {
+                if (!repoConfig.connection) repoConfig.connection = {};
+                repoConfig.connection.password = pw;
+                console.log('Loaded DB password from encrypted store (app/config/db_pass.enc)');
+            } else {
+                console.warn('Failed to decrypt DB password from app/config/db_pass.enc');
+            }
+        } catch (e) {
+            console.warn('Error while attempting to load encrypted DB password:', e && e.message ? e.message : e);
+        }
+    }
+} catch (ee) {
+    // swallow
+}
+
+module.exports = repoConfig;

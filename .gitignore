@@ -1,2 +1,5 @@
+# Local DB override created by installer
+/app/config/database.local.js
 node_modules/
 package-lock.json
+app/config/db_pass.enc
