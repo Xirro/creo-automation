@@ -61,7 +61,7 @@ try {
   $sc.TargetPath = (Join-Path $Env:WINDIR 'system32\WindowsPowerShell\v1.0\powershell.exe')
   $sc.Arguments = "-NoProfile -ExecutionPolicy Bypass -File `"$launcher`""
   $sc.WorkingDirectory = $InstallDir
-  if (Test-Path $icon) { $sc.IconLocation = $icon }
+  if (Test-Path $icon) { $sc.IconLocation = "$icon,0" }
   $sc.Save()
   Write-Output "Created desktop shortcut: $shortcutPath"
   exit 0

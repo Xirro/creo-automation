@@ -12,6 +12,7 @@ Compression=lzma
 Source: "..\dist\*"; DestDir: "{app}"; Flags: recursesubdirs createallsubdirs
 Source: "desktop-launcher.ps1"; DestDir: "{app}\bin"; Flags: ignoreversion
 Source: "creo-automation.ico"; DestDir: "{app}"; Flags: ignoreversion
+Source: "create-desktop-shortcut.ps1"; DestDir: "{app}"; Flags: ignoreversion
 
 [Tasks]
 Name: "desktopicon"; Description: "Create a desktop icon"; GroupDescription: "Additional icons:"; Flags: unchecked
@@ -33,7 +34,7 @@ Filename: "{app}\bin\register-service.cmd"; Description: "Register CreoAutomatio
 ; Create desktop shortcut after postinstall steps (only if user selected the task)
 Filename: "{win}\system32\WindowsPowerShell\v1.0\powershell.exe"; \
   Parameters: "-NoProfile -ExecutionPolicy Bypass -File ""{app}\create-desktop-shortcut.ps1"" -InstallDir ""{app}"""; \
-  Flags: postinstall runhidden skipifsilent; Description: "Create desktop shortcut"; StatusMsg: "Creating desktop shortcut"
+  Check: IsTaskSelected('desktopicon'); Flags: postinstall runhidden skipifsilent; Description: "Create desktop shortcut"; StatusMsg: "Creating desktop shortcut"
 
 [UninstallRun]
 Filename: "{app}\bin\register-service.cmd"; Parameters: "remove"; Flags: runhidden; RunOnceId: "UnregisterCreoAutomationService"
