@@ -16,7 +16,7 @@ Name: "{group}\Creo Automation"; Filename: "{app}\bin\run-app.bat"
 
 [Run]
 Filename: "{win}\system32\WindowsPowerShell\v1.0\powershell.exe"; \
-  Parameters: "-NoProfile -ExecutionPolicy Bypass -File \"\"{app}\\scripts\\postinstall-config.ps1\"\" -Ini \"\"{app}\\dbinstaller.ini\"\" -InstallDir \"\"{app}\"\""; \
+  Parameters: "-NoProfile -ExecutionPolicy Bypass -File ""{app}\scripts\postinstall-config.ps1"" -Ini ""{app}\dbinstaller.ini"" -InstallDir ""{app}"""; \
   Flags: postinstall waituntilterminated; Description: "Post-install DB configuration"; StatusMsg: "Configuring database settings"
 
 Filename: "{app}\bin\run-app.bat"; Description: "Start Creo Automation"; Flags: nowait postinstall skipifsilent
