@@ -32,7 +32,7 @@ Filename: "{app}\bin\register-service.cmd"; Description: "Register CreoAutomatio
 
 ; Create desktop shortcut after postinstall steps (only if user selected the task)
 Filename: "{win}\system32\WindowsPowerShell\v1.0\powershell.exe"; \
-  Parameters: "-NoProfile -ExecutionPolicy Bypass -File \"{app}\\create-desktop-shortcut.ps1\" -InstallDir \"{app}\""; \
+  Parameters: "-NoProfile -ExecutionPolicy Bypass -File ""{app}\create-desktop-shortcut.ps1"" -InstallDir ""{app}"""; \
   Flags: postinstall runhidden skipifsilent; Description: "Create desktop shortcut"; StatusMsg: "Creating desktop shortcut"
 
 [UninstallRun]
