@@ -21,6 +21,7 @@ const Promise = require('bluebird');
 
 //Excel Connection
 const Excel = require('exceljs');
+const fs = require('fs');
 
 // Defensive helpers used by generateMBOM to avoid crashes on unexpected nulls
 function safeSubstr(s, start, len) {
@@ -3376,10 +3377,14 @@ exports.generateMBOM = function (req, res) {
 
                 //write workbook to a file located "temporarily" in the uploads folder of the app.
                 //Afterwards send that file to the client's downloads folder via the built-in res.download node.js function
-                workbook.xlsx.writeFile('uploads/' + mbomData.jobNum + mbomData.releaseNum + ' MBOM.xlsx').then(function () {
+                // IMPORTANT: return the writeFile promise so any errors propagate to the outer catch
+                return workbook.xlsx.writeFile('uploads/' + mbomData.jobNum + mbomData.releaseNum + ' MBOM.xlsx').then(function () {
                     const remoteFilePath = 'uploads/';
                     const remoteFilename = mbomData.jobNum + mbomData.releaseNum + ' MBOM.xlsx';
                     res.download(remoteFilePath + remoteFilename);
+                }).catch(err => {
+                    // rethrow so outer .catch handles diagnostic writing
+                    throw err;
                 });
 
                 return null;
@@ -3798,17 +3803,48 @@ exports.generateMBOM = function (req, res) {
 
                 //write workbook to a file located "temporarily" in the uploads folder of the app.
                 //Afterwards send that file to the client's downloads folder via the built-in res.download node.js function
-                workbook.xlsx.writeFile('uploads/' + mbomData.jobNum + mbomData.releaseNum + ' MBOM.xlsx').then(function () {
+                // IMPORTANT: return the writeFile promise so any errors propagate to the outer catch
+                return workbook.xlsx.writeFile('uploads/' + mbomData.jobNum + mbomData.releaseNum + ' MBOM.xlsx').then(function () {
                     const remoteFilePath = 'uploads/';
                     const remoteFilename = mbomData.jobNum + mbomData.releaseNum + ' MBOM.xlsx';
                     res.download(remoteFilePath + remoteFilename);
+                }).catch(err => {
+                    // rethrow so outer .catch handles diagnostic writing
+                    throw err;
                 });
-
-                return null;
             }
         })
         .catch(err => {
             //if error occurs at anytime at any point in the code above, log it to the console
-            console.log('there was an error:' + err);
+            console.error('generateMBOM encountered an error:', err && err.stack ? err.stack : err);
+
+            // Attempt to write a diagnostic JSON to uploads/ so we can inspect intermediate arrays without crashing
+            try {
+                const diag = {
+                    timestamp: new Date().toISOString(),
+                    mbomData: mbomData || null,
+                    mbomSumData: mbomSumData || null,
+                    mbomSecSumData: mbomSecSumData || null,
+                    mbomItemData: mbomItemData || null,
+                    mbomUserItem: mbomUserItem || null,
+                    mbomComItem: mbomComItem || null,
+                    mbomBrkSum: mbomBrkSum || null,
+                    mbomBrkAccSum: mbomBrkAccSum || null,
+                    error: err && err.stack ? err.stack : String(err)
+                };
+                // ensure uploads directory exists
+                try { fs.mkdirSync('uploads', { recursive: true }); } catch (e) { /* ignore */ }
+                const diagPath = 'uploads/mbom-diagnostic-' + (mbomData && mbomData.jobNum ? mbomData.jobNum : 'unknown') + '-' + (mbomData && mbomData.mbomID ? mbomData.mbomID : 'unknown') + '-' + Date.now() + '.json';
+                fs.writeFileSync(diagPath, JSON.stringify(diag, null, 2));
+                console.error('generateMBOM diagnostic written to', diagPath);
+                if (!res.headersSent) {
+                    res.status(500).send('Error generating MBOM. Diagnostic written to ' + diagPath);
+                }
+            } catch (writeErr) {
+                console.error('Failed to write MBOM diagnostic:', writeErr);
+                if (!res.headersSent) {
+                    res.status(500).send('Error generating MBOM. Also failed to write diagnostic.');
+                }
+            }
         });
 };
