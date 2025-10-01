@@ -22,6 +22,21 @@ const Promise = require('bluebird');
 //Excel Connection
 const Excel = require('exceljs');
 
+// Defensive helpers used by generateMBOM to avoid crashes on unexpected nulls
+function safeSubstr(s, start, len) {
+    try {
+        if (!s && s !== 0) return '';
+        s = s.toString();
+        return s.substring(start, start + len);
+    } catch (e) {
+        return '';
+    }
+}
+
+function ensureArrayIndex(arr, idx) {
+    return Array.isArray(arr) && arr.length > idx ? arr[idx] : null;
+}
+
 
 
 //IN ANY OF THESE FUNCTIONS IF YOU WANT TO DEBUG OR ANALYZE THE BEHAVIOR
@@ -2671,8 +2686,15 @@ exports.generateMBOM = function (req, res) {
             return null;
         })
         .then(() => {
-            //if this mbom has sections
-            if (mbomSumData[0].noSectionMBOM == 'N') {
+            // Validate mbom record exists
+                if (!ensureArrayIndex(mbomSumData, 0)) {
+                    console.error('generateMBOM: no MBOM record found for mbomID=', mbomData.mbomID);
+                    res.status(400).send('MBOM not found');
+                    return null;
+                }
+
+                //if this mbom has sections
+                if (mbomSumData[0].noSectionMBOM == 'N') {
 
                 //sort mbomSecSumData in ascending order by sectionNum
                 mbomSecSumData.sort(function (a, b) {
@@ -2812,10 +2834,10 @@ exports.generateMBOM = function (req, res) {
                             let itemPN = row.itemPN;
                             let qty = row.qty;
                             let itemDesc = row.itemDesc;
-                            let itemDesc1 = itemDesc.substring(0, 40);
-                            let itemDesc2 = itemDesc.substring(40, 80);
-                            let itemDesc3 = itemDesc.substring(80, 120);
-                            let itemDesc4 = itemDesc.substring(120, 160);
+                            let itemDesc1 = safeSubstr(itemDesc, 0, 40);
+                            let itemDesc2 = safeSubstr(itemDesc, 40, 40);
+                            let itemDesc3 = safeSubstr(itemDesc, 80, 40);
+                            let itemDesc4 = safeSubstr(itemDesc, 120, 40);
                             let unitOfIssue = row.unitOfIssue;
                             let catCode = row.catCode;
                             let classCode = row.class;
@@ -2912,8 +2934,8 @@ exports.generateMBOM = function (req, res) {
                             seqNum = '0' + count;
                         else
                             seqNum = count;
-                        let brkPN = row.brkPN;
-                        let crdPN = row.cradlePN;
+                        let brkPN = (row.brkPN || '').toString();
+                        let crdPN = (row.cradlePN || '').toString();
                         let devDes = row.devDesignation;
                         let qty = row.qty;
                         let unitOfIssue = row.unitOfIssue;
@@ -3064,11 +3086,11 @@ exports.generateMBOM = function (req, res) {
                         //for each element in totalBrkAccQty
                         for (let el of totalBrkAccQty) {
                             count++;
-                            let brkAccDesc = el.brkAccDesc;
-                            let brkAccDesc1 = brkAccDesc.substring(0, 40);
-                            let brkAccDesc2 = brkAccDesc.substring(40, 80);
-                            let brkAccDesc3 = brkAccDesc.substring(80, 120);
-                            let brkAccDesc4 = brkAccDesc.substring(120, 160);
+                            let brkAccDesc = el.brkAccDesc || '';
+                            let brkAccDesc1 = safeSubstr(brkAccDesc, 0, 40);
+                            let brkAccDesc2 = safeSubstr(brkAccDesc, 40, 40);
+                            let brkAccDesc3 = safeSubstr(brkAccDesc, 80, 40);
+                            let brkAccDesc4 = safeSubstr(brkAccDesc, 120, 40);
                             let brkAccPN = el.brkAccPN;
                             let brkAccMfgPartNum = null;
                             //jobscope part number restriction
@@ -3217,11 +3239,11 @@ exports.generateMBOM = function (req, res) {
 
                     let itemPN = (row.itemPN).toString();
                     let qty = row.qty;
-                    let itemDesc = row.itemDesc;
-                    let itemDesc1 = itemDesc.substring(0, 40);
-                    let itemDesc2 = itemDesc.substring(40, 80);
-                    let itemDesc3 = itemDesc.substring(80, 120);
-                    let itemDesc4 = itemDesc.substring(120, 160);
+                    let itemDesc = row.itemDesc || '';
+                    let itemDesc1 = safeSubstr(itemDesc, 0, 40);
+                    let itemDesc2 = safeSubstr(itemDesc, 40, 40);
+                    let itemDesc3 = safeSubstr(itemDesc, 80, 40);
+                    let itemDesc4 = safeSubstr(itemDesc, 120, 40);
                     let unitOfIssue = row.unitOfIssue;
                     let catCode = row.catCode;
                     let classCode = row.class;
@@ -3571,8 +3593,8 @@ exports.generateMBOM = function (req, res) {
                     else
                         seqNum = count;
 
-                    let brkPN = row.brkPN;
-                    let crdPN = row.cradlePN;
+                        let brkPN = (row.brkPN || '').toString();
+                        let crdPN = (row.cradlePN || '').toString();
                     let devDes = row.devDesignation;
                     let qty = row.qty;
                     let unitOfIssue = row.unitOfIssue;
@@ -3724,11 +3746,11 @@ exports.generateMBOM = function (req, res) {
                     //for each element in totalBrkAccQty
                     for (let el of totalBrkAccQty) {
                         count++;
-                        let brkAccDesc = el.brkAccDesc;
-                        let brkAccDesc1 = brkAccDesc.substring(0, 40);
-                        let brkAccDesc2 = brkAccDesc.substring(40, 80);
-                        let brkAccDesc3 = brkAccDesc.substring(80, 120);
-                        let brkAccDesc4 = brkAccDesc.substring(120, 160);
+                        let brkAccDesc = el.brkAccDesc || '';
+                        let brkAccDesc1 = safeSubstr(brkAccDesc, 0, 40);
+                        let brkAccDesc2 = safeSubstr(brkAccDesc, 40, 40);
+                        let brkAccDesc3 = safeSubstr(brkAccDesc, 80, 40);
+                        let brkAccDesc4 = safeSubstr(brkAccDesc, 120, 40);
                         let brkAccPN = el.brkAccPN;
                         let brkAccMfgPartNum = null;
                         //jobscope part number restriction
