@@ -19,34 +19,7 @@ function Show-Error([string]$msg, [string]$title = 'Creo Automation') {
   [System.Windows.Forms.MessageBox]::Show($msg, $title, [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error) | Out-Null
 }
 
-function Test-Health([int]$port) {
-  $uri = "http://localhost:$port/"
-  try {
-    Invoke-WebRequest -Uri $uri -UseBasicParsing -TimeoutSec 2 -ErrorAction Stop | Out-Null
-    return $true
-  } catch {
-    return $false
-  }
-}
-
-function Wait-Until-Healthy([int]$port, [int]$timeoutSec) {
-  $sw = [System.Diagnostics.Stopwatch]::StartNew()
-  $intervalMs = 500
-  while ($sw.Elapsed.TotalSeconds -lt $timeoutSec) {
-    if (Test-Health -port $port) { return $true }
-    Start-Sleep -Milliseconds $intervalMs
-  }
-  return $false
-}
-
-# Wait up to 10 seconds for the app to be healthy before creating the shortcut
-$port = 3000
-$timeout = 10
-if (-not (Wait-Until-Healthy -port $port -timeoutSec $timeout)) {
-  Show-Error "The application did not respond on http://localhost:$port within $timeout seconds. Desktop shortcut will not be created." "Creo Automation - Not Ready"
-  Write-Output "Skipping desktop shortcut creation because app did not become healthy within $timeout seconds."
-  exit 0
-}
+; Create desktop shortcut immediately (no health check)
 
 try {
   $desktop = [Environment]::GetFolderPath('Desktop')
