@@ -2558,9 +2558,10 @@ exports.generateMBOM = function (req, res) {
         releaseNum: req.body.releaseNum
     };
 
-    // Ensure uploads directory exists so ExcelJS can write files there
+    // Ensure uploads directory exists so ExcelJS can write files there.
+    // Use project-root-relative path (not process.cwd) to avoid differences in working directory.
+    const uploadsDir = path.join(__dirname, '..', '..', 'uploads');
     try {
-        const uploadsDir = path.join(process.cwd(), 'uploads');
         fs.mkdirSync(uploadsDir, { recursive: true });
     } catch (e) {
         // If directory creation fails, we'll handle the write error later and produce diagnostics
@@ -3389,10 +3390,9 @@ exports.generateMBOM = function (req, res) {
                 //write workbook to a file located "temporarily" in the uploads folder of the app.
                 //Afterwards send that file to the client's downloads folder via the built-in res.download node.js function
                 // IMPORTANT: return the writeFile promise so any errors propagate to the outer catch
-                return workbook.xlsx.writeFile('uploads/' + mbomData.jobNum + mbomData.releaseNum + ' MBOM.xlsx').then(function () {
-                    const remoteFilePath = 'uploads/';
-                    const remoteFilename = mbomData.jobNum + mbomData.releaseNum + ' MBOM.xlsx';
-                    res.download(remoteFilePath + remoteFilename);
+                const workbookPath = path.join(uploadsDir, mbomData.jobNum + mbomData.releaseNum + ' MBOM.xlsx');
+                return workbook.xlsx.writeFile(workbookPath).then(function () {
+                    res.download(workbookPath);
                 }).catch(err => {
                     // rethrow so outer .catch handles diagnostic writing
                     throw err;
@@ -3815,10 +3815,9 @@ exports.generateMBOM = function (req, res) {
                 //write workbook to a file located "temporarily" in the uploads folder of the app.
                 //Afterwards send that file to the client's downloads folder via the built-in res.download node.js function
                 // IMPORTANT: return the writeFile promise so any errors propagate to the outer catch
-                return workbook.xlsx.writeFile('uploads/' + mbomData.jobNum + mbomData.releaseNum + ' MBOM.xlsx').then(function () {
-                    const remoteFilePath = 'uploads/';
-                    const remoteFilename = mbomData.jobNum + mbomData.releaseNum + ' MBOM.xlsx';
-                    res.download(remoteFilePath + remoteFilename);
+                const workbookPath = path.join(uploadsDir, mbomData.jobNum + mbomData.releaseNum + ' MBOM.xlsx');
+                return workbook.xlsx.writeFile(workbookPath).then(function () {
+                    res.download(workbookPath);
                 }).catch(err => {
                     // rethrow so outer .catch handles diagnostic writing
                     throw err;
@@ -3845,9 +3844,7 @@ exports.generateMBOM = function (req, res) {
 
             // Try to write diagnostic to uploads/ first, fallback to system temp directory
             try {
-                const path = require('path');
                 const os = require('os');
-                const uploadsDir = path.join(process.cwd(), 'uploads');
                 const fileName = 'mbom-diagnostic-' + (mbomData && mbomData.jobNum ? mbomData.jobNum : 'unknown') + '-' + (mbomData && mbomData.mbomID ? mbomData.mbomID : 'unknown') + '-' + Date.now() + '.json';
                 const diagPath = path.join(uploadsDir, fileName);
 
