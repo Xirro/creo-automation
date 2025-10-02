@@ -205,7 +205,7 @@
                                                     <form id="asmForm" class="asmForm" action="" method="POST">
                                                         <input type="text" name="CREO_workingDir" class="form-control" value="<%= workingDir %>" hidden="hidden" required/>
                                                         <input type="text" name="CREO_outputDir" class="form-control" value="<%= outputDir %>" hidden="hidden" required/>
-                                                        <input id="loadBtn" type="submit" value="Load" class="btn btn-lg btn-outline-success waves-effect waves-light" onclick="this.form.action='./loadDesign'" style="margin-bottom:1%;" />
+                                                        <button id="loadBtn" type="submit" class="btn btn-lg btn-outline-success waves-effect waves-light" formaction="./loadDesign" style="margin-bottom:1%;">Load</button>
                                                         <div class="row justify-content-center">
                                                             <div class="col-sm-12">
                                                                 <table id="creoAsmTable" class="table table-bordered dt-responsive nowrap" style="border-collapse: collapse; border-spacing: 0; width: 100%;">
@@ -219,7 +219,7 @@
                                                                     <% for (var i = 0; i < asmList.length; i++) { %>
                                                                         <% if (asmList[i].slice(7,11) == '0000') { %>
                                                                         <tr>
-                                                                            <td><input type="hidden" value="0" name="includeInExportCheck"><input class="form-check-input" type="checkbox" onclick="this.previousSibling.value=1-this.previousSibling.value" style="margin-left:3%; margin-top:0;"></td>
+                                                                            <td><input type="hidden" value="0" name="includeInExportCheck"><input class="form-check-input" type="checkbox" data-toggle-hidden-prev style="margin-left:3%; margin-top:0;"></td>
                                                                             <td><input type="text" name="asmName" value="<%=asmList[i]%>" hidden="hidden" /><%=asmList[i]%></td>
                                                                         </tr>
                                                                         <% } %>

@@ -314,14 +314,13 @@
                                                     </div>
                                                     <div class="col-sm-2">
                                                         <% if(brkAccData.length != 0){ %>
-                                                            <script> openBreakerAccessories() </script>
                                                             <div class="form-group" style="margin-top: 2.5rem; padding-left: 2.5rem;">
-                                                                <input class="form-check-input" type="checkbox" name="addBreakerAccessories" id="addAccessories" checked="checked" onclick="openBreakerAccessories()">
+                                                                <input class="form-check-input" type="checkbox" name="addBreakerAccessories" id="addAccessories" checked="checked" data-fn="openBreakerAccessories">
                                                                 <label class="form-check-label" for="addAccessories">Add Loose Accessories</label>
                                                             </div>
                                                         <% } else { %>
                                                             <div class="form-group" style="margin-top: 2.5rem; padding-left: 2.5rem;">
-                                                                <input class="form-check-input" type="checkbox" name="addBreakerAccessories" id="addAccessories" onclick="openBreakerAccessories()">
+                                                                <input class="form-check-input" type="checkbox" name="addBreakerAccessories" id="addAccessories" data-fn="openBreakerAccessories">
                                                                 <label class="form-check-label" for="addAccessories">Add Loose Accessories</label>
                                                             </div>
                                                         <% } %>
@@ -368,7 +367,7 @@
                                                                 <input type="text" id="accessoryPN" name="accessoryPN" class="form-control" value="" placeholder="Type P/N Here" autocomplete="off" required/>
                                                             </div>
                                                             <div class="col-sm-2" style="margin-top: 2.2rem;">
-                                                                <button id="addAccessoryBtn" type="submit" class="btn btn-md btn-outline-info waves-effect waves-light" onclick="addBrkAccessoryFromEdit(<%= mbomBrkData[0].idDev %>)">Add Accessory</button>
+                                                                <button id="addAccessoryBtn" type="submit" class="btn btn-md btn-outline-info waves-effect waves-light add-accessory-btn" data-dev="<%= mbomBrkData[0].idDev %>">Add Accessory</button>
                                                             </div>
                                                         </div>
                                                     </div>
@@ -380,8 +379,8 @@
                                                                     <span class="badge badge-info"><%=brkAccData[i].brkAccQty%></span>  <%=brkAccData[i].brkAccDesc%>
                                                                 </p>
                                                                 <p>
-                                                                    <input id="editButton" type="submit" value="Edit" class="btn btn-md btn-outline-warning waves-effect waves-light" data-toggle="modal" data-target="#editAccModal_<%=brkAccData[i].brkAccID%>"/>
-                                                                    <input id="<%=brkAccData[i].brkAccPN%>_<%=brkAccData[i].idDev%>" type="submit" value="Delete" class="btn btn-md btn-outline-danger waves-effect waves-light" onclick="deleteBrkAccFromEdit(this)"/>
+                                                                    <input id="editButton" type="submit" value="Edit" class="btn btn-md btn-outline-warning waves-effect waves-light edit-acc-btn" data-toggle="modal" data-target="#editAccModal_<%=brkAccData[i].brkAccID%>" data-acc-id="<%=brkAccData[i].brkAccID%>"/>
+                                                                    <button id="delAcc_<%=brkAccData[i].brkAccID%>" type="button" class="btn btn-md btn-outline-danger waves-effect waves-light delete-acc-btn" data-acc-pn="<%=brkAccData[i].brkAccPN%>" data-dev="<%=brkAccData[i].idDev%>">Delete</button>
                                                                 </p>
                                                             </li>
                                                             <!-- EDIT BRK ACC MODAL -->
@@ -426,7 +425,7 @@
                                                                                         </div>
                                                                                     </div>
                                                                                     <div class="modal-footer justify-content-center" style="border-top: none;">
-                                                                                        <input id="<%= brkAccData[i].brkAccID %>" type="submit" value="Save Changes" class="btn-block btn-lg btn-success col-sm-5" style="border: 0" onclick="editBrkAccFromEdit(this)"/>
+                                                                                        <button id="saveAcc_<%= brkAccData[i].brkAccID %>" type="button" class="btn-block btn-lg btn-success col-sm-5 save-acc-btn" style="border: 0" data-acc-id="<%= brkAccData[i].brkAccID %>">Save Changes</button>
                                                                                     </div>
                                                                                 </div>
 
@@ -445,7 +444,7 @@
 
                                             <div class="row justify-content-center">
                                                 <div class="col-2" style="padding-top:5%;">
-                                                    <input id="uploadBtn" type="submit" value="Save" class="btn-block btn-lg btn-outline-success waves-effect waves-light" onclick="document.getElementById('breakerForm').submit();"/>
+                                                    <button id="uploadBtn" type="button" class="btn-block btn-lg btn-outline-success waves-effect waves-light">Save</button>
                                                 </div>
                                             </div>
                                             </div>
@@ -498,6 +497,35 @@
 <script src="/public/assets/pages/dashboard.js"></script>
 <script src="/public/assets/pages/rangeslider-init.js"></script>
 <script src="/public/assets/pages/form-advanced.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function(){
+        var uploadBtn = document.getElementById('uploadBtn');
+        if (uploadBtn) {
+            uploadBtn.addEventListener('click', function(){
+                var form = document.getElementById('breakerForm');
+                if (form) form.submit();
+            });
+        }
+
+        // bind data-fn on this page (openBreakerAccessories)
+        document.querySelectorAll('input[data-fn], input[data-toggle-hidden-prev]').forEach(function(el){
+            if (el.hasAttribute('data-fn')) {
+                el.addEventListener('change', function(){
+                    var fnName = this.getAttribute('data-fn');
+                    var fn = window[fnName];
+                    if (typeof fn === 'function') {
+                        try { fn(this); } catch(err) { console.error(fnName + ' error', err); }
+                    }
+                });
+            }
+            if (el.hasAttribute('data-toggle-hidden-prev')) {
+                el.addEventListener('change', function(){
+                    try { var prev = this.previousElementSibling; if (prev && prev.tagName === 'INPUT' && prev.type === 'hidden') prev.value = this.checked ? '1' : '0'; } catch(e) { console.error(e); }
+                });
+            }
+        });
+    });
+</script>
 <script src="/public/assets/js/app.js"></script>
 <script src="/public/plugins/ion-rangeslider/ion.rangeSlider.min.js"></script>
 <script src="/public/assets/js/mbomCheckbox.js"></script>
@@ -509,6 +537,41 @@
 
 <!-- Creoson -->
 <script src="/creoson/creoConnect.js"></script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function(){
+        // add accessory
+        document.querySelectorAll('.add-accessory-btn').forEach(function(btn){
+            btn.addEventListener('click', function(e){
+                var dev = this.getAttribute('data-dev');
+                if (!dev) return;
+                if (typeof addBrkAccessoryFromEdit === 'function') {
+                    try { addBrkAccessoryFromEdit(parseInt(dev)); } catch(err) { console.error(err); }
+                }
+            });
+        });
+
+        // delete accessory
+        document.querySelectorAll('.delete-acc-btn').forEach(function(btn){
+            btn.addEventListener('click', function(e){
+                var pn = this.getAttribute('data-acc-pn');
+                var dev = this.getAttribute('data-dev');
+                if (typeof deleteBrkAccFromEdit === 'function') {
+                    try { deleteBrkAccFromEdit({ target: this }); } catch(err) { console.error(err); }
+                }
+            });
+        });
+
+        // save accessory edits
+        document.querySelectorAll('.save-acc-btn').forEach(function(btn){
+            btn.addEventListener('click', function(e){
+                if (typeof editBrkAccFromEdit === 'function') {
+                    try { editBrkAccFromEdit(this); } catch(err) { console.error(err); }
+                }
+            });
+        });
+    });
+</script>
 
 </body>
 </html>

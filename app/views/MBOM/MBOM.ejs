@@ -203,7 +203,7 @@
                                         <div class="form-group">
                                             <div class="row justify-content-center">
                                             <div class="col-6">
-                                                <input id="createBtn" type="submit" value="Create New" class="btn-block btn-lg btn-outline-success waves-effect waves-light" onclick="this.form.action='/createMBOM'" />
+                                                <button id="createBtn" type="submit" class="btn-block btn-lg btn-outline-success waves-effect waves-light" formaction="/createMBOM">Create New</button>
                                             </div>
                                             <div class="col-6">
                                                 <input id="copyBtn" type="button" value="Copy From Existing" class="btn-block btn-lg btn-outline-secondary waves-effect waves-light" data-toggle="modal" data-target="#copyMBOMModal"/>
@@ -241,8 +241,8 @@
                                                                 </form>
                                                             </div>
                                                             <div class="modal-footer justify-content-center">
-                                                                <div class="w-50">
-                                                                    <input id="copyModalBtn" type="submit" value="Copy" class="btn-block btn-lg btn-info" onclick="this.form.action='/copyMBOM'" />
+                                                                    <div class="w-50">
+                                                                    <button id="copyModalBtn" type="submit" class="btn-block btn-lg btn-info" formaction="/copyMBOM">Copy</button>
                                                                 </div>
                                                             </div>
                                                         </div>

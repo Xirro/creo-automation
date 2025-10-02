@@ -2290,28 +2290,43 @@ exports.mbomAddSection = function(req, res) {
     };
     let numSections, mbomID;
 
-    //Initial db query - lookup mbomSum in the row referenced by jobNum and releaseNum
-    querySql("SELECT * FROM " + database + " . " + dbConfig.MBOM_summary_table + " WHERE jobNum = ? AND releaseNum = ?", [data.jobNum, data.releaseNum])
-        .then(rows => {
-            //write the numSections and mbomID
+    // Run add-section inside a DB transaction so insert + summary update are atomic
+    Promise.using(DB.getSqlConnection(), async function(connection) {
+        await connection.beginTransactionAsync();
+        try {
+            // lookup mbom summary row
+            const rows = await connection.queryAsync("SELECT * FROM " + database + " . " + dbConfig.MBOM_summary_table + " WHERE jobNum = ? AND releaseNum = ?", [data.jobNum, data.releaseNum]);
+            if(!rows || rows.length === 0){
+                await connection.rollbackAsync();
+                res.status(404).send('MBOM not found');
+                return;
+            }
+
             numSections = rows[0].numSections + 1;
             mbomID = rows[0].mbomID;
 
-            //update mbomSum with the new numSections in the row referenced by jobNum and releaseNum
-            querySql("UPDATE " + database + "." + dbConfig.MBOM_summary_table + " SET numSections = ? WHERE jobNum = ? AND releaseNum = ?", [numSections, data.jobNum, data.releaseNum]);
-            //insert new row into mbomNewSectionSum with numSections and mbomID
-            querySql("INSERT INTO " + database + "." + dbConfig.MBOM_new_section_sum + " SET sectionNum = ?, mbomID = ?", [numSections, mbomID]);
-            return null;
-        })
-        .then(() => {
-            //redirect to searchMBOM page
+            // update summary and insert new section using the same connection
+            await connection.queryAsync("UPDATE " + database + "." + dbConfig.MBOM_summary_table + " SET numSections = ? WHERE jobNum = ? AND releaseNum = ?", [numSections, data.jobNum, data.releaseNum]);
+            await connection.queryAsync("INSERT INTO " + database + "." + dbConfig.MBOM_new_section_sum + " SET sectionNum = ?, mbomID = ?", [numSections, mbomID]);
+
+            await connection.commitAsync();
+        } catch (err) {
+            try { await connection.rollbackAsync(); } catch(e) { /* ignore rollback error */ }
+            console.log('there was an error during mbomAddSection transaction:', err);
+            if(!res.headersSent) res.status(500).send('Error adding section');
+            return;
+        }
+    })
+    .then(() => {
+        if (!res.headersSent) {
             res.locals = {title: 'Add Section'};
             res.redirect('searchMBOM/?bomID=' + data.jobNum + data.releaseNum + "_" + mbomID);
-        })
-        .catch(err => {
-            //if error occurs at anytime at any point in the code above, log it to the console
-            console.log('there was an error:' + err);
-        });
+        }
+    })
+    .catch(err => {
+        console.log('there was an error:' + err);
+        if(!res.headersSent) res.status(500).send('Error adding section');
+    });
 };
 
 
@@ -2369,84 +2384,101 @@ exports.mbomResetSection = function(req, res) {
 //mbomDeleteSection function
 exports.mbomDeleteSection = function(req, res) {
     req.setTimeout(0); //no timeout (this is needed to prevent error due to page taking a long time to load)
+    // log request for debugging duplicate-invocation issues
+    try {
+        const remoteIP = req.ip || req.connection && req.connection.remoteAddress || req.get && req.get('X-Forwarded-For') || 'unknown';
+        console.log(`[mbomDeleteSection] incoming request from ${remoteIP} at ${new Date().toISOString()} - bodyKeys=${Object.keys(req.body || {}).join(',')} queryKeys=${Object.keys(req.query || {}).join(',')}`);
+    } catch(e){ /* swallow logging errors */ }
     //Initialize variables
+    // prefer Express-parsed query, fall back to manual parse
     let urlObj = url.parse(req.originalUrl);
     urlObj.protocol = req.protocol;
     urlObj.host = req.get('host');
-    let qs = queryString.parse(urlObj.search);
-    let selectedSec = qs.selectedSec;
-    let numSections = qs.numSections;
+    let qs = queryString.parse(urlObj.search || '');
+    // Prefer form-posted body value (we now set selectedSec as a hidden input),
+    // otherwise fall back to req.query then parsed URL
+    let selectedSec = (req.body && req.body.selectedSec) ? req.body.selectedSec : (req.query && req.query.selectedSec ? req.query.selectedSec : qs.selectedSec);
+    let numSections = (req.body && req.body.numSections) ? req.body.numSections : (req.query && req.query.numSections ? req.query.numSections : qs.numSections);
+    // normalize to integer for arithmetic
+    numSections = parseInt(numSections, 10) || 0;
+
+    // Normalize incoming body fields: some forms post arrays (multiple inputs with same name),
+    // other times they post single values. Accept either.
+    const normalize = v => Array.isArray(v) ? v[0] : v;
     let data = {
-        mbomID: req.body.mbomID[0],
-        jobNum: req.body.jobNum[0],
-        releaseNum: req.body.releaseNum[0]
+        mbomID: normalize(req.body.mbomID),
+        jobNum: normalize(req.body.jobNum),
+        releaseNum: normalize(req.body.releaseNum)
     };
     let brkIDs = [];
     let itemIDs = [];
 
-    //Initial db query - lookup mbomNewSectionSum row referenced by mbomID and sectionNum
-    querySql("SELECT * FROM " + database + " . " + dbConfig.MBOM_new_section_sum + " WHERE mbomID = ? AND sectionNum = ?", [data.mbomID, selectedSec])
-        .then(
-            async function(rows){
-                //lookup mbomBrkSum row referenced by secID
-                const brk = await querySql("SELECT * FROM " + dbConfig.MBOM_breaker_table + " WHERE secID = ?", rows[0].secID);
-                //lookup mbomItemSum row referenced by secID
-                const item = await querySql("SELECT * FROM " + dbConfig.MBOM_item_table + " WHERE secID = ?", rows[0].secID);
-                return {brk, item};
-            })
-        .then(({brk, item}) => {
-            //for each brk
-            for(let row of brk){
-                //push id to brkIDs
-                brkIDs.push(row.idDev);
-            }
-            //for each item
-            for(let row of item){
-                //push id to itemIDs
-                itemIDs.push(row.itemSumID);
+    // Run the delete/clear/renumber sequence inside a DB transaction so the operation is atomic
+    Promise.using(DB.getSqlConnection(), async function(connection) {
+        // begin transaction
+        await connection.beginTransactionAsync();
+        try {
+            // lookup secID for the mbomID and sectionNum
+            const rows = await connection.queryAsync("SELECT secID FROM " + database + " . " + dbConfig.MBOM_new_section_sum + " WHERE mbomID = ? AND sectionNum = ?", [data.mbomID, selectedSec]);
+            if(!rows || rows.length === 0){
+                console.log('mbomDeleteSection: no section row found for', { mbomID: data.mbomID, selectedSec });
+                // nothing to commit - rollback and respond
+                await connection.rollbackAsync();
+                res.status(404).send('Section not found');
+                return;
             }
 
-            //delete row from mbomNewSectionSum referenced by mbomID and sectionNum
-            querySql("DELETE FROM " + database + " . " + dbConfig.MBOM_new_section_sum + " WHERE mbomID = ? AND sectionNum = ?", [data.mbomID[0], selectedSec]);
+            const secID = rows[0].secID;
 
-            return null;
-        })
-        .then(
-            async function(){
-                //for each breaker id
-                for(let row of brkIDs){
-                    //update the mbomBrkSum secID in the row referenced by idDev
-                    await querySql("UPDATE " + database + "." + dbConfig.MBOM_breaker_table + " SET secID = ? WHERE idDev = ?", [null, row]);
-                }
-                for(let row of itemIDs){
-                    //update the mbomItemSum secID in the row referenced by itemSumID
-                    await querySql("UPDATE " + database + " . " + dbConfig.MBOM_item_table + " SET secID = ? WHERE itemSumID = ?", [null, row]);
-                }
+            // lookup breaker/item rows that reference this secID
+            const brk = await connection.queryAsync("SELECT * FROM " + dbConfig.MBOM_breaker_table + " WHERE secID = ?", [secID]);
+            const item = await connection.queryAsync("SELECT * FROM " + dbConfig.MBOM_item_table + " WHERE secID = ?", [secID]);
 
-                return null;
+            for(let row of brk){ brkIDs.push(row.idDev); }
+            for(let row of item){ itemIDs.push(row.itemSumID); }
+
+            // delete the section row by secID
+            await connection.queryAsync("DELETE FROM " + database + " . " + dbConfig.MBOM_new_section_sum + " WHERE secID = ?", [secID]);
+
+            // clear secID references on breaker/item rows that referenced this secID
+            for(let id of brkIDs){
+                await connection.queryAsync("UPDATE " + database + "." + dbConfig.MBOM_breaker_table + " SET secID = ? WHERE idDev = ?", [null, id]);
             }
-        )
-        .then(() => {
-            for(let i = parseInt(selectedSec) + 1; i <= numSections; i++){
-                //update the mbomNewSectionSum sectionNum in the row referenced by mbomID and sectionNum
-                querySql("UPDATE " + database + " . " + dbConfig.MBOM_new_section_sum + " SET sectionNum = ? WHERE mbomID = ? AND sectionNum = ?", [i - 1, data.mbomID[0], i]);
+            for(let id of itemIDs){
+                await connection.queryAsync("UPDATE " + database + "." + dbConfig.MBOM_item_table + " SET secID = ? WHERE itemSumID = ?", [null, id]);
             }
-            return null;
-        })
-        .then(() => {
-            //update the mbomSum numSections in the row referenced by mbomID
-            querySql("UPDATE " + database + "." + dbConfig.MBOM_summary_table + " SET numSections = ? WHERE mbomID = ?", [(numSections - 1), data.mbomID]);
-            return null;
-        })
-        .then(() => {
-            //redirect to searchMBOM
+
+            // renumber subsequent sections
+            for(let i = parseInt(selectedSec, 10) + 1; i <= numSections; i++){
+                await connection.queryAsync("UPDATE " + database + " . " + dbConfig.MBOM_new_section_sum + " SET sectionNum = ? WHERE mbomID = ? AND sectionNum = ?", [i - 1, data.mbomID, i]);
+            }
+
+            // update mbom summary numSections
+            await connection.queryAsync("UPDATE " + database + "." + dbConfig.MBOM_summary_table + " SET numSections = ? WHERE mbomID = ?", [(numSections - 1), data.mbomID]);
+
+            // commit transaction
+            await connection.commitAsync();
+        } catch (err) {
+            // rollback on any error
+            try { await connection.rollbackAsync(); } catch(e) { /* ignore rollback errors */ }
+            console.log('there was an error during mbomDeleteSection transaction:', err);
+            // if response hasn't been sent yet, send 500
+            if (!res.headersSent) res.status(500).send('Error deleting section');
+            return;
+        }
+    })
+    .then(() => {
+        // redirect to searchMBOM after successful commit
+        if (!res.headersSent) {
             res.locals = {title: 'Delete Section'};
             res.redirect('../searchMBOM/?bomID=' + data.jobNum + data.releaseNum + "_" + data.mbomID);
-        })
-        .catch(err => {
-            //if error occurs at anytime at any point in the code above, log it to the console
-            console.log('there was an error:' + err);
-        });
+        }
+    })
+    .catch(err => {
+        // any unexpected errors
+        console.log('there was an error:' + err);
+        if (!res.headersSent) res.status(500).send('Error deleting section');
+    });
 };
 
 

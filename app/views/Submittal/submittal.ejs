@@ -205,7 +205,7 @@
                                                     <div class="form-group">
                                                         <div class="row justify-content-center">
                                                             <div class="col-6"  style="margin-bottom: 2%;">
-                                                                <input id="createBtn" type="submit" value="Create New" class="btn-block btn-lg btn-outline-success waves-effect waves-light" onclick="this.form.action='/createSubmittal'" />
+                                                                <button id="createBtn" type="submit" class="btn-block btn-lg btn-outline-success waves-effect waves-light" formaction="/createSubmittal">Create New</button>
                                                             </div>
                                                             <div class="col-6">
                                                                 <input id="copyBtn" type="button" value="Copy From Existing" class="btn-block btn-lg btn-outline-secondary waves-effect waves-light" data-toggle="modal" data-target="#copyMBOMModal"/>
@@ -243,8 +243,8 @@
                                                                                 </form>
                                                                             </div>
                                                                             <div class="modal-footer justify-content-center">
-                                                                                <div class="w-50">
-                                                                                    <input id="copyModalBtn" type="submit" value="Copy" class="btn-block btn-lg btn-info" onclick="this.form.action='/copySubmittal'" />
+                                                                                    <div class="w-50">
+                                                                                <button id="copyModalBtn" type="submit" class="btn-block btn-lg btn-info" formaction="/copySubmittal">Copy</button>
                                                                                 </div>
                                                                             </div>
                                                                         </div>
@@ -316,7 +316,7 @@
                                                 <div class="form-group">
                                                     <div class="row justify-content-center">
                                                         <div class="col-6"  style="margin-bottom: 2%;">
-                                                            <input id="createBtn" type="submit" value="Create New" class="btn-block btn btn-outline-success waves-effect waves-light" onclick="this.form.action='/createSubmittal'" />
+                                                            <button id="createBtn" type="submit" class="btn-block btn btn-outline-success waves-effect waves-light" formaction="/createSubmittal">Create New</button>
                                                         </div>
                                                         <div class="col-6">
                                                             <input id="copyBtn" type="button" value="Copy From Existing" class="btn-block btn btn-outline-secondary waves-effect waves-light" data-toggle="modal" data-target="#copyMBOMModal"/>
@@ -354,9 +354,9 @@
                                                                             </form>
                                                                         </div>
                                                                         <div class="modal-footer justify-content-center">
-                                                                            <div class="w-50">
-                                                                                <input id="copyModalBtn" type="submit" value="Copy" class="btn-block btn-lg btn-info" onclick="this.form.action='/copySubmittal'" />
-                                                                            </div>
+                                                                                <div class="w-50">
+                                                                                    <button id="copyModalBtn" type="submit" class="btn-block btn-lg btn-info" formaction="/copySubmittal">Copy</button>
+                                                                                </div>
                                                                         </div>
                                                                     </div>
                                                                 </div>
