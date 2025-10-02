@@ -2506,14 +2506,15 @@ exports.sectionConfigure = function(req, res) {
                             //if sections exist
                             if(rows.length != 0){
                                 //if the ID has an I (short for Item)
-                                if((secData.ID).includes('I')) {
+                                const secIdStr = (secData.ID || '').toString();
+                                if(secIdStr.includes('I')) {
                                     //write the number portion to tempID
-                                    let tempID = (secData.ID).substring(1);
+                                    let tempID = secIdStr.substring(1);
                                     //update the mbomItemSum secID column in the row referenced by itemSumID
                                     querySql("UPDATE " + database + " . " + dbConfig.MBOM_item_table + " SET secID = ? WHERE itemSumID = ?", [rows[0].secID, tempID]);
                                 } else {
                                     //write the number portion to tempID
-                                    let tempID = (secData.ID).substring(1);
+                                    let tempID = secIdStr.substring(1);
                                     //update the mbomBrkSum secID column in the row referenced by idDev
                                     querySql("UPDATE " + database + " . " + dbConfig.MBOM_breaker_table + " SET secID = ? WHERE idDev = ?", [rows[0].secID, tempID]);
                                 }
@@ -3511,11 +3512,11 @@ exports.generateMBOM = function (req, res) {
 
                     let itemPN = row.itemPN;
                     let qty = row.qty;
-                    let itemDesc = row.itemDesc;
-                    let itemDesc1 = itemDesc.substring(0, 40);
-                    let itemDesc2 = itemDesc.substring(40, 80);
-                    let itemDesc3 = itemDesc.substring(80, 120);
-                    let itemDesc4 = itemDesc.substring(120, 160);
+                    let itemDesc = row.itemDesc || '';
+                    let itemDesc1 = safeSubstr(itemDesc, 0, 40);
+                    let itemDesc2 = safeSubstr(itemDesc, 40, 40);
+                    let itemDesc3 = safeSubstr(itemDesc, 80, 40);
+                    let itemDesc4 = safeSubstr(itemDesc, 120, 40);
                     let unitOfIssue = row.unitOfIssue;
                     let catCode = row.catCode;
                     let classCode = row.class;
