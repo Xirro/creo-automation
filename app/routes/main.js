@@ -7,8 +7,7 @@ module.exports = function(app) {
     //get request to /home url => landingPage()
     app.get('/home', mainController.landingPage);
 
-    // mount debug routes
-    require('./debug.js')(app);
+    // debug routes removed in cleanup
 
     //we can also bypass the extra file in mainController.js for simple functions by using it directly
     /*app.get('/home',

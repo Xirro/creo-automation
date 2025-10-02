@@ -3838,64 +3838,10 @@ exports.generateMBOM = function (req, res) {
                 });
             }
         })
-        .catch(async err => {
-            // log the original error
+        .catch(err => {
             console.error('generateMBOM encountered an error:', err && err.stack ? err.stack : err);
-
-            // Build diagnostic object
-            const diag = {
-                timestamp: new Date().toISOString(),
-                mbomData: mbomData || null,
-                mbomSumData: mbomSumData || null,
-                mbomSecSumData: mbomSecSumData || null,
-                mbomItemData: mbomItemData || null,
-                mbomUserItem: mbomUserItem || null,
-                mbomComItem: mbomComItem || null,
-                mbomBrkSum: mbomBrkSum || null,
-                mbomBrkAccSum: mbomBrkAccSum || null,
-                error: err && err.stack ? err.stack : String(err)
-            };
-
-            // Try to write diagnostic to uploads/ first, fallback to system temp directory
-            try {
-                const os = require('os');
-                const fileName = 'mbom-diagnostic-' + (mbomData && mbomData.jobNum ? mbomData.jobNum : 'unknown') + '-' + (mbomData && mbomData.mbomID ? mbomData.mbomID : 'unknown') + '-' + Date.now() + '.json';
-                const diagPath = path.join(uploadsDir, fileName);
-
-                // ensure uploads directory exists
-                try { await fs.promises.mkdir(uploadsDir, { recursive: true }); } catch (e) { /* ignore */ }
-
-                // attempt write
-                await fs.promises.writeFile(diagPath, JSON.stringify(diag, null, 2), { encoding: 'utf8' });
-                console.error('generateMBOM diagnostic written to', diagPath);
-                if (!res.headersSent) {
-                    res.status(500).send('Error generating MBOM. Diagnostic written to ' + diagPath);
-                }
-                return;
-            } catch (writeErr) {
-                // failed to write to uploads, try system temp folder
-                try {
-                    const path = require('path');
-                    const os = require('os');
-                    const tmpDir = os.tmpdir();
-                    const fileName = 'mbom-diagnostic-' + (mbomData && mbomData.jobNum ? mbomData.jobNum : 'unknown') + '-' + (mbomData && mbomData.mbomID ? mbomData.mbomID : 'unknown') + '-' + Date.now() + '.json';
-                    const diagPathTmp = path.join(tmpDir, fileName);
-                    await fs.promises.writeFile(diagPathTmp, JSON.stringify(diag, null, 2), { encoding: 'utf8' });
-                    console.error('generateMBOM diagnostic written to tmp dir', diagPathTmp);
-                    console.error('Original write error:', writeErr && writeErr.stack ? writeErr.stack : writeErr);
-                    if (!res.headersSent) {
-                        res.status(500).send('Error generating MBOM. Diagnostic written to ' + diagPathTmp + ' (original upload write error: ' + (writeErr && writeErr.message ? writeErr.message : String(writeErr)) + ')');
-                    }
-                    return;
-                } catch (writeErr2) {
-                    // both writes failed — log everything and return a message with both errors
-                    console.error('Failed to write MBOM diagnostic to uploads and tmp dir:', writeErr2 && writeErr2.stack ? writeErr2.stack : writeErr2);
-                    console.error('Previous write error:', writeErr && writeErr.stack ? writeErr.stack : writeErr);
-                    if (!res.headersSent) {
-                        res.status(500).send('Error generating MBOM. Also failed to write diagnostic. See server logs for details.');
-                    }
-                    return;
-                }
+            if (!res.headersSent) {
+                res.status(500).send('Error generating MBOM. See server logs for details.');
             }
         });
 };
