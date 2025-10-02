@@ -2558,9 +2558,23 @@ exports.generateMBOM = function (req, res) {
         releaseNum: req.body.releaseNum
     };
 
-    // Ensure uploads directory exists so ExcelJS can write files there.
-    // Use project-root-relative path (not process.cwd) to avoid differences in working directory.
-    const uploadsDir = path.join(__dirname, '..', '..', 'uploads');
+    // Determine a writable uploads directory.
+    // Preference order:
+    // 1) If running in non-production and repository uploads exists, use project uploads (dev convenience)
+    // 2) Else use %LOCALAPPDATA%\CreoAutomation\uploads (per-user writable location)
+    // 3) Allow override with UPLOADS_DIR env var
+    const os = require('os');
+    const projectUploads = path.join(__dirname, '..', '..', 'uploads');
+    let uploadsDir;
+    if (process.env.UPLOADS_DIR) {
+        uploadsDir = process.env.UPLOADS_DIR;
+    } else if (process.env.NODE_ENV !== 'production' && fs.existsSync(projectUploads)) {
+        uploadsDir = projectUploads;
+    } else {
+        const localAppData = process.env.LOCALAPPDATA || path.join(os.homedir(), 'AppData', 'Local');
+        uploadsDir = path.join(localAppData, 'CreoAutomation', 'uploads');
+    }
+
     try {
         fs.mkdirSync(uploadsDir, { recursive: true });
     } catch (e) {
