@@ -1,7 +1,6 @@
-//import the js functions from the mainController.js file and write them to a variable mainController
+//import the js functions from the mainproController.js file and write them to a variable mainController
 const mainController = require('../controllers/mainController.js');
-// mount debug routes (temporary)
-require('./debug.js')(module.exports);
+// mount debug routes (temporary) - mounted below with the real `app` instance
 
 //export a function of app (this exposes these functions to server.js and completes the connection between server-router-controller-view)
 module.exports = function(app) {
