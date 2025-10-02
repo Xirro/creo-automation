@@ -22,6 +22,7 @@ const Promise = require('bluebird');
 //Excel Connection
 const Excel = require('exceljs');
 const fs = require('fs');
+const path = require('path');
 
 // Defensive helpers used by generateMBOM to avoid crashes on unexpected nulls
 function safeSubstr(s, start, len) {
@@ -2555,6 +2556,15 @@ exports.generateMBOM = function (req, res) {
         jobNum: req.body.jobNum,
         releaseNum: req.body.releaseNum
     };
+
+    // Ensure uploads directory exists so ExcelJS can write files there
+    try {
+        const uploadsDir = path.join(process.cwd(), 'uploads');
+        fs.mkdirSync(uploadsDir, { recursive: true });
+    } catch (e) {
+        // If directory creation fails, we'll handle the write error later and produce diagnostics
+        console.error('Could not ensure uploads directory exists:', e && e.stack ? e.stack : e);
+    }
     let partNumCount = 1;
     let mbomSumData = [];
     let mbomSecSumData = [];
