@@ -30,8 +30,7 @@ jobs:
 
       - name: Run build (if defined)
         run: |
-          # If you have a build script that produces an installer at ./dist/CreoAutomationInstaller.exe,
-          # ensure package.json has a "build" script. This step will exit 0 if no build script exists.
+          # If you have a build script that produces an artifact under ./dist, run it.
           $pkg = Get-Content package.json -Raw | ConvertFrom-Json -ErrorAction SilentlyContinue
           if ($pkg -and $pkg.scripts -and $pkg.scripts.build) {
             Write-Host "Found build script, running npm run build"
@@ -39,6 +38,29 @@ jobs:
           } else {
             Write-Host "No build script defined in package.json; skipping build step"
           }
+
+      - name: Prepare distribution folder (build-dist.ps1)
+        run: |
+          Write-Host "Running scripts\build-dist.ps1 to prepare ./dist"
+          powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\build-dist.ps1 -ProjectRoot $PWD -NodeExe (Get-Command node).Source
+
+      - name: Install Inno Setup (choco)
+        run: |
+          choco install innosetup -y
+        shell: powershell
+
+      - name: Build installer with Inno Setup
+        run: |
+          $iscc = 'C:\Program Files (x86)\Inno Setup 6\ISCC.exe'
+          if (-not (Test-Path $iscc)) {
+            Write-Host "ISCC.exe not found at $iscc; attempting to locate with where.exe"
+            $found = & where.exe ISCC.exe 2>$null | Select-Object -First 1
+            if ($found) { $iscc = $found }
+          }
+          if (-not (Test-Path $iscc)) { throw "ISCC.exe not found. Inno Setup installation failed or path differs." }
+          Write-Host "Using ISCC: $iscc"
+          & $iscc 'installer\setup.iss'
+        shell: powershell
 
       - name: Create GitHub release
         id: create_release
@@ -54,17 +76,19 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload CreoAutomationInstaller (if present)
-        id: upload_asset
-        uses: softprops/action-gh-release@v1
+        uses: actions/upload-release-asset@v1
         with:
-          files: dist/CreoAutomationInstaller.exe
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: dist_installer/CreoAutomationInstaller.exe
+          asset_name: CreoAutomationInstaller.exe
+          asset_content_type: application/octet-stream
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Verify asset presence
         run: |
-          if (Test-Path "./dist/CreoAutomationInstaller.exe") {
-            Write-Host "CreoAutomationInstaller.exe found and uploaded"
+          if (Test-Path "./dist_installer/CreoAutomationInstaller.exe") {
+            Write-Host "CreoAutomationInstaller.exe found in dist_installer and uploaded"
           } else {
-            Write-Host "No CreoAutomationInstaller.exe produced. If you want automatic upload, ensure your build creates ./dist/CreoAutomationInstaller.exe"
+            Write-Host "No CreoAutomationInstaller.exe produced. Ensure scripts/build-dist.ps1 and installer/setup.iss produce dist_installer\\CreoAutomationInstaller.exe"
           }
