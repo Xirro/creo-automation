@@ -50,6 +50,7 @@ jobs:
         shell: powershell
 
       - name: Build installer with Inno Setup (versioned)
+        id: build-installer
         run: |
           # Read version from package.json
           $pkg = Get-Content package.json -Raw | ConvertFrom-Json
@@ -73,8 +74,8 @@ jobs:
           if (-not (Test-Path $iscc)) { throw "ISCC.exe not found. Inno Setup installation failed or path differs." }
           Write-Host "Using ISCC: $iscc"
           & $iscc $tmpIss
-          # Expose the version as output for later steps
-          Write-Host "::set-output name=installer_version::$version"
+          # Expose the version as output for later steps (use GITHUB_OUTPUT file)
+          Add-Content -Path $env:GITHUB_OUTPUT -Value "installer_version=$version"
         shell: powershell
 
       - name: Create GitHub release
@@ -102,8 +103,11 @@ jobs:
 
       - name: Verify asset presence
         run: |
-          if (Test-Path "./dist_installer/CreoAutomationInstaller.exe") {
-            Write-Host "CreoAutomationInstaller.exe found in dist_installer and uploaded"
+          $version = '${{ steps.build-installer.outputs.installer_version }}'
+          $path = "./dist_installer/CreoAutomationInstaller-$version.exe"
+          if (Test-Path $path) {
+            Write-Host "Found $path"
           } else {
-            Write-Host "No CreoAutomationInstaller.exe produced. Ensure scripts/build-dist.ps1 and installer/setup.iss produce dist_installer\\CreoAutomationInstaller.exe"
+            Write-Host "No $path produced. Ensure scripts/build-dist.ps1 and installer/setup.iss produce the versioned installer"
+            exit 1
           }
