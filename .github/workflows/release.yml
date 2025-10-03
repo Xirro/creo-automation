@@ -78,26 +78,32 @@ jobs:
           Add-Content -Path $env:GITHUB_OUTPUT -Value "installer_version=$version"
         shell: powershell
 
-      - name: Create GitHub release
-        id: create_release
-        uses: actions/create-release@v1
-        with:
-          tag_name: ${{ github.ref_name }}
-          release_name: ${{ github.ref_name }}
-          body: |
-            See CHANGELOG.md for release notes.
-          draft: false
-          prerelease: false
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Install GitHub CLI (gh)
+        run: |
+          choco install gh -y
+        shell: powershell
 
-      - name: Upload versioned CreoAutomationInstaller (if present)
-        uses: actions/upload-release-asset@v1
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ${{ format('dist_installer/CreoAutomationInstaller-{0}.exe', steps.build-installer.outputs.installer_version) }}
-          asset_name: ${{ format('CreoAutomationInstaller-{0}.exe', steps.build-installer.outputs.installer_version) }}
-          asset_content_type: application/octet-stream
+      - name: Create GitHub release and upload asset using gh
+        id: gh_release
+        run: |
+          $tag = $env:GITHUB_REF_NAME
+          $version = '${{ steps.build-installer.outputs.installer_version }}'
+          Write-Host "Creating release $tag and uploading CreoAutomationInstaller-$version.exe"
+
+          # Authenticate gh using the provided token
+          $token = $env:GITHUB_TOKEN
+          if (-not $token) { throw 'GITHUB_TOKEN is not set' }
+          Write-Output $token | gh auth login --with-token
+
+          # Create the release and upload the single asset (will fail if asset is missing)
+          $assetPath = "./dist_installer/CreoAutomationInstaller-$version.exe"
+          if (-not (Test-Path $assetPath)) {
+            Write-Host "Asset $assetPath not found. Aborting release creation."
+            exit 1
+          }
+
+          # Create the release and attach the built installer
+          gh release create $tag $assetPath --title $tag --notes-file CHANGELOG.md --repo $env:GITHUB_REPOSITORY
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
