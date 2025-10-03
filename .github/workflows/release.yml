@@ -49,8 +49,21 @@ jobs:
           choco install innosetup -y
         shell: powershell
 
-      - name: Build installer with Inno Setup
+      - name: Build installer with Inno Setup (versioned)
         run: |
+          # Read version from package.json
+          $pkg = Get-Content package.json -Raw | ConvertFrom-Json
+          $version = $pkg.version -replace '\+','-'
+          Write-Host "Package version: $version"
+
+          # Create a temporary ISS with versioned OutputBaseFilename
+          $origIss = 'installer\setup.iss'
+          $tmpIss = "installer\setup_$version.iss"
+          $issText = Get-Content $origIss -Raw
+          # Replace OutputBaseFilename line (naive replace, expects OutputBaseFilename=CreoAutomationInstaller)
+          $issText = $issText -replace 'OutputBaseFilename=CreoAutomationInstaller', "OutputBaseFilename=CreoAutomationInstaller-$version"
+          Set-Content -Path $tmpIss -Value $issText -Encoding ASCII
+
           $iscc = 'C:\Program Files (x86)\Inno Setup 6\ISCC.exe'
           if (-not (Test-Path $iscc)) {
             Write-Host "ISCC.exe not found at $iscc; attempting to locate with where.exe"
@@ -59,7 +72,9 @@ jobs:
           }
           if (-not (Test-Path $iscc)) { throw "ISCC.exe not found. Inno Setup installation failed or path differs." }
           Write-Host "Using ISCC: $iscc"
-          & $iscc 'installer\setup.iss'
+          & $iscc $tmpIss
+          # Expose the version as output for later steps
+          Write-Host "::set-output name=installer_version::$version"
         shell: powershell
 
       - name: Create GitHub release
@@ -75,12 +90,12 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Upload CreoAutomationInstaller (if present)
+      - name: Upload versioned CreoAutomationInstaller (if present)
         uses: actions/upload-release-asset@v1
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: dist_installer/CreoAutomationInstaller.exe
-          asset_name: CreoAutomationInstaller.exe
+          asset_path: ${{ format('dist_installer/CreoAutomationInstaller-{0}.exe', steps.build-installer.outputs.installer_version) }}
+          asset_name: ${{ format('CreoAutomationInstaller-{0}.exe', steps.build-installer.outputs.installer_version) }}
           asset_content_type: application/octet-stream
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
