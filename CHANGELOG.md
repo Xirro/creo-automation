@@ -5,16 +5,6 @@ All notable changes to this project will be documented in this file.
 ## [v0.1.0-beta] - 2025-10-03
 ### Added
 - Beta release for testing installer workflow and MBOM runtime fixes.
-
-### Changed
-- Installer filename now includes the Git tag (e.g. `CreoAutomationInstaller-v0.1.0-beta.exe`).
-
-### Notes
-- This release is intended for CI validation. Please run MBOM smoke tests against a test DB.
-
-## [1.0.0] - 2025-10-02
-### Added
-- First official release.
 - CHANGELOG.md and release tag v1.0.0.
 
 ### Changed
@@ -23,6 +13,7 @@ All notable changes to this project will be documented in this file.
 - Replaced inline form-action mutations with `button formaction` where appropriate.
 - Fixed malformed EJS placeholders in Submittal templates causing template parse errors.
 - Updated accessory UI: "Add Loose Accessories" checkbox and "Add Accessory" button restored and made robust.
+- Installer filename now includes the Git tag (e.g. `CreoAutomationInstaller-v0.1.0-beta.exe`).
 
 ### Fixed
 - Prevent Node process crashes during Generate MBOM (XLSX export) and improved file handling around Excel generation.
