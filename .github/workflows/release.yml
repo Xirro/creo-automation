@@ -52,17 +52,28 @@ jobs:
       - name: Build installer with Inno Setup (versioned)
         id: build-installer
         run: |
-          # Read version from package.json
-          $pkg = Get-Content package.json -Raw | ConvertFrom-Json
-          $version = $pkg.version -replace '\+','-'
-          Write-Host "Package version: $version"
+          # Determine installer version: prefer the Git tag name (e.g. v0.1.0-beta) when present,
+          # otherwise fall back to package.json version.
+          $pkg = Get-Content package.json -Raw | ConvertFrom-Json -ErrorAction SilentlyContinue
+          $pkgVersion = if ($pkg -and $pkg.version) { $pkg.version -replace '\+','-' } else { '' }
+          $refName = $env:GITHUB_REF_NAME
+
+          if ($refName -and $refName -match '^v') {
+            $installer_version = $refName
+            Write-Host "Using Git tag as installer version: $installer_version"
+          } elseif ($pkgVersion) {
+            $installer_version = $pkgVersion
+            Write-Host "Using package.json version as installer version: $installer_version"
+          } else {
+            throw "Unable to determine installer version from tag or package.json"
+          }
 
           # Create a temporary ISS with versioned OutputBaseFilename
           $origIss = 'installer\setup.iss'
-          $tmpIss = "installer\setup_$version.iss"
+          $tmpIss = "installer\setup_$installer_version.iss"
           $issText = Get-Content $origIss -Raw
           # Replace OutputBaseFilename line (naive replace, expects OutputBaseFilename=CreoAutomationInstaller)
-          $issText = $issText -replace 'OutputBaseFilename=CreoAutomationInstaller', "OutputBaseFilename=CreoAutomationInstaller-$version"
+          $issText = $issText -replace 'OutputBaseFilename=CreoAutomationInstaller', "OutputBaseFilename=CreoAutomationInstaller-$installer_version"
           Set-Content -Path $tmpIss -Value $issText -Encoding ASCII
 
           $iscc = 'C:\Program Files (x86)\Inno Setup 6\ISCC.exe'
@@ -75,7 +86,7 @@ jobs:
           Write-Host "Using ISCC: $iscc"
           & $iscc $tmpIss
           # Expose the version as output for later steps (use GITHUB_OUTPUT file)
-          Add-Content -Path $env:GITHUB_OUTPUT -Value "installer_version=$version"
+          Add-Content -Path $env:GITHUB_OUTPUT -Value "installer_version=$installer_version"
         shell: powershell
 
       - name: Install GitHub CLI (gh)
