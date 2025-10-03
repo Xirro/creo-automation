@@ -1,0 +1,37 @@
+name: npm audit
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  npm-audit:
+    name: Run npm audit and upload JSON
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install production dependencies
+        run: |
+          npm ci --only=production
+
+      - name: Run npm audit (JSON)
+        run: |
+          # Always produce JSON output. npm audit exits with code >0 when vulnerabilities found, so allow failure to still upload artifact.
+          npm audit --json > npm-audit.json || true
+          echo "Generated npm-audit.json"
+
+      - name: Upload npm audit artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: npm-audit-${{ github.sha }}
+          path: npm-audit.json
