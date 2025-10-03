@@ -113,8 +113,17 @@ jobs:
             exit 1
           }
 
-          # Create the release and attach the built installer
-          gh release create $tag $assetPath --title $tag --notes-file CHANGELOG.md --repo $env:GITHUB_REPOSITORY
+          # If the release already exists, upload the asset with --clobber to replace any existing file.
+          # Otherwise create the release and attach the asset.
+          Write-Host "Checking if release $tag exists"
+          gh release view $tag --repo $env:GITHUB_REPOSITORY 2>$null
+          if ($LASTEXITCODE -eq 0) {
+            Write-Host "Release $tag exists — uploading asset (will clobber if present)"
+            gh release upload $tag $assetPath --clobber --repo $env:GITHUB_REPOSITORY
+          } else {
+            Write-Host "Release $tag does not exist — creating and uploading asset"
+            gh release create $tag $assetPath --title $tag --notes-file CHANGELOG.md --repo $env:GITHUB_REPOSITORY
+          }
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
