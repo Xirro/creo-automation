@@ -1,4 +1,9 @@
 async function creoRequest(creoJSONFunction) {
+    if (process.env.CREOSON_ENABLED !== 'true') {
+        console.log('Creoson disabled via CREOSON_ENABLED; skipping creoRequest');
+        exports.creoResponse = null;
+        return null;
+    }
     const axios = require('axios');
     const creoHttp = 'http://localhost:9056/creoson';
     try {

@@ -24,15 +24,19 @@ const Promise = require('bluebird');
 const axios = require('axios');
 let creoHttp = 'http://localhost:9056/creoson';
 let sessionId;
-axios.post(creoHttp, { command: 'connection', function: 'connect' })
-    .then(resp => {
-        sessionId = resp.data && resp.data.sessionId;
-        axios.post(creoHttp, { sessionId: sessionId, command: 'creo', function: 'set_creo_version', data: { version: '3' } });
-    })
-    .catch(err => {
-        if (err.code === 'ECONNREFUSED') console.log('> Error in slimVACController.js: Creoson server not reachable');
-        else console.log('> There was an error in slimVACController.js:', err);
-    });
+if (process.env.CREOSON_ENABLED === 'true') {
+    axios.post(creoHttp, { command: 'connection', function: 'connect' })
+        .then(resp => {
+            sessionId = resp.data && resp.data.sessionId;
+            axios.post(creoHttp, { sessionId: sessionId, command: 'creo', function: 'set_creo_version', data: { version: '3' } });
+        })
+        .catch(err => {
+            if (err.code === 'ECONNREFUSED') console.log('> Error in slimVACController.js: Creoson server not reachable');
+            else console.log('> There was an error in slimVACController.js:', err);
+        });
+} else {
+    console.log('Creoson disabled via CREOSON_ENABLED; skipping Creoson init in slimVACController.js');
+}
 
 
 //IN ANY OF THESE FUNCTIONS IF YOU WANT TO DEBUG OR ANALYZE THE BEHAVIOR

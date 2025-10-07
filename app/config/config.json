@@ -1,7 +1,7 @@
 {
   "development": {
     "username": "root",
-    "password": "E5i5wks15",
+    "password": "",
     "database": "sai_test",
     "host": "localhost",
     "dialect": "mysql",
@@ -9,7 +9,7 @@
   },
   "test": {
     "username": "root",
-    "password": "E5i5wks15",
+    "password": "",
     "database": "sai_test",
     "host": "localhost",
     "dialect": "mysql",
@@ -17,7 +17,7 @@
   },
   "production": {
     "username": "doadmin",
-    "password": "xaikjabounn01k3i",
+    "password": "",
     "host": "saidb-do-user-6679940-0.db.ondigitalocean.com",
     "port": 25060,
     "database": "saidb",

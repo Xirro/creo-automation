@@ -12,29 +12,28 @@ let repoConfig = {
     //IN PRODUCTION ENVIRONMENT UN-COMMENT THIS PORTION
     //IN DEVELOPMENT ENVIRONMENT COMMENT THIS PORTION
     //******************************************************
+    // Repo defaults intentionally omit credentials. Provide secrets via one of:
+    //  - app/config/database.local.js (created by installer)
+    //  - app/config/db_pass.enc (encrypted DPAPI store)
+    //  - runtime login page which initializes the connection pool
     connection: {
-        user: 'doadmin',
-        password: 'xaikjabounn01k3i',
-        host: 'saidb-do-user-6679940-0.db.ondigitalocean.com',
-        port: 25060,
-        database: 'saidb',
+        user: '',
+        password: '',
+        host: '',
+        port: 0,
+        database: '',
         dialect: 'mysql',
-        logging: true,
+        logging: false,
         force: false,
         timezone: '+00:00',
         pool: {
-            max: 100,
+            max: 10,
             min: 0,
             idle: 200000,
             acquire: 10000000,
         },
-        ssl: true,
-        dialectOptions: {
-            ssl: {
-                ssl: true,
-                cert: fs.readFileSync('app/config/ca-certificate.crt')
-            }
-        },
+        ssl: false,
+        dialectOptions: {}
     },
     //*******************************************************
 

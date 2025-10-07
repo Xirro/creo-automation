@@ -22,19 +22,23 @@ let creoHttp = 'http://localhost:9056/creoson';
 let sessionId = '';
 
 // initial creoson connection (needed to get the sessionId)
-axios.post(creoHttp, { command: 'connection', function: 'connect' })
-    .then(reqConnectBody => {
-        sessionId = reqConnectBody.data && reqConnectBody.data.sessionId;
-        // set creo version
-        axios.post(creoHttp, { sessionId: sessionId, command: 'creo', function: 'set_creo_version', data: { version: '3' } });
-    })
-    .catch(err => {
-        if (err.code === 'ECONNREFUSED') {
-            console.log('> Error in partComparisonController.js: Creoson server is not running or not reachable at http://localhost:9056/creoson');
-        } else {
-            console.log('> There was an error in partComparisonController.js: ', err);
-        }
-    });
+if (process.env.CREOSON_ENABLED === 'true') {
+    axios.post(creoHttp, { command: 'connection', function: 'connect' })
+        .then(reqConnectBody => {
+            sessionId = reqConnectBody.data && reqConnectBody.data.sessionId;
+            // set creo version
+            axios.post(creoHttp, { sessionId: sessionId, command: 'creo', function: 'set_creo_version', data: { version: '3' } });
+        })
+        .catch(err => {
+            if (err.code === 'ECONNREFUSED') {
+                console.log('> Error in partComparisonController.js: Creoson server is not running or not reachable at http://localhost:9056/creoson');
+            } else {
+                console.log('> There was an error in partComparisonController.js: ', err);
+            }
+        });
+} else {
+    console.log('Creoson disabled via CREOSON_ENABLED; skipping Creoson init in partComparisonController.js');
+}
 
 //creo function (used to remove some of the boilerplate thats involved with creoson http calls)
 //Inputs: creoson sessionId provided from above, and function data JSON object

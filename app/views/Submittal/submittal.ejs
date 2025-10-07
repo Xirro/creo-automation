@@ -43,165 +43,19 @@
 </head>
 <body>
 <div id="wrapper">
-    <!-- Top Bar Start -->
-    <div class="topbar">
+    <%- include('../partials/header') %>
 
-        <!-- LOGO -->
-        <div class="topbar-left" style="background-color: white;">
-            <a href="" class="logo">
-                        <span>
-                            <img src="/public/assets/images/SAI-Logo.JPG" alt="" height="67">
-                        </span>
-                <i>
-                    <img src="/public/assets/images/SAI-Logo.JPG" alt="" height="22">
-                </i>
-            </a>
-        </div>
-
-        <nav class="navbar-custom">
-            <ul class="navbar-right d-flex list-inline float-right mb-0">
-                <li class="dropdown notification-list d-none d-sm-block">
-                    <form role="search" class="app-search">
-                        <div class="form-group mb-0">
-                            <input type="text" class="form-control" placeholder="Search..">
-                            <button type="submit"><i class="fa fa-search"></i></button>
-                        </div>
-                    </form>
-                </li>
-            </ul>
-
-            <ul class="list-inline menu-left mb-0">
-                <li class="float-left">
-                    <button class="button-menu-mobile open-left waves-effect">
-                        <i class="mdi mdi-menu"></i>
-                    </button>
-                </li>
-            </ul>
-
-        </nav>
-
-    </div>
-    <!-- Top Bar End -->
-
-    <!-- ========== Left Sidebar Start ========== -->
-    <div class="left side-menu">
-        <div class="slimscroll-menu" id="remove-scroll">
-
-            <!--- Sidemenu -->
-            <div id="sidebar-menu">
-                <!-- Left Menu Start -->
-                <ul class="metismenu" id="side-menu">
-                    <li class="menu-title">CREO Automation</li>
-                    <li>
-                        <a href="../MBOM" class="waves-effect">
-                            <i class="mdi mdi-content-duplicate"></i> <span> MBOM </span>
-                        </a>
-                    </li>
-                    <li>
-                        <a href="../PDF-DXF-BIN_BOM" class="waves-effect">
-                            <i class="mdi mdi-content-duplicate"></i> <span> PDF / DXF / BIN BOM </span>
-                        </a>
-                    </li>
-                    <li>
-                        <a href="../submittal" class="waves-effect">
-                            <i class="mdi mdi-file-pdf"></i> <span> Submittal </span>
-                        </a>
-                    </li>
-                    <li>
-                            <a href="../slimVAC_NAR" class="waves-effect">
-                            <i class="mdi mdi-content-duplicate"></i> <span> SlimVAC NAR </span>
-                        </a>
-                    </li>
-                    <li>
-                        <a href="../partComparison" class="waves-effect">
-                            <i class="mdi mdi-content-duplicate"></i> <span> Part Comparison </span>
-                        </a>
-                    </li>
-                    <li>
-                        <a href="../renameMain" class="waves-effect">
-                            <i class="mdi mdi-content-duplicate"></i> <span> Rename </span>
-                        </a>
-                    </li>
-                </ul>
-
-            </div>
-            <!-- Sidebar -->
-            <div class="clearfix"></div>
-
-        </div>
-        <!-- Sidebar -left -->
-
-    </div>
-    <!-- Left Sidebar End -->
-
+    <%- include('../partials/sidebar') %>
+    <!-- Content Start -->
     <div class="content-page">
-        <!-- Content Start -->
+    <div class="content">
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-sm-12">
+                    <div class="page-title-box">
+                        <h4 class="page-title">Submittal</h4>
 
-        <div class="content">
-            <div class="container-fluid">
-                <div class="row">
-                    <div class="col-sm-12">
-                        <div class="page-title-box">
-                            <h4 class="page-title">Mechanical Engineering - Submittal</h4>
-                            <div class="row justify-content-center">
-                                <div class="col-sm-5">
-                                    <div class="card m-b-20" style="height:94%;">
-                                        <div class="card-body">
-                                            <h4 class="mt-0 header-title">Create Submittal</h4>
-                                            <h6 style="color:red;"><%= message %></h6>
-
-                                            <% if  (newSubData != null) { %>
-                                                <form id="newSubmittalForm" class="newSubmittalForm" action="" method="POST">
-                                                    <div class="form-group">
-                                                        <div class="row">
-                                                            <div class="col-sm-8">
-                                                                <label for="example-text-input" class="col-form-label">Job #</label>
-                                                                <input type="text" name="jobNum" class="form-control" value="<%=newSubData.jobNum%>" placeholder="Type Number Here" id="example-text-input" autocomplete="off" required>
-                                                            </div>
-                                                            <div class="col-sm-4">
-                                                                <label for="example-text-input" class="col-form-label">Release</label>
-                                                                <input type="text" name="releaseNum" class="form-control" value="<%=newSubData.releaseNum%>" placeholder="Type Release Here" id="example-text-input" autocomplete="off" required>
-                                                            </div>
-                                                        </div>
-                                                        <div class="row">
-                                                            <div class="col-sm-12">
-                                                                <label for="example-text-input" class="col-form-label">Job Name</label>
-                                                                <input type="text" name="jobName" class="form-control" value="<%=newSubData.jobName%>" placeholder="Type Name Here" id="example-text-input" autocomplete="off" required>
-                                                            </div>
-                                                        </div>
-                                                        <div class="row">
-                                                            <div class="col-sm-12">
-                                                                <label for="example-text-input" class="col-form-label">Customer</label>
-                                                                <input type="text" name="customer" class="form-control" value="<%=newSubData.customer%>" placeholder="Type Customer Here" id="example-text-input" autocomplete="off" required>
-                                                            </div>
-                                                        </div>
-                                                        <div class="row">
-                                                            <div class="col-sm-12">
-                                                                <label for="example-text-input" class="col-form-label">Layout Name</label>
-                                                                <input type="text" name="layoutName" class="form-control" value="<%=newSubData.layoutName%>" placeholder="Type Designation Here" id="example-text-input" autocomplete="off" required>
-                                                            </div>
-                                                        </div>
-                                                        <div class="row">
-                                                            <div class="col-sm-4">
-                                                                <label for="example-text-input" class="col-form-label">Drawn By</label>
-                                                                <input type="text" name="drawnBy" class="form-control" value="<%=newSubData.drawnBy%>" placeholder="Type Initials Here" id="example-text-input" autocomplete="off" required>
-                                                            </div>
-                                                            <div class="col-sm-8">
-                                                                <label for="example-text-input" class="col-form-label">Drawn Date</label>
-                                                                <input type="text" name="drawnDate" class="form-control" value="<%=newSubData.drawnDate%>" placeholder="Type Date Here" id="example-text-input" autocomplete="off" required>
-                                                            </div>
-                                                        </div>
-                                                        <div class="row">
-                                                            <div class="col-sm-4">
-                                                                <label for="example-text-input" class="col-form-label">Checked By</label>
-                                                                <input type="text" name="checkedBy" class="form-control" value="<%=newSubData.checkedBy%>" placeholder="Type Initials Here" id="example-text-input" autocomplete="off" required>
-                                                            </div>
-                                                            <div class="col-sm-8">
-                                                                <label for="example-text-input" class="col-form-label">Checked Date</label>
-                                                                <input type="text" name="checkedDate" class="form-control" value="<%=newSubData.checkedDate%>" placeholder="Type Date Here" id="example-text-input" autocomplete="off" required>
-                                                            </div>
-                                                        </div>
-                                                    </div>
+    <% if (newSubData) { %>
                                                     <div class="form-group">
                                                         <div class="row justify-content-center">
                                                             <div class="col-6"  style="margin-bottom: 2%;">
