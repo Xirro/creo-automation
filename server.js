@@ -37,7 +37,9 @@ app.use(bodyParser.json({
 app.use(cookieParser());
 
 //directs app to use/initialize the session
-app.use(session({ secret: 'saiapsportal',resave: true, saveUninitialized:true})); //session secret
+// session secret should come from environment in production. Provide a safe dev fallback.
+const sessionSecret = process.env.SESSION_SECRET || 'dev-local-session-secret-change-me';
+app.use(session({ secret: sessionSecret, resave: true, saveUninitialized: true }));
 
 //database dependencies
 let mysql = require('mysql');

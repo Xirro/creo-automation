@@ -49,7 +49,7 @@ let repoConfig = {
         'user': 'root',
         'port' : 3306,
         'database': 'sai_test',
-        'password': 'E5i5wks15',
+        // 'password': '<LOCAL_DEV_PASSWORD_REMOVED>', // moved to app/config/database.local.js or env
         'multipleStatements': true
     },*/
     //*******************************************************
