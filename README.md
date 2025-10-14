@@ -14,3 +14,7 @@ When running this script for the first time, open up and start a Creoson server.
 Lastly, to run the app, type the command "npm start" and you should see the following if successful: 
 ![image](https://github.com/Xirro/creo-automation/assets/103897770/53f4cc76-0861-49a8-94a7-6dedb9b6a7d9)
 
+---
+
+Recent fixes (2025-10-14): safer MBOM accessory deletes (require `brkAccID`), renaming of in-memory delete param to `arrIndex`, EJS template hardening to avoid runtime errors, SQL parameter binding fixes, and friendlier login error messaging with accessible alerts.
+

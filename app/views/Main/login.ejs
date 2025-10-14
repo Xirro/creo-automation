@@ -13,7 +13,7 @@
   <div class="container login-box">
     <h3>Creo Automation — Login</h3>
     <% if (error) { %>
-      <div class="alert alert-danger"><%= error %></div>
+      <div class="alert alert-danger" role="alert" aria-live="polite"><%= error %></div>
     <% } %>
     <form id="loginForm" method="post" action="/login">
       <div class="form-group">
@@ -41,6 +41,13 @@
           spinner.style.display = 'inline-block';
           label.textContent = 'Logging in...';
         });
+
+        // If the page was rendered with an error (previous login failed), make sure spinner is hidden and button enabled
+        if (document.querySelector('.alert.alert-danger')) {
+          btn.disabled = false;
+          spinner.style.display = 'none';
+          label.textContent = 'Login';
+        }
       })();
     </script>
     <p class="mt-3 text-muted small">Credentials are not stored in the repository. For server installs use the installer to save an encrypted password.</p>

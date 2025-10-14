@@ -42,7 +42,7 @@ const sessionSecret = process.env.SESSION_SECRET || 'dev-local-session-secret-ch
 app.use(session({ secret: sessionSecret, resave: true, saveUninitialized: true }));
 
 //database dependencies
-let mysql = require('mysql');
+let mysql = require('mysql2');
 let myConnection = require('express-myconnection');
 let dbConfig = require('./app/config/database.js');
 let database = dbConfig.connection.database;
@@ -160,26 +160,20 @@ app.post('/login', async function(req, res) {
             await new Promise((r) => setTimeout(r, 6000));
         }
         // First, verify the credentials by attempting a short test connection.
-        await new Promise((resolve, reject) => {
-            const testConn = mysql.createConnection({
+        // Use mysql2 to test connection using promise-based API
+        await (async () => {
+            const mysql2 = require('mysql2/promise');
+            const conn = await mysql2.createConnection({
                 host: connInfo.host,
                 port: connInfo.port,
                 user: connInfo.user,
                 password: connInfo.password,
                 database: connInfo.database,
-                connectTimeout: 7000
+                connectTimeout: 7000,
+                ssl: connInfo.ssl ? { rejectUnauthorized: false } : undefined
             });
-            testConn.connect(function(err) {
-                if (err) {
-                    try { testConn.end(); } catch (e) {}
-                    return reject(err);
-                }
-                testConn.end(function(endErr) {
-                    if (endErr) return reject(endErr);
-                    return resolve();
-                });
-            });
-        });
+            await conn.end();
+        })();
 
         // If test connection succeeded, initialize app DB helpers and middleware
         db.init(connInfo);
@@ -188,10 +182,23 @@ app.post('/login', async function(req, res) {
         req.session.dbConn = { host: connInfo.host, port: connInfo.port, database: connInfo.database, user: connInfo.user };
         res.redirect('/home');
     } catch (e) {
-        // On failure, log the error and use PRG to avoid form resubmission on refresh.
-        console.error('Login DB init/test failed:', e && e.message ? e.message : e);
+        // On failure, log the error server-side and set a friendly, non-sensitive message for the UI.
+        console.error('Login DB init/test failed:', e && e.stack ? e.stack : e);
+
+        // Map common error messages to clearer user-facing strings without leaking details
+        let friendlyMsg = 'Unable to login. Please check your username and password.';
+        const msg = (e && e.message) ? e.message.toLowerCase() : '';
+
+        if (msg.includes('access denied') || msg.includes('authentication')) {
+            friendlyMsg = 'Username or password are incorrect.';
+        } else if (msg.includes('getaddrinfo') || msg.includes('enotfound') || msg.includes('econnrefused') || msg.includes('connecttimeout')) {
+            friendlyMsg = 'Unable to reach the database host. Please check network and server settings.';
+        } else if (msg.includes('timedout') || msg.includes('connecttimeout')) {
+            friendlyMsg = 'Connection timed out while contacting the database. Try again or check network connectivity.';
+        }
+
         if (req.session) {
-            req.session.loginError = 'Username or password are incorrect.';
+            req.session.loginError = friendlyMsg;
         }
         return res.redirect('/login');
     }

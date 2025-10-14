@@ -81,3 +81,9 @@ Notes:
 - The Accessory Save button fix (item #1) is included exactly as you requested — the suggested code change and a minimal JS helper approach are listed. I left the exact function name flexible so it fits your preferred client helper (`editBrkAcc` vs `editBrkAccBtn`).
 - If you want, I can open a PR that implements item #1 only and run the smoke test (start server w/ CREOSON disabled and exercise the MBOM accessory Save flow). Reply "Please implement #1 and run smoke tests" and I'll proceed.
 
+--
+
+Implemented fixes (2025-10-14):
+- See `CHANGELOG.md` for a concise list of safety and login UX fixes applied on 2025-10-14 (delete-by-primary-key enforcement, `arrIndex` rename, EJS hardening, SQL binding fixes, login error improvements).
+
+

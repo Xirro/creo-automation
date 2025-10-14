@@ -21,23 +21,6 @@ const Promise = require('bluebird');
 
 //Excel Connection
 const Excel = require('exceljs');
-const fs = require('fs');
-const path = require('path');
-
-// Defensive helpers used by generateMBOM to avoid crashes on unexpected nulls
-function safeSubstr(s, start, len) {
-    try {
-        if (!s && s !== 0) return '';
-        s = s.toString();
-        return s.substring(start, start + len);
-    } catch (e) {
-        return '';
-    }
-}
-
-function ensureArrayIndex(arr, idx) {
-    return Array.isArray(arr) && arr.length > idx ? arr[idx] : null;
-}
 
 
 
@@ -625,13 +608,21 @@ exports.editBreakerAcc = function(req, res){
 
 //deleteBreakerAcc function
 exports.deleteBreakerAcc = function(req, res){
-    req.setTimeout(0);  //no timeout (this is needed to prevent error due to page taking a long time to load)
-    //Initialize variables
+    req.setTimeout(0);
+
+    // Accept either arrIndex (in-memory index) or brkAccID (primary key). At least one must be present.
+    if (!req.body || (typeof req.body.arrIndex === 'undefined' && typeof req.body.brkAccID === 'undefined')) {
+        console.warn('deleteBreakerAcc called without arrIndex or brkAccID; rejecting request');
+        res.status(400).send('arrIndex or brkAccID is required');
+        return;
+    }
+
     let mbomID = req.body.mbomID;
     let mbomData = {
         jobNum: req.body.jobNum,
         releaseNum: req.body.releaseNum
     };
+
     brkDataObj = {
         devDesignation: req.body.devDesignation,
         brkPN: req.body.brkPN,
@@ -640,19 +631,29 @@ exports.deleteBreakerAcc = function(req, res){
         catCode: req.body.catCode,
         class: req.body.classCode
     };
-    let pn = req.body.pn;
 
-    //arrayRemove function definition
-    function arrayRemove(arr, value) {
-        return arr.filter(function(el){
-            return el.pn != value;
+    // prefer explicit arrIndex when provided
+    if (typeof req.body.arrIndex !== 'undefined' && req.body.arrIndex !== null && req.body.arrIndex !== '') {
+        const idx = parseInt(req.body.arrIndex, 10);
+        if (!isNaN(idx) && isFinite(idx) && idx >= 0 && idx < brkAccArr.length) {
+            if (brkAccArr[idx] && String(brkAccArr[idx].mbomID) === String(mbomID)) {
+                brkAccArr.splice(idx, 1);
+            } else {
+                // mbomID mismatch: be conservative and do not delete; log and continue
+                console.warn('deleteBreakerAcc: arrIndex mbomID mismatch or item missing at index', idx);
+            }
+        } else {
+            console.warn('deleteBreakerAcc: arrIndex out of bounds or invalid:', req.body.arrIndex);
+        }
+    } else {
+        // fallback to removing by brkAccID (primary key style) from in-memory array
+        const brkAccID = req.body.brkAccID;
+        brkAccArr = brkAccArr.filter(function(el){
+            return String(el.brkAccID) !== String(brkAccID);
         });
     }
 
-    //execute arrayRemove function on brkAccArr
-    brkAccArr = arrayRemove(brkAccArr, pn);
-
-    //redirect to the searchMBOM page
+    // redirect back to searchMBOM
     res.redirect('searchMBOM/?bomID=' + mbomData.jobNum + mbomData.releaseNum + "_" + mbomID);
 };
 
@@ -708,7 +709,7 @@ exports.addBrkAccFromEdit = function(req, res) {
     querySql("INSERT INTO " + database + "." + dbConfig.MBOM_brkAcc_table + " SET ?", formData)
         .then(() => {
             //lookup mbomBrkSum row
-            return querySql("SELECT * FROM " + database + "." + dbConfig.MBOM_breaker_table + " WHERE idDev = ?", idDev)
+            return querySql("SELECT * FROM " + database + "." + dbConfig.MBOM_breaker_table + " WHERE idDev = ?", [idDev])
         })
         .then(rows => {
             //for each row
@@ -717,7 +718,7 @@ exports.addBrkAccFromEdit = function(req, res) {
                 breakerData.push(row);
             }
             //lookup mbomBrkAccSum using idDev
-            return querySql("SELECT * FROM " + database + "." + dbConfig.MBOM_brkAcc_table + " WHERE idDev = ?", idDev)
+            return querySql("SELECT * FROM " + database + "." + dbConfig.MBOM_brkAcc_table + " WHERE idDev = ?", [idDev])
         })
         .then(rows => {
             //for each accessory
@@ -788,7 +789,7 @@ exports.editBrkAccFromEdit = function(req, res) {
     querySql("UPDATE " + database + "." + dbConfig.MBOM_brkAcc_table + " SET brkAccQty = ?, brkAccType = ?, brkAccDesc = ?, brkAccPN = ? WHERE brkAccID = ? ", [updateAcc.qty, updateAcc.type, updateAcc.desc, updateAcc.pn, brkAccID])
         .then(() => {
             //lookup the mbomBrkSum table for the specific row
-            return querySql("SELECT * FROM " + database + "." + dbConfig.MBOM_breaker_table + " WHERE idDev = ?", idDev)
+            return querySql("SELECT * FROM " + database + "." + dbConfig.MBOM_breaker_table + " WHERE idDev = ?", [idDev])
         })
         .then(rows => {
             //for each breaker
@@ -797,7 +798,7 @@ exports.editBrkAccFromEdit = function(req, res) {
                 breakerData.push(row);
             }
             //lookup the mbomBrkAccSum table for corresponding accessories
-            return querySql("SELECT * FROM " + database + "." + dbConfig.MBOM_brkAcc_table + " WHERE idDev = ?", idDev)
+            return querySql("SELECT * FROM " + database + "." + dbConfig.MBOM_brkAcc_table + " WHERE idDev = ?", [idDev])
         })
         .then(rows => {
             //for each accessory
@@ -830,67 +831,82 @@ exports.editBrkAccFromEdit = function(req, res) {
 
 
 
-//deleteBrkAccFromEdit function
+//deleteBrkAccFromEdit function (strict: requires brkAccID)
 exports.deleteBrkAccFromEdit = function(req, res) {
-    req.setTimeout(0); //no timeout (this is needed to prevent error due to page taking a long time to load)
-    //Initialize variables
-    let idDev = req.body.idDev;
-    let pn = req.body.pn;
-    let breakerData = [];
-    let accData = [];
-    let mbomData = {
-        mbomID: req.body.mbomID,
-        jobNum: req.body.jobNum,
-        releaseNum: req.body.releaseNum,
-        jobName: req.body.jobName,
-        customer: req.body.customer,
-        boardDesignation: req.body.devLayout
-    };
-    //update editBrkDataObj (defined outside of the function) with user input
-    editBrkDataObj = {
-        devDesignation: req.body.devDesignation,
-        brkPN: req.body.brkPN,
-        cradlePN: req.body.cradlePN,
-        devMfg: req.body.devMfg,
-        catCode: req.body.catCode,
-        class: req.body.class
-    };
+    req.setTimeout(0);
 
-    //Initial db query - delete the mbomBrkAccSum row corresponding to the idDev and pn
-    querySql("DELETE FROM "+ database + "." + dbConfig.MBOM_brkAcc_table + " WHERE idDev = ? AND brkAccPN = ?", [idDev, pn])
-        .then(() => {
-            //lookup mbomBrkSum row with the specific idDev
-            return querySql("SELECT * FROM " + database + "." + dbConfig.MBOM_breaker_table + " WHERE idDev = ?", idDev)
-        })
+    // Validate input: brkAccID is required to avoid ambiguous deletions
+    if (!req.body || !req.body.brkAccID) {
+        console.warn('deleteBrkAccFromEdit called without brkAccID; rejecting request to prevent multi-row delete');
+        res.status(400).send({ success: false, error: 'brkAccID is required' });
+        return;
+    }
+
+    const brkAccID = req.body.brkAccID;
+
+    // First, look up the accessory row to determine its idDev (authoritative source)
+    querySql("SELECT idDev FROM " + database + "." + dbConfig.MBOM_brkAcc_table + " WHERE brkAccID = ?", [brkAccID])
         .then(rows => {
-            //for breaker row
-            for(let row of rows){
-                //push to breakerData
-                breakerData.push(row);
+            if (!rows || rows.length === 0) {
+                // accessory not found; nothing to delete
+                console.warn('deleteBrkAccFromEdit: brkAccID not found:', brkAccID);
+                res.status(404).send({ success: false, error: 'Accessory not found' });
+                return Promise.resolve(null);
             }
-            //lookup the mbomBrkAccSum table where the idDev matches
-            return querySql("SELECT * FROM " + database + "." + dbConfig.MBOM_brkAcc_table + " WHERE idDev = ?", idDev)
+
+            const idDevServer = rows[0].idDev;
+
+            // perform delete by primary key only
+            return querySql("DELETE FROM " + database + "." + dbConfig.MBOM_brkAcc_table + " WHERE brkAccID = ?", [brkAccID])
+                .then(() => idDevServer);
         })
-        .then(rows => {
-            //for each accessory
-            for(let row of rows){
-                //push to accData
-                accData.push(row);
-            }
-            return null
-        })
-        .then(() => {
-            //render the editBreaker page with mbomBrkData, brkAccData, mbomData, and brkData
-            res.locals = {title: 'Delete Breaker Accessory'};
-            res.render('MBOM/editBreaker', {
-                mbomBrkData: breakerData,
-                brkAccData: accData,
-                mbomData: mbomData,
-                brkData: editBrkDataObj
-            });
+        .then(idDevServer => {
+            // if earlier we already responded (accessory not found), short-circuit
+            if (!idDevServer) return null;
+
+            // after delete, fetch updated breaker row and accessory list for re-render using server-side idDev
+            let breakerData = [];
+            let accData = [];
+
+            return querySql("SELECT * FROM " + database + "." + dbConfig.MBOM_breaker_table + " WHERE idDev = ?", [idDevServer])
+                .then(rows => {
+                    for (let row of rows) breakerData.push(row);
+                    return querySql("SELECT * FROM " + database + "." + dbConfig.MBOM_brkAcc_table + " WHERE idDev = ?", [idDevServer]);
+                })
+                .then(rows => {
+                    for (let row of rows) accData.push(row);
+
+                    // build mbomData and editBrkDataObj for re-rendering (prefer client-provided values but fallback to breakerData[0])
+                    let mbomData = {
+                        mbomID: req.body.mbomID,
+                        jobNum: req.body.jobNum,
+                        releaseNum: req.body.releaseNum,
+                        jobName: req.body.jobName,
+                        customer: req.body.customer,
+                        boardDesignation: req.body.devLayout || (breakerData[0] && breakerData[0].devLayout)
+                    };
+
+                    // prefer the values the client submitted; if missing, use breaker row values
+                    editBrkDataObj = {
+                        devDesignation: req.body.devDesignation || (breakerData[0] && breakerData[0].devDesignation),
+                        brkPN: req.body.brkPN || (breakerData[0] && breakerData[0].brkPN),
+                        cradlePN: req.body.cradlePN || (breakerData[0] && breakerData[0].cradlePN),
+                        devMfg: req.body.devMfg || (breakerData[0] && breakerData[0].devMfg),
+                        catCode: req.body.catCode || (breakerData[0] && breakerData[0].catCode),
+                        class: req.body.class || (breakerData[0] && breakerData[0].class)
+                    };
+
+                    res.locals = { title: 'Delete Breaker Accessory' };
+                    res.render('MBOM/editBreaker', {
+                        mbomBrkData: breakerData,
+                        brkAccData: accData,
+                        mbomData: mbomData,
+                        brkData: editBrkDataObj
+                    });
+                });
         })
         .catch(err => {
-            //if error occurs at anytime at any point in the code above, log it to the console
+            console.error('Error in deleteBrkAccFromEdit:', err);
             return Promise.reject(err);
         });
 };
@@ -2290,43 +2306,28 @@ exports.mbomAddSection = function(req, res) {
     };
     let numSections, mbomID;
 
-    // Run add-section inside a DB transaction so insert + summary update are atomic
-    Promise.using(DB.getSqlConnection(), async function(connection) {
-        await connection.beginTransactionAsync();
-        try {
-            // lookup mbom summary row
-            const rows = await connection.queryAsync("SELECT * FROM " + database + " . " + dbConfig.MBOM_summary_table + " WHERE jobNum = ? AND releaseNum = ?", [data.jobNum, data.releaseNum]);
-            if(!rows || rows.length === 0){
-                await connection.rollbackAsync();
-                res.status(404).send('MBOM not found');
-                return;
-            }
-
+    //Initial db query - lookup mbomSum in the row referenced by jobNum and releaseNum
+    querySql("SELECT * FROM " + database + " . " + dbConfig.MBOM_summary_table + " WHERE jobNum = ? AND releaseNum = ?", [data.jobNum, data.releaseNum])
+        .then(rows => {
+            //write the numSections and mbomID
             numSections = rows[0].numSections + 1;
             mbomID = rows[0].mbomID;
 
-            // update summary and insert new section using the same connection
-            await connection.queryAsync("UPDATE " + database + "." + dbConfig.MBOM_summary_table + " SET numSections = ? WHERE jobNum = ? AND releaseNum = ?", [numSections, data.jobNum, data.releaseNum]);
-            await connection.queryAsync("INSERT INTO " + database + "." + dbConfig.MBOM_new_section_sum + " SET sectionNum = ?, mbomID = ?", [numSections, mbomID]);
-
-            await connection.commitAsync();
-        } catch (err) {
-            try { await connection.rollbackAsync(); } catch(e) { /* ignore rollback error */ }
-            console.log('there was an error during mbomAddSection transaction:', err);
-            if(!res.headersSent) res.status(500).send('Error adding section');
-            return;
-        }
-    })
-    .then(() => {
-        if (!res.headersSent) {
+            //update mbomSum with the new numSections in the row referenced by jobNum and releaseNum
+            querySql("UPDATE " + database + "." + dbConfig.MBOM_summary_table + " SET numSections = ? WHERE jobNum = ? AND releaseNum = ?", [numSections, data.jobNum, data.releaseNum]);
+            //insert new row into mbomNewSectionSum with numSections and mbomID
+            querySql("INSERT INTO " + database + "." + dbConfig.MBOM_new_section_sum + " SET sectionNum = ?, mbomID = ?", [numSections, mbomID]);
+            return null;
+        })
+        .then(() => {
+            //redirect to searchMBOM page
             res.locals = {title: 'Add Section'};
             res.redirect('searchMBOM/?bomID=' + data.jobNum + data.releaseNum + "_" + mbomID);
-        }
-    })
-    .catch(err => {
-        console.log('there was an error:' + err);
-        if(!res.headersSent) res.status(500).send('Error adding section');
-    });
+        })
+        .catch(err => {
+            //if error occurs at anytime at any point in the code above, log it to the console
+            console.log('there was an error:' + err);
+        });
 };
 
 
@@ -2384,101 +2385,84 @@ exports.mbomResetSection = function(req, res) {
 //mbomDeleteSection function
 exports.mbomDeleteSection = function(req, res) {
     req.setTimeout(0); //no timeout (this is needed to prevent error due to page taking a long time to load)
-    // log request for debugging duplicate-invocation issues
-    try {
-        const remoteIP = req.ip || req.connection && req.connection.remoteAddress || req.get && req.get('X-Forwarded-For') || 'unknown';
-        console.log(`[mbomDeleteSection] incoming request from ${remoteIP} at ${new Date().toISOString()} - bodyKeys=${Object.keys(req.body || {}).join(',')} queryKeys=${Object.keys(req.query || {}).join(',')}`);
-    } catch(e){ /* swallow logging errors */ }
     //Initialize variables
-    // prefer Express-parsed query, fall back to manual parse
     let urlObj = url.parse(req.originalUrl);
     urlObj.protocol = req.protocol;
     urlObj.host = req.get('host');
-    let qs = queryString.parse(urlObj.search || '');
-    // Prefer form-posted body value (we now set selectedSec as a hidden input),
-    // otherwise fall back to req.query then parsed URL
-    let selectedSec = (req.body && req.body.selectedSec) ? req.body.selectedSec : (req.query && req.query.selectedSec ? req.query.selectedSec : qs.selectedSec);
-    let numSections = (req.body && req.body.numSections) ? req.body.numSections : (req.query && req.query.numSections ? req.query.numSections : qs.numSections);
-    // normalize to integer for arithmetic
-    numSections = parseInt(numSections, 10) || 0;
-
-    // Normalize incoming body fields: some forms post arrays (multiple inputs with same name),
-    // other times they post single values. Accept either.
-    const normalize = v => Array.isArray(v) ? v[0] : v;
+    let qs = queryString.parse(urlObj.search);
+    let selectedSec = qs.selectedSec;
+    let numSections = qs.numSections;
     let data = {
-        mbomID: normalize(req.body.mbomID),
-        jobNum: normalize(req.body.jobNum),
-        releaseNum: normalize(req.body.releaseNum)
+        mbomID: req.body.mbomID[0],
+        jobNum: req.body.jobNum[0],
+        releaseNum: req.body.releaseNum[0]
     };
     let brkIDs = [];
     let itemIDs = [];
 
-    // Run the delete/clear/renumber sequence inside a DB transaction so the operation is atomic
-    Promise.using(DB.getSqlConnection(), async function(connection) {
-        // begin transaction
-        await connection.beginTransactionAsync();
-        try {
-            // lookup secID for the mbomID and sectionNum
-            const rows = await connection.queryAsync("SELECT secID FROM " + database + " . " + dbConfig.MBOM_new_section_sum + " WHERE mbomID = ? AND sectionNum = ?", [data.mbomID, selectedSec]);
-            if(!rows || rows.length === 0){
-                console.log('mbomDeleteSection: no section row found for', { mbomID: data.mbomID, selectedSec });
-                // nothing to commit - rollback and respond
-                await connection.rollbackAsync();
-                res.status(404).send('Section not found');
-                return;
+    //Initial db query - lookup mbomNewSectionSum row referenced by mbomID and sectionNum
+    querySql("SELECT * FROM " + database + " . " + dbConfig.MBOM_new_section_sum + " WHERE mbomID = ? AND sectionNum = ?", [data.mbomID, selectedSec])
+        .then(
+            async function(rows){
+                //lookup mbomBrkSum row referenced by secID
+                const brk = await querySql("SELECT * FROM " + dbConfig.MBOM_breaker_table + " WHERE secID = ?", rows[0].secID);
+                //lookup mbomItemSum row referenced by secID
+                const item = await querySql("SELECT * FROM " + dbConfig.MBOM_item_table + " WHERE secID = ?", rows[0].secID);
+                return {brk, item};
+            })
+        .then(({brk, item}) => {
+            //for each brk
+            for(let row of brk){
+                //push id to brkIDs
+                brkIDs.push(row.idDev);
+            }
+            //for each item
+            for(let row of item){
+                //push id to itemIDs
+                itemIDs.push(row.itemSumID);
             }
 
-            const secID = rows[0].secID;
+            //delete row from mbomNewSectionSum referenced by mbomID and sectionNum
+            querySql("DELETE FROM " + database + " . " + dbConfig.MBOM_new_section_sum + " WHERE mbomID = ? AND sectionNum = ?", [data.mbomID[0], selectedSec]);
 
-            // lookup breaker/item rows that reference this secID
-            const brk = await connection.queryAsync("SELECT * FROM " + dbConfig.MBOM_breaker_table + " WHERE secID = ?", [secID]);
-            const item = await connection.queryAsync("SELECT * FROM " + dbConfig.MBOM_item_table + " WHERE secID = ?", [secID]);
+            return null;
+        })
+        .then(
+            async function(){
+                //for each breaker id
+                for(let row of brkIDs){
+                    //update the mbomBrkSum secID in the row referenced by idDev
+                    await querySql("UPDATE " + database + "." + dbConfig.MBOM_breaker_table + " SET secID = ? WHERE idDev = ?", [null, row]);
+                }
+                for(let row of itemIDs){
+                    //update the mbomItemSum secID in the row referenced by itemSumID
+                    await querySql("UPDATE " + database + " . " + dbConfig.MBOM_item_table + " SET secID = ? WHERE itemSumID = ?", [null, row]);
+                }
 
-            for(let row of brk){ brkIDs.push(row.idDev); }
-            for(let row of item){ itemIDs.push(row.itemSumID); }
-
-            // delete the section row by secID
-            await connection.queryAsync("DELETE FROM " + database + " . " + dbConfig.MBOM_new_section_sum + " WHERE secID = ?", [secID]);
-
-            // clear secID references on breaker/item rows that referenced this secID
-            for(let id of brkIDs){
-                await connection.queryAsync("UPDATE " + database + "." + dbConfig.MBOM_breaker_table + " SET secID = ? WHERE idDev = ?", [null, id]);
+                return null;
             }
-            for(let id of itemIDs){
-                await connection.queryAsync("UPDATE " + database + "." + dbConfig.MBOM_item_table + " SET secID = ? WHERE itemSumID = ?", [null, id]);
+        )
+        .then(() => {
+            for(let i = parseInt(selectedSec) + 1; i <= numSections; i++){
+                //update the mbomNewSectionSum sectionNum in the row referenced by mbomID and sectionNum
+                querySql("UPDATE " + database + " . " + dbConfig.MBOM_new_section_sum + " SET sectionNum = ? WHERE mbomID = ? AND sectionNum = ?", [i - 1, data.mbomID[0], i]);
             }
-
-            // renumber subsequent sections
-            for(let i = parseInt(selectedSec, 10) + 1; i <= numSections; i++){
-                await connection.queryAsync("UPDATE " + database + " . " + dbConfig.MBOM_new_section_sum + " SET sectionNum = ? WHERE mbomID = ? AND sectionNum = ?", [i - 1, data.mbomID, i]);
-            }
-
-            // update mbom summary numSections
-            await connection.queryAsync("UPDATE " + database + "." + dbConfig.MBOM_summary_table + " SET numSections = ? WHERE mbomID = ?", [(numSections - 1), data.mbomID]);
-
-            // commit transaction
-            await connection.commitAsync();
-        } catch (err) {
-            // rollback on any error
-            try { await connection.rollbackAsync(); } catch(e) { /* ignore rollback errors */ }
-            console.log('there was an error during mbomDeleteSection transaction:', err);
-            // if response hasn't been sent yet, send 500
-            if (!res.headersSent) res.status(500).send('Error deleting section');
-            return;
-        }
-    })
-    .then(() => {
-        // redirect to searchMBOM after successful commit
-        if (!res.headersSent) {
+            return null;
+        })
+        .then(() => {
+            //update the mbomSum numSections in the row referenced by mbomID
+            querySql("UPDATE " + database + "." + dbConfig.MBOM_summary_table + " SET numSections = ? WHERE mbomID = ?", [(numSections - 1), data.mbomID]);
+            return null;
+        })
+        .then(() => {
+            //redirect to searchMBOM
             res.locals = {title: 'Delete Section'};
             res.redirect('../searchMBOM/?bomID=' + data.jobNum + data.releaseNum + "_" + data.mbomID);
-        }
-    })
-    .catch(err => {
-        // any unexpected errors
-        console.log('there was an error:' + err);
-        if (!res.headersSent) res.status(500).send('Error deleting section');
-    });
+        })
+        .catch(err => {
+            //if error occurs at anytime at any point in the code above, log it to the console
+            console.log('there was an error:' + err);
+        });
 };
 
 
@@ -2538,15 +2522,14 @@ exports.sectionConfigure = function(req, res) {
                             //if sections exist
                             if(rows.length != 0){
                                 //if the ID has an I (short for Item)
-                                const secIdStr = (secData.ID || '').toString();
-                                if(secIdStr.includes('I')) {
+                                if((secData.ID).includes('I')) {
                                     //write the number portion to tempID
-                                    let tempID = secIdStr.substring(1);
+                                    let tempID = (secData.ID).substring(1);
                                     //update the mbomItemSum secID column in the row referenced by itemSumID
                                     querySql("UPDATE " + database + " . " + dbConfig.MBOM_item_table + " SET secID = ? WHERE itemSumID = ?", [rows[0].secID, tempID]);
                                 } else {
                                     //write the number portion to tempID
-                                    let tempID = secIdStr.substring(1);
+                                    let tempID = (secData.ID).substring(1);
                                     //update the mbomBrkSum secID column in the row referenced by idDev
                                     querySql("UPDATE " + database + " . " + dbConfig.MBOM_breaker_table + " SET secID = ? WHERE idDev = ?", [rows[0].secID, tempID]);
                                 }
@@ -2589,30 +2572,6 @@ exports.generateMBOM = function (req, res) {
         jobNum: req.body.jobNum,
         releaseNum: req.body.releaseNum
     };
-
-    // Determine a writable uploads directory.
-    // Preference order:
-    // 1) If running in non-production and repository uploads exists, use project uploads (dev convenience)
-    // 2) Else use %LOCALAPPDATA%\CreoAutomation\uploads (per-user writable location)
-    // 3) Allow override with UPLOADS_DIR env var
-    const os = require('os');
-    const projectUploads = path.join(__dirname, '..', '..', 'uploads');
-    let uploadsDir;
-    if (process.env.UPLOADS_DIR) {
-        uploadsDir = process.env.UPLOADS_DIR;
-    } else if (process.env.NODE_ENV !== 'production' && fs.existsSync(projectUploads)) {
-        uploadsDir = projectUploads;
-    } else {
-        const localAppData = process.env.LOCALAPPDATA || path.join(os.homedir(), 'AppData', 'Local');
-        uploadsDir = path.join(localAppData, 'CreoAutomation', 'uploads');
-    }
-
-    try {
-        fs.mkdirSync(uploadsDir, { recursive: true });
-    } catch (e) {
-        // If directory creation fails, we'll handle the write error later and produce diagnostics
-        console.error('Could not ensure uploads directory exists:', e && e.stack ? e.stack : e);
-    }
     let partNumCount = 1;
     let mbomSumData = [];
     let mbomSecSumData = [];
@@ -2745,15 +2704,8 @@ exports.generateMBOM = function (req, res) {
             return null;
         })
         .then(() => {
-            // Validate mbom record exists
-                if (!ensureArrayIndex(mbomSumData, 0)) {
-                    console.error('generateMBOM: no MBOM record found for mbomID=', mbomData.mbomID);
-                    res.status(400).send('MBOM not found');
-                    return null;
-                }
-
-                //if this mbom has sections
-                if (mbomSumData[0].noSectionMBOM == 'N') {
+            //if this mbom has sections
+            if (mbomSumData[0].noSectionMBOM == 'N') {
 
                 //sort mbomSecSumData in ascending order by sectionNum
                 mbomSecSumData.sort(function (a, b) {
@@ -2893,10 +2845,10 @@ exports.generateMBOM = function (req, res) {
                             let itemPN = row.itemPN;
                             let qty = row.qty;
                             let itemDesc = row.itemDesc;
-                            let itemDesc1 = safeSubstr(itemDesc, 0, 40);
-                            let itemDesc2 = safeSubstr(itemDesc, 40, 40);
-                            let itemDesc3 = safeSubstr(itemDesc, 80, 40);
-                            let itemDesc4 = safeSubstr(itemDesc, 120, 40);
+                            let itemDesc1 = itemDesc.substring(0, 40);
+                            let itemDesc2 = itemDesc.substring(40, 80);
+                            let itemDesc3 = itemDesc.substring(80, 120);
+                            let itemDesc4 = itemDesc.substring(120, 160);
                             let unitOfIssue = row.unitOfIssue;
                             let catCode = row.catCode;
                             let classCode = row.class;
@@ -2993,8 +2945,8 @@ exports.generateMBOM = function (req, res) {
                             seqNum = '0' + count;
                         else
                             seqNum = count;
-                        let brkPN = (row.brkPN || '').toString();
-                        let crdPN = (row.cradlePN || '').toString();
+                        let brkPN = row.brkPN;
+                        let crdPN = row.cradlePN;
                         let devDes = row.devDesignation;
                         let qty = row.qty;
                         let unitOfIssue = row.unitOfIssue;
@@ -3145,11 +3097,11 @@ exports.generateMBOM = function (req, res) {
                         //for each element in totalBrkAccQty
                         for (let el of totalBrkAccQty) {
                             count++;
-                            let brkAccDesc = el.brkAccDesc || '';
-                            let brkAccDesc1 = safeSubstr(brkAccDesc, 0, 40);
-                            let brkAccDesc2 = safeSubstr(brkAccDesc, 40, 40);
-                            let brkAccDesc3 = safeSubstr(brkAccDesc, 80, 40);
-                            let brkAccDesc4 = safeSubstr(brkAccDesc, 120, 40);
+                            let brkAccDesc = el.brkAccDesc;
+                            let brkAccDesc1 = brkAccDesc.substring(0, 40);
+                            let brkAccDesc2 = brkAccDesc.substring(40, 80);
+                            let brkAccDesc3 = brkAccDesc.substring(80, 120);
+                            let brkAccDesc4 = brkAccDesc.substring(120, 160);
                             let brkAccPN = el.brkAccPN;
                             let brkAccMfgPartNum = null;
                             //jobscope part number restriction
@@ -3298,11 +3250,11 @@ exports.generateMBOM = function (req, res) {
 
                     let itemPN = (row.itemPN).toString();
                     let qty = row.qty;
-                    let itemDesc = row.itemDesc || '';
-                    let itemDesc1 = safeSubstr(itemDesc, 0, 40);
-                    let itemDesc2 = safeSubstr(itemDesc, 40, 40);
-                    let itemDesc3 = safeSubstr(itemDesc, 80, 40);
-                    let itemDesc4 = safeSubstr(itemDesc, 120, 40);
+                    let itemDesc = row.itemDesc;
+                    let itemDesc1 = itemDesc.substring(0, 40);
+                    let itemDesc2 = itemDesc.substring(40, 80);
+                    let itemDesc3 = itemDesc.substring(80, 120);
+                    let itemDesc4 = itemDesc.substring(120, 160);
                     let unitOfIssue = row.unitOfIssue;
                     let catCode = row.catCode;
                     let classCode = row.class;
@@ -3435,13 +3387,10 @@ exports.generateMBOM = function (req, res) {
 
                 //write workbook to a file located "temporarily" in the uploads folder of the app.
                 //Afterwards send that file to the client's downloads folder via the built-in res.download node.js function
-                // IMPORTANT: return the writeFile promise so any errors propagate to the outer catch
-                const workbookPath = path.join(uploadsDir, mbomData.jobNum + mbomData.releaseNum + ' MBOM.xlsx');
-                return workbook.xlsx.writeFile(workbookPath).then(function () {
-                    res.download(workbookPath);
-                }).catch(err => {
-                    // rethrow so outer .catch handles diagnostic writing
-                    throw err;
+                workbook.xlsx.writeFile('uploads/' + mbomData.jobNum + mbomData.releaseNum + ' MBOM.xlsx').then(function () {
+                    const remoteFilePath = 'uploads/';
+                    const remoteFilename = mbomData.jobNum + mbomData.releaseNum + ' MBOM.xlsx';
+                    res.download(remoteFilePath + remoteFilename);
                 });
 
                 return null;
@@ -3558,11 +3507,11 @@ exports.generateMBOM = function (req, res) {
 
                     let itemPN = row.itemPN;
                     let qty = row.qty;
-                    let itemDesc = row.itemDesc || '';
-                    let itemDesc1 = safeSubstr(itemDesc, 0, 40);
-                    let itemDesc2 = safeSubstr(itemDesc, 40, 40);
-                    let itemDesc3 = safeSubstr(itemDesc, 80, 40);
-                    let itemDesc4 = safeSubstr(itemDesc, 120, 40);
+                    let itemDesc = row.itemDesc;
+                    let itemDesc1 = itemDesc.substring(0, 40);
+                    let itemDesc2 = itemDesc.substring(40, 80);
+                    let itemDesc3 = itemDesc.substring(80, 120);
+                    let itemDesc4 = itemDesc.substring(120, 160);
                     let unitOfIssue = row.unitOfIssue;
                     let catCode = row.catCode;
                     let classCode = row.class;
@@ -3655,8 +3604,8 @@ exports.generateMBOM = function (req, res) {
                     else
                         seqNum = count;
 
-                        let brkPN = (row.brkPN || '').toString();
-                        let crdPN = (row.cradlePN || '').toString();
+                    let brkPN = row.brkPN;
+                    let crdPN = row.cradlePN;
                     let devDes = row.devDesignation;
                     let qty = row.qty;
                     let unitOfIssue = row.unitOfIssue;
@@ -3808,11 +3757,11 @@ exports.generateMBOM = function (req, res) {
                     //for each element in totalBrkAccQty
                     for (let el of totalBrkAccQty) {
                         count++;
-                        let brkAccDesc = el.brkAccDesc || '';
-                        let brkAccDesc1 = safeSubstr(brkAccDesc, 0, 40);
-                        let brkAccDesc2 = safeSubstr(brkAccDesc, 40, 40);
-                        let brkAccDesc3 = safeSubstr(brkAccDesc, 80, 40);
-                        let brkAccDesc4 = safeSubstr(brkAccDesc, 120, 40);
+                        let brkAccDesc = el.brkAccDesc;
+                        let brkAccDesc1 = brkAccDesc.substring(0, 40);
+                        let brkAccDesc2 = brkAccDesc.substring(40, 80);
+                        let brkAccDesc3 = brkAccDesc.substring(80, 120);
+                        let brkAccDesc4 = brkAccDesc.substring(120, 160);
                         let brkAccPN = el.brkAccPN;
                         let brkAccMfgPartNum = null;
                         //jobscope part number restriction
@@ -3860,20 +3809,17 @@ exports.generateMBOM = function (req, res) {
 
                 //write workbook to a file located "temporarily" in the uploads folder of the app.
                 //Afterwards send that file to the client's downloads folder via the built-in res.download node.js function
-                // IMPORTANT: return the writeFile promise so any errors propagate to the outer catch
-                const workbookPath = path.join(uploadsDir, mbomData.jobNum + mbomData.releaseNum + ' MBOM.xlsx');
-                return workbook.xlsx.writeFile(workbookPath).then(function () {
-                    res.download(workbookPath);
-                }).catch(err => {
-                    // rethrow so outer .catch handles diagnostic writing
-                    throw err;
+                workbook.xlsx.writeFile('uploads/' + mbomData.jobNum + mbomData.releaseNum + ' MBOM.xlsx').then(function () {
+                    const remoteFilePath = 'uploads/';
+                    const remoteFilename = mbomData.jobNum + mbomData.releaseNum + ' MBOM.xlsx';
+                    res.download(remoteFilePath + remoteFilename);
                 });
+
+                return null;
             }
         })
         .catch(err => {
-            console.error('generateMBOM encountered an error:', err && err.stack ? err.stack : err);
-            if (!res.headersSent) {
-                res.status(500).send('Error generating MBOM. See server logs for details.');
-            }
+            //if error occurs at anytime at any point in the code above, log it to the console
+            console.log('there was an error:' + err);
         });
 };

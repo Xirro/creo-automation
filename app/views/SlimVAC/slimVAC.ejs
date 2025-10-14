@@ -45,9 +45,199 @@
 
 <div id="wrapper">
 
-    <%- include('../partials/header') %>
+    <!-- Top Bar Start -->
+    <div class="topbar">
 
-    <%- include('../partials/sidebar') %>
+        <!-- LOGO -->
+        <div class="topbar-left" style="background-color: white;">
+            <a href="" class="logo">
+                        <span>
+                            <img src="/public/assets/images/SAI-Logo.JPG" alt="" height="67">
+                        </span>
+                <i>
+                    <img src="/public/assets/images/SAI-Logo.JPG" alt="" height="22">
+                </i>
+            </a>
+        </div>
+
+        <nav class="navbar-custom">
+            <ul class="navbar-right d-flex list-inline float-right mb-0">
+                <li class="dropdown notification-list d-none d-sm-block">
+                    <form role="search" class="app-search">
+                        <div class="form-group mb-0">
+                            <input type="text" class="form-control" placeholder="Search..">
+                            <button type="submit"><i class="fa fa-search"></i></button>
+                        </div>
+                    </form>
+                </li>
+            </ul>
+
+            <ul class="list-inline menu-left mb-0">
+                <li class="float-left">
+                    <button class="button-menu-mobile open-left waves-effect">
+                        <i class="mdi mdi-menu"></i>
+                    </button>
+                </li>
+            </ul>
+
+        </nav>
+
+    </div>
+    <!-- Top Bar End -->
+
+
+    <!-- ========== Left Sidebar Start ========== -->
+    <div class="left side-menu">
+        <div class="slimscroll-menu" id="remove-scroll">
+
+            <!--- Sidemenu -->
+            <div id="sidebar-menu">
+                <!-- Left Menu Start -->
+                <ul class="metismenu" id="side-menu">
+                    <li class="menu-title">CREO Automation</li>
+                    <li>
+                        <a href="../MBOM" class="waves-effect">
+                            <i class="mdi mdi-content-duplicate"></i> <span> MBOM </span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="../PDF-DXF-BIN_BOM" class="waves-effect">
+                            <i class="mdi mdi-content-duplicate"></i> <span> PDF / DXF / BIN BOM </span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="../submittal" class="waves-effect">
+                            <i class="mdi mdi-file-pdf"></i> <span> Submittal </span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="../slimVAC_NAR" class="waves-effect">
+                            <i class="mdi mdi-content-duplicate"></i> <span> SlimVAC NAR </span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="../partComparison" class="waves-effect">
+                            <i class="mdi mdi-content-duplicate"></i> <span> Part Comparison </span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="../renameMain" class="waves-effect">
+                            <i class="mdi mdi-content-duplicate"></i> <span> Rename </span>
+                        </a>
+                    </li>
+                </ul>
+
+            </div>
+            <!-- Sidebar -->
+            <div class="clearfix"></div>
+
+        </div>
+        <!-- Sidebar -left -->
+
+    </div>
+    <!-- Left Sidebar End -->
+
+    <div class="content-page">
+        <!-- Content Start -->
+
+        <div class="content">
+            <div class="container-fluid">
+                <div class="row">
+                    <div class="col-sm-12">
+                        <div class="page-title-box">
+                            <h4 class="page-title">Mechanical Engineering</h4>
+                            <div class="row justify-content-center">
+                                <div class="col-sm-5">
+                                    <div class="card m-b-20" style="height:94%;">
+                                        <div class="card-body">
+                                            <h4 class="mt-0 header-title">Create Layout</h4>
+                                            <h6 style="color:red;"><%= message %></h6>
+
+                                            <% if  (newLayoutData != null) { %>
+                                            <form id="newLayoutForm" class="newLayoutForm" action="" method="POST">
+                                                <div class="form-group">
+                                                    <div class="row">
+                                                        <div class="col-sm-8">
+                                                            <label for="example-text-input" class="col-form-label">Job #</label>
+                                                            <input type="text" name="jobNum" class="form-control" value="<%=newLayoutData.jobNum%>" placeholder="Type Number Here" id="example-text-input" autocomplete="off" required>
+                                                        </div>
+                                                        <div class="col-sm-4">
+                                                            <label for="example-text-input" class="col-form-label">Release</label>
+                                                            <input type="text" name="releaseNum" class="form-control" value="<%=newLayoutData.releaseNum%>" placeholder="Type Release Here" id="example-text-input" autocomplete="off" required>
+                                                        </div>
+                                                    </div>
+                                                    <div class="row">
+                                                        <div class="col-sm-12">
+                                                            <label for="example-text-input" class="col-form-label">Job Name</label>
+                                                            <input type="text" name="jobName" class="form-control" value="<%=newLayoutData.jobName%>" placeholder="Type Name Here" id="example-text-input" autocomplete="off" required>
+                                                        </div>
+                                                    </div>
+                                                    <div class="row">
+                                                        <div class="col-sm-12">
+                                                            <label for="example-text-input" class="col-form-label">Customer</label>
+                                                            <input type="text" name="customer" class="form-control" value="<%=newLayoutData.customer%>" placeholder="Type Customer Here" id="example-text-input" autocomplete="off" required>
+                                                        </div>
+                                                    </div>
+                                                    <div class="row">
+                                                        <div class="col-sm-12">
+                                                            <label for="example-text-input" class="col-form-label">Layout Name</label>
+                                                            <input type="text" name="layoutName" class="form-control" value="<%=newLayoutData.layoutName%>" placeholder="Type Designation Here" id="example-text-input" autocomplete="off" required>
+                                                        </div>
+                                                    </div>
+                                                    <div class="row">
+                                                        <div class="col-sm-4">
+                                                            <label for="example-text-input" class="col-form-label">Drawn By</label>
+                                                            <input type="text" name="drawnBy" class="form-control" value="<%=newLayoutData.drawnBy%>" placeholder="Type Initials Here" id="example-text-input" autocomplete="off" required>
+                                                        </div>
+                                                        <div class="col-sm-8">
+                                                            <label for="example-text-input" class="col-form-label">Drawn Date</label>
+                                                            <input type="text" name="drawnDate" class="form-control" value="<%=newLayoutData.drawnDate%>" placeholder="Type Date Here" id="example-text-input" autocomplete="off" required>
+                                                        </div>
+                                                    </div>
+                                                    <div class="row">
+                                                        <div class="col-sm-4">
+                                                            <label for="example-text-input" class="col-form-label">Checked By</label>
+                                                            <input type="text" name="checkedBy" class="form-control" value="<%=newLayoutData.checkedBy%>" placeholder="Type Initials Here" id="example-text-input" autocomplete="off" required>
+                                                        </div>
+                                                        <div class="col-sm-8">
+                                                            <label for="example-text-input" class="col-form-label">Checked Date</label>
+                                                            <input type="text" name="checkedDate" class="form-control" value="<%=newLayoutData.checkedDate%>" placeholder="Type Date Here" id="example-text-input" autocomplete="off" required>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="form-group">
+                                                    <div class="row justify-content-center">
+                                                        <div class="col-6"  style="margin-bottom: 2%;">
+                                                            <input id="createBtn" type="submit" value="Create New" class="btn-block btn-lg btn-outline-success waves-effect waves-light" onclick="this.form.action='/createLayout'" />
+                                                        </div>
+                                                        <div class="col-6">
+                                                            <input id="copyBtn" type="button" value="Copy From Existing" class="btn-block btn-lg btn-outline-secondary waves-effect waves-light" data-toggle="modal" data-target="#copyLayoutModal"/>
+                                                            <!-- Modal -->
+                                                            <div class="modal fade" id="copyLayoutModal" tabindex="-1" role="dialog" aria-labelledby="copyLayoutModalTitle" aria-hidden="true">
+                                                                <div class="modal-dialog modal-dialog-centered" role="document">
+                                                                    <div class="modal-content">
+                                                                        <div class="modal-header">
+                                                                            <h5 class="modal-title" id="exampleModalLongTitle">Layout Search</h5>
+                                                                            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                                                                <span aria-hidden="true">&times;</span>
+                                                                            </button>
+                                                                        </div>
+                                                                        <div class="modal-body">
+                                                                            <form id="copyLayoutForm" class="copyLayoutForm" action="" method="POST">
+                                                                                <div class="form-group">
+                                                                                    <p class="mb-0" style="font-size: medium">
+                                                                                        Please fill out the following and click "Copy" afterwards
+                                                                                    </p>
+                                                                                    <p class="text-muted m-b-5"></p>
+                                                                                    <div class="row">
+                                                                                        <div class="col-sm-12">
+                                                                                            <label for="example-text-input" class="col-form-label" style="font-size: small">Job Number</label>
+                                                                                            <input type="text" name="copyJobNum" class="form-control" value="" placeholder="Type Number Here" id="example-text-input" autocomplete="off">
+                                                                                        </div>
+                                                                                    </div>
+                                                                                    <p class="text-muted m-b-10"></p>
+                                                                                    <div class="row">
+                                                                                        <div class="col-sm-12">
                                                                                             <label for="example-text-input" class="col-form-label" style="font-size: small">Release</label>
                                                                                             <input type="text" name="copyReleaseNum" class="form-control" value="" placeholder="Type Release Here" id="example-text-input" autocomplete="off">
                                                                                         </div>
@@ -57,7 +247,7 @@
                                                                         </div>
                                                                         <div class="modal-footer justify-content-center">
                                                                             <div class="w-50">
-                                                                                <button id="copyModalBtn" type="submit" class="btn-block btn-lg btn-info" formaction="/copyLayout">Copy</button>
+                                                                                <input id="copyModalBtn" type="submit" value="Copy" class="btn-block btn-lg btn-info" onclick="this.form.action='/copyLayout'" />
                                                                             </div>
                                                                         </div>
                                                                     </div>
@@ -129,7 +319,7 @@
                                                     <div class="form-group">
                                                         <div class="row justify-content-center">
                                                             <div class="col-6"  style="margin-bottom: 2%;">
-                                                                <button id="createBtn" type="submit" class="btn-block btn btn-outline-success waves-effect waves-light" formaction="/createLayout">Create New</button>
+                                                                <input id="createBtn" type="submit" value="Create New" class="btn-block btn btn-outline-success waves-effect waves-light" onclick="this.form.action='/createLayout'" />
                                                             </div>
                                                             <div class="col-6">
                                                                 <input id="copyBtn" type="button" value="Copy From Existing" class="btn-block btn btn-outline-secondary waves-effect waves-light" data-toggle="modal" data-target="#copyMBOMModal"/>
@@ -168,7 +358,7 @@
                                                                             </div>
                                                                             <div class="modal-footer justify-content-center">
                                                                                 <div class="w-50">
-                                                                                    <button id="copyModalBtn" type="submit" class="btn-block btn-lg btn-info" formaction="/copyLayout">Copy</button>
+                                                                                    <input id="copyModalBtn" type="submit" value="Copy" class="btn-block btn-lg btn-info" onclick="this.form.action='/copyLayout'" />
                                                                                 </div>
                                                                             </div>
                                                                         </div>

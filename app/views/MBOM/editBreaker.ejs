@@ -29,9 +29,17 @@
 
 <body>
 <div id="wrapper">
+    <!-- Top Bar Start -->
     <%- include('../partials/header') %>
-    <%- include('../partials/sidebar') %>
+    <!-- Top Bar End -->
 
+    <!-- ========== Left Sidebar Start ========== -->
+    <%- include('../partials/sidebar') %>
+    <!-- Left Sidebar End -->
+
+    <% // defensive: ensure mbomBrkData[0] exists to avoid runtime errors when controller returned no rows %>
+    <% if (typeof mbomBrkData === 'undefined' || !mbomBrkData) { mbomBrkData = []; } %>
+    <% if (!mbomBrkData[0]) { mbomBrkData[0] = {}; } %>
 
     <div class="content-page">
         <!-- Content Start -->
@@ -125,7 +133,7 @@
                                                     <% } %>
                                                         <div class="form-group">
                                                             <% if(mbomBrkData) { %>
-                                                                <input type="text" name="idDev" class="form-control" value="<%= mbomBrkData[0].idDev %>" hidden="hidden" >
+                                                                <input type="text" name="idDev" class="form-control" value="<%= mbomBrkData[0].idDev || '' %>" hidden="hidden" >
                                                             <% } %>
                                                         </div>
 
@@ -146,7 +154,7 @@
                                                             <div class="form-group">
                                                                 <label for="example-text-input" class="col-form-label">Device Designation</label>
                                                                 <% if (!brkData) { %>
-                                                                    <input type="text" id="editDevDesLimit" name="devDesignation" maxlength="160" class="form-control" value="<%= mbomBrkData[0].devDesignation %>" autocomplete="off"/>
+                                                                    <input type="text" id="editDevDesLimit" name="devDesignation" maxlength="160" class="form-control" value="<%= mbomBrkData[0].devDesignation || '' %>" autocomplete="off"/>
                                                             <% } else { %>
                                                                     <input type="text" id="editDevDesLimit" name="devDesignation" maxlength="160" class="form-control" value="<%= brkData.devDesignation %>" autocomplete="off"/>
 
@@ -159,7 +167,7 @@
                                                         <div class="form-group">
                                                             <label for="example-text-input" class="col-form-label">Breaker P/N</label>
                                                             <% if (!brkData) { %>
-                                                                <input type="text" id="editBrkPN"  name="brkPN" class="form-control" value="<%= mbomBrkData[0].brkPN %>" autocomplete="off"/>
+                                                                <input type="text" id="editBrkPN"  name="brkPN" class="form-control" value="<%= mbomBrkData[0].brkPN || '' %>" autocomplete="off"/>
                                                             <% } else { %>
                                                                 <input type="text" id="editBrkPN"  name="brkPN" class="form-control" value="<%= brkData.brkPN %>" autocomplete="off"/>
                                                             <% } %>
@@ -169,7 +177,7 @@
                                                         <div class="form-group">
                                                             <label for="example-text-input" class="col-form-label">Cradle P/N</label>
                                                             <% if (!brkData) { %>
-                                                                <input type="text" id="editCradlePN"  name="cradlePN" class="form-control" value="<%= mbomBrkData[0].cradlePN %>" autocomplete="off"/>
+                                                                <input type="text" id="editCradlePN"  name="cradlePN" class="form-control" value="<%= mbomBrkData[0].cradlePN || '' %>" autocomplete="off"/>
                                                             <% } else { %>
                                                                 <input type="text" id="editCradlePN"  name="cradlePN" class="form-control" value="<%= brkData.cradlePN %>" autocomplete="off"/>
                                                             <% } %>
@@ -179,7 +187,7 @@
                                                         <div class="form-group">
                                                             <label for="example-text-input" class="col-form-label">Manufacturer</label>
                                                             <% if (!brkData) { %>
-                                                                <input type="text" id="editDevMfg"  name="devMfg" class="form-control" value="<%= mbomBrkData[0].devMfg %>" placeholder="Type Mfg. Here" autocomplete="off"/>
+                                                                <input type="text" id="editDevMfg"  name="devMfg" class="form-control" value="<%= mbomBrkData[0].devMfg || '' %>" placeholder="Type Mfg. Here" autocomplete="off"/>
                                                             <% } else { %>
                                                                 <input type="text" id="editDevMfg"  name="devMfg" class="form-control" value="<%= brkData.devMfg %>" placeholder="Type Mfg. Here" autocomplete="off"/>
                                                             <% } %>
@@ -191,12 +199,12 @@
                                                             <select class="form-control" id="editDevCatCode" name="catCode">
                                                                 <option value="Select">Select</option>
                                                                 <option value="00-CB" selected>00-CB</option>
-                                                                <% if (mbomBrkData[0].catCode == '36-CB MC') { %>
+                                                                <% if ((mbomBrkData[0].catCode || '') == '36-CB MC') { %>
                                                                     <option value="36-CB MC" selected="selected">36-CB MC</option>
                                                                 <% } else { %>
                                                                     <option value="36-CB MC">36-CB MC</option>
                                                                 <% } %>
-                                                                <% if (mbomBrkData[0].catCode == '37-CB IC') { %>
+                                                                <% if ((mbomBrkData[0].catCode || '') == '37-CB IC') { %>
                                                                     <option value="37-CB IC" selected="selected">37-CB IC</option>
                                                                 <% } else { %>
                                                                     <option value="37-CB IC">37-CB IC</option>
@@ -208,11 +216,11 @@
                                                         <div class="form-group">
                                                             <label for="example-text-input" class="col-form-label">Class</label>
                                                             <select class="form-control" id="editDevClass" name="class">
-                                                                <% if (mbomBrkData[0].class == 'MCCB') { %>
+                                                                <% if ((mbomBrkData[0].class || '') == 'MCCB') { %>
                                                                     <option value="Select">Select</option>
                                                                     <option value="MCCB" selected>MCCB</option>
                                                                     <option value="ICCB">ICCB</option>
-                                                                <% } else if (mbomBrkData[0].class == 'ICCB') { %>
+                                                                <% } else if ((mbomBrkData[0].class || '') == 'ICCB') { %>
                                                                     <option value="Select">Select</option>
                                                                     <option value="MCCB">MCCB</option>
                                                                     <option value="ICCB" selected>ICCB</option>
@@ -279,7 +287,7 @@
                                                                 <input type="text" id="accessoryPN" name="accessoryPN" class="form-control" value="" placeholder="Type P/N Here" autocomplete="off" required/>
                                                             </div>
                                                             <div class="col-sm-2" style="margin-top: 2.2rem;">
-                                                                <button id="addAccessoryBtn" type="submit" class="btn btn-md btn-outline-info waves-effect waves-light add-accessory-btn" data-dev="<%= mbomBrkData[0].idDev %>">Add Accessory</button>
+                                                                <button id="addAccessoryBtn" type="submit" class="btn btn-md btn-outline-info waves-effect waves-light add-accessory-btn" data-dev="<%= mbomBrkData[0].idDev || '' %>">Add Accessory</button>
                                                             </div>
                                                         </div>
                                                     </div>
@@ -292,7 +300,7 @@
                                                                 </p>
                                                                 <p>
                                                                     <input id="editButton" type="submit" value="Edit" class="btn btn-md btn-outline-warning waves-effect waves-light edit-acc-btn" data-toggle="modal" data-target="#editAccModal_<%=brkAccData[i].brkAccID%>" data-acc-id="<%=brkAccData[i].brkAccID%>"/>
-                                                                    <button id="delAcc_<%=brkAccData[i].brkAccID%>" type="button" class="btn btn-md btn-outline-danger waves-effect waves-light delete-acc-btn" data-acc-pn="<%=brkAccData[i].brkAccPN%>" data-dev="<%=brkAccData[i].idDev%>">Delete</button>
+                                                                    <button id="delAcc_<%=brkAccData[i].brkAccID%>" type="button" class="btn btn-md btn-outline-danger waves-effect waves-light delete-acc-btn" data-acc-id="<%=brkAccData[i].brkAccID%>" data-acc-pn="<%=brkAccData[i].brkAccPN%>" data-dev="<%=brkAccData[i].idDev%>">Delete</button>
                                                                 </p>
                                                             </li>
                                                             <!-- EDIT BRK ACC MODAL -->
@@ -371,10 +379,7 @@
             </div> <!-- container-fluid -->
         </div> <!-- content -->
     </div> <!-- content-page -->
-    <!-- footer -->
-    <footer class="footer">
-        © 2021 SAI, Advanced Power Solutions Inc.
-    </footer>
+    <%- include('../partials/footer') %>
 </div> <!-- wrapper -->
 
 

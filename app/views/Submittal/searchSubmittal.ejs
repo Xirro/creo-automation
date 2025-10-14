@@ -111,9 +111,96 @@
 
 <body>
 <div id="wrapper">
-    <%- include('../partials/header') %>
+    <!-- Top Bar Start -->
+    <div class="topbar">
 
-    <%- include('../partials/sidebar') %>
+        <!-- LOGO -->
+        <div class="topbar-left" style="background-color: white;">
+            <a href="" class="logo">
+                        <span>
+                            <img src="/public/assets/images/SAI-Logo.JPG" alt="" height="67">
+                        </span>
+                <i>
+                    <img src="/public/assets/images/SAI-Logo.JPG" alt="" height="22">
+                </i>
+            </a>
+        </div>
+
+        <nav class="navbar-custom">
+            <ul class="navbar-right d-flex list-inline float-right mb-0">
+                <li class="dropdown notification-list d-none d-sm-block">
+                    <form role="search" class="app-search">
+                        <div class="form-group mb-0">
+                            <input type="text" class="form-control" placeholder="Search..">
+                            <button type="submit"><i class="fa fa-search"></i></button>
+                        </div>
+                    </form>
+                </li>
+            </ul>
+
+            <ul class="list-inline menu-left mb-0">
+                <li class="float-left">
+                    <button class="button-menu-mobile open-left waves-effect">
+                        <i class="mdi mdi-menu"></i>
+                    </button>
+                </li>
+            </ul>
+
+        </nav>
+
+    </div>
+    <!-- Top Bar End -->
+
+    <!-- ========== Left Sidebar Start ========== -->
+    <div class="left side-menu">
+        <div class="slimscroll-menu" id="remove-scroll">
+
+            <!--- Sidemenu -->
+            <div id="sidebar-menu">
+                <!-- Left Menu Start -->
+                <ul class="metismenu" id="side-menu">
+                    <li class="menu-title">CREO Automation</li>
+                    <li>
+                        <a href="../MBOM" class="waves-effect">
+                            <i class="mdi mdi-content-duplicate"></i> <span> MBOM </span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="../PDF-DXF-BIN_BOM" class="waves-effect">
+                            <i class="mdi mdi-content-duplicate"></i> <span> PDF / DXF / BIN BOM </span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="../submittal" class="waves-effect">
+                            <i class="mdi mdi-file-pdf"></i> <span> Submittal </span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="../slimVAC_NAR" class="waves-effect">
+                            <i class="mdi mdi-content-duplicate"></i> <span> SlimVAC NAR </span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="../partComparison" class="waves-effect">
+                            <i class="mdi mdi-content-duplicate"></i> <span> Part Comparison </span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="../renameMain" class="waves-effect">
+                            <i class="mdi mdi-content-duplicate"></i> <span> Rename </span>
+                        </a>
+                    </li>
+                </ul>
+
+            </div>
+            <!-- Sidebar -->
+            <div class="clearfix"></div>
+
+        </div>
+        <!-- Sidebar -left -->
+
+    </div>
+    <!-- Left Sidebar End -->
 
     <div class="content-page">
         <!-- Content Start -->
@@ -283,7 +370,7 @@
                                                         </div>
                                                     </div>
                                                     <div class="col-3">
-                                                        <button id="revBtn" type="submit" class="btn-block btn btn-outline-secondary waves-effect waves-light" formaction="/createSubmittalRev">Create Rev</button>
+                                                        <input id="revBtn" type="submit" value="Create Rev" class="btn-block btn btn-outline-secondary waves-effect waves-light" onclick="this.form.action='/createSubmittalRev'" />
                                                     </div>
                                                 </div>
                                                 <!-- END EDIT CURRENT SUBMITTAL -->
@@ -365,14 +452,14 @@
                                                 <input type="text" name="restriction_<%x%>" class="restriction" value="<%=restriction.type%>_<%=restriction.value%>" hidden="hidden">
                                                 <% let y = 0; %>
                                                 <% for (let restrictionType of Object.keys(restriction.restrictions)) { %>
-                                                <input type="text" name="restrictionType_<%= x %>_<%= y %>" class="restrictionType_<%=restriction.type%>_<%=restriction.value%>" value="<%=restrictionType%>"  hidden="hidden">
+                                                <input type="text" name="restrictionType_<%x%>_<%y%>" class="restrictionType_<%=restriction.type%>_<%=restriction.value%>" value="<%=restrictionType%>"  hidden="hidden">
                                                 <% let z = 0; %>
                                                 <% if (restriction.restrictions[restrictionType].length != 0) { %>
                                                     <% for (let restrictionVal of restriction.restrictions[restrictionType]) { %>
-                                                    <input type="text" name="restrictionVal_<%= x %>_<%= y %>_<%= z %>" class="restrictionVal_<%=restriction.type%>_<%=restriction.value%>_<%=restrictionType%>"  value="<%=restrictionVal%>"  hidden="hidden">
+                                                    <input type="text" name="restrictionVal_<%x%>_<%y%>_<%z%>" class="restrictionVal_<%=restriction.type%>_<%=restriction.value%>_<%=restrictionType%>"  value="<%=restrictionVal%>"  hidden="hidden">
                                                     <% } %>
                                                 <% } else { %>
-                                                <input type="text" name="restrictionVal_<%= x %>_<%= y %>_<%= z %>" class="restrictionVal_<%=restriction.type%>_<%=restriction.value%>_<%=restrictionType%>"  value="N/A"  hidden="hidden">
+                                                <input type="text" name="restrictionVal_<%x%>_<%y%>_<%z%>" class="restrictionVal_<%=restriction.type%>_<%=restriction.value%>_<%=restrictionType%>"  value="N/A"  hidden="hidden">
                                                 <% } %>
                                                 <% } %>
                                                 <% } %>
@@ -1130,7 +1217,7 @@
                                                                 <div class="col-sm-2">
                                                                     <form id="addSectionForm" class="addSectionForm" action="" method="POST">
                                                                         <label for="example-text-input" class="col-form-label"></label>
-                                                                        <button id="addSectionBtn" type="submit" class="btn-block btn btn-outline-secondary waves-effect waves-light add-button" formaction="../layoutAddSection/?subID=<%= subData[0].jobNum %><%= subData[0].releaseNum %>_<%= subData[0].subID%>">Add Section</button>
+                                                                        <button id="addSectionBtn" type="submit" class="btn-block btn btn-outline-secondary waves-effect waves-light add-button" onclick="this.form.action='../layoutAddSection/?subID=<%= subData[0].jobNum %><%= subData[0].releaseNum %>_<%= subData[0].subID%>'">Add Section</button>
                                                                     </form>
                                                                 </div>
                                                                 <div class="col-sm-2" >
@@ -1209,7 +1296,7 @@
                                                                             </div>
                                                                         </div>
                                                                         <label for="example-text-input" class="col-form-label"></label>
-                                                                        <button id="genCreoBtn" type="submit" class="btn-block btn btn-outline-success waves-effect waves-light" formaction="../creoGenSubmittal/?subID=<%= subData[0].jobNum %><%= subData[0].releaseNum %>_<%= subData[0].subID%>">Generate Submittal</button>
+                                                                        <button id="genCreoBtn" type="submit" class="btn-block btn btn-outline-success waves-effect waves-light" onclick="this.form.action='../creoGenSubmittal/?subID=<%= subData[0].jobNum %><%= subData[0].releaseNum %>_<%= subData[0].subID%>'">Generate Submittal</button>
                                                                     </form>
                                                                 </div>
 
@@ -1314,11 +1401,11 @@
 
                                                                                         <% secID = section.secID; %>
                                                                                         <% if(section.secType == null && section.secHeight == null && section.secWidth == null && section.secDepth == null){ %>
-                                                                                        <button class="btn dropdown-toggle btn-danger section-details-btn" type="button" aria-haspopup="true" aria-expanded="false" data-toggle="modal" data-target="#sectionPropertiesModal<%=section.sectionNum%>" data-section-num="<%= section.sectionNum %>" data-comp-type-enc="<%= encodeURIComponent(section.compType || '') %>" style="margin-top: -2.5rem; margin-left: 8.5rem;">
+                                                                                        <button class="btn dropdown-toggle btn-danger" type="button" id="sectionDetails" aria-haspopup="true" aria-expanded="false" data-toggle="modal" data-target="#sectionPropertiesModal<%=section.sectionNum%>" onclick="showComp(<%=section.sectionNum %>); checkForPB(<%= section.sectionNum %>,<%= section.compType %>);" style="margin-top: -2.5rem; margin-left: 8.5rem;">
                                                                                             Details &nbsp;
                                                                                         </button>
                                                                                         <% } else { %>
-                                                                                        <button class="btn dropdown-toggle btn-secondary section-details-btn" type="button" aria-haspopup="true" aria-expanded="false" data-toggle="modal" data-target="#sectionPropertiesModal<%=section.sectionNum%>" data-section-num="<%= section.sectionNum %>" data-comp-type-enc="<%= encodeURIComponent(section.compType || '') %>" style="margin-top: -2.5rem; margin-left: 8.5rem;">
+                                                                                        <button class="btn dropdown-toggle btn-secondary" type="button" id="sectionDetails" aria-haspopup="true" aria-expanded="false"data-toggle="modal" data-target="#sectionPropertiesModal<%=section.sectionNum%>" onclick="showComp(<%=section.sectionNum %>); checkForPB(<%= section.sectionNum %>,<%= section.compType %>);" style="margin-top: -2.5rem; margin-left: 8.5rem;">
                                                                                             Details &nbsp;
                                                                                         </button>
                                                                                         <% } %>
@@ -1712,11 +1799,11 @@
                                                                                     <% for(let k = 0; k < sectionData.length; k++) { %>
                                                                                         <% if (sectionData[k].sectionNum == j+1) { %>
                                                                                         <div class="col-sm-3">
-                                                                                            <input type="checkbox" name="pbCheck" id="panelboard_<%=j+1%>" class="form-check-input" value="noBrk" data-fn="showPB"/>
+                                                                                            <input type="checkbox" name="pbCheck" id="panelboard_<%=j+1%>" class="form-check-input" value="noBrk" onclick="showPB(this)"/>
                                                                                             <label class="form-check-label" for="panelboard_<%=j+1%>">Panelboard</label>
                                                                                         </div>
                                                                                         <div class="col-sm-6">
-                                                                                            <input type="checkbox" name="pbCheck" id="panelboardbrk_<%=j+1%>" class="form-check-input" value="yesBrk" data-fn="showPBbrk"/>
+                                                                                            <input type="checkbox" name="pbCheck" id="panelboardbrk_<%=j+1%>" class="form-check-input" value="yesBrk" onclick="showPBbrk(this)"/>
                                                                                             <label class="form-check-label" for="panelboardbrk_<%=j+1%>">Panelboard with ICCB</label>
                                                                                         </div>
                                                                                         <% } %>
@@ -1729,7 +1816,7 @@
                                                                                             <div style="width: 100%; background-color: lightgrey; height: 16.3rem; padding: 5px 5px 5px 5px; border: 2px solid lightslategrey; border-radius: 3px;">
                                                                                                 <div style="width: 100%; background-color: #e6e1e1; height: 23%; padding: 7px 5px 5px 5px; border: 2px solid lightslategrey; border-radius: 3px; margin-bottom: .4rem;">
                                                                                                     <div class="form-group">
-                                                                                                        <select id="compA<%=j+1%>" name="compA" class="form-control" data-fn-change="compAdetails" >
+                                                                                                        <select id="compA<%=j+1%>" name="compA" class="form-control" onChange="compAdetails(this)" >
                                                                                                             <option value="" disabled selected>A</option>
                                                                                                             <% if(sectionData[k].compType != null && JSON.parse(sectionData[k].compType).A == 'brk'){ %>
                                                                                                             <option value="brk_<%=j+1%>" selected>Breaker</option>
@@ -1747,7 +1834,7 @@
                                                                                                 </div>
                                                                                                 <div style="width: 100%; background-color: #e6e1e1; height: 23%; padding: 7px 5px 5px 5px; border: 2px solid lightslategrey; border-radius: 3px; margin-bottom: .4rem;">
                                                                                                     <div class="form-group">
-                                                                                                        <select id="compB<%=j+1%>" name="compB" class="form-control" data-fn-change="compBdetails">
+                                                                                                        <select id="compB<%=j+1%>" name="compB" class="form-control" onChange="compBdetails(this)">
                                                                                                             <option value="" disabled selected>B</option>
                                                                                                             <% if(sectionData[k].compType != null && JSON.parse(sectionData[k].compType).B == 'brk'){ %>
                                                                                                             <option value="brk_<%=j+1%>" selected>Breaker</option>
@@ -1765,7 +1852,7 @@
                                                                                                 </div>
                                                                                                 <div style="width: 100%; background-color: #e6e1e1;; height: 23%; padding: 7px 5px 5px 5px; border: 2px solid lightslategrey; border-radius: 3px; margin-bottom: .4rem;">
                                                                                                     <div class="form-group">
-                                                                                                        <select id="compC<%=j+1%>" name="compC" class="form-control" data-fn-change="compCdetails">
+                                                                                                        <select id="compC<%=j+1%>" name="compC" class="form-control" onChange="compCdetails(this)">
                                                                                                             <option value="" disabled selected>C</option>
                                                                                                             <% if(sectionData[k].compType != null && JSON.parse(sectionData[k].compType).C == 'brk'){ %>
                                                                                                             <option value="brk_<%=j+1%>" selected>Breaker</option>
@@ -1783,7 +1870,7 @@
                                                                                                 </div>
                                                                                                 <div style="width: 100%; background-color: #e6e1e1; height: 23%; padding: 7px 5px 5px 5px; border: 2px solid lightslategrey; border-radius: 3px;">
                                                                                                     <div class="form-group">
-                                                                                                        <select id="compD<%=j+1%>" name="compD" class="form-control" data-fn-change="compDdetails">
+                                                                                                        <select id="compD<%=j+1%>" name="compD" class="form-control" onChange="compDdetails(this)">
                                                                                                             <option value="" disabled selected>D</option>
                                                                                                             <% if(sectionData[k].compType != null && JSON.parse(sectionData[k].compType).D == 'brk' && JSON.parse(sectionData[k].compType).A != 'panelboard'){ %>
                                                                                                             <option value="brk_<%=j+1%>" selected>Breaker</option>
@@ -1985,15 +2072,15 @@
                                                                                                 </div>
                                                                                             </div>
                                                                                             <div class="btn-group" id="pbButtons_<%=j+1%>_1" role="group" aria-label="Basic example" style="display:none;">
-                                                                                                <button type="button" class="btn btn-secondary add-row-btn" data-fn="addSingleRowCenterLeftExisting" data-section="<%=j+1%>" data-maxrow="<%=maxRow%>">Add Single (C - L)</button>
-                                                                                                <button type="button" class="btn btn-secondary add-row-btn" data-fn="addSingleRowCenterRightExisting" data-section="<%=j+1%>" data-maxrow="<%=maxRow%>">Add Single (C - R)</button>
+                                                                                                <button type="button" class="btn btn-secondary" id="addSingleCenterLeftRowBtn" onclick="addSingleRowCenterLeftExisting(<%=j+1%>, <%=maxRow%>)">Add Single (C - L)</button>
+                                                                                                <button type="button" class="btn btn-secondary" id="addSingleCenterRightRowBtn" onclick="addSingleRowCenterRightExisting(<%=j+1%>, <%=maxRow%>)">Add Single (C - R)</button>
                                                                                             </div>
                                                                                             <div class="btn-group" id="pbButtons_<%=j+1%>_2" role="group" aria-label="Basic example" style="display:none;">
                                                                                                 <!--<button type="button" class="btn btn-secondary" id="addSingleCenterRowBtn" onclick="addSingleRowExisting(<%=j+1%>, <%=maxRow%>)">Add Single (C)</button>-->
-                                                                                                <button type="button" class="btn btn-secondary add-row-btn" data-fn="addDualRowExisting" data-section="<%=j+1%>" data-maxrow="<%=maxRow%>">Add Dual</button>
-                                                                                                <button type="button" class="btn btn-secondary add-row-btn" data-fn="addSingleLeftRowExisting" data-section="<%=j+1%>" data-maxrow="<%=maxRow%>">Add Single (L)</button>
-                                                                                                <button type="button" class="btn btn-secondary add-row-btn" data-fn="addSingleRightRowExisting" data-section="<%=j+1%>" data-maxrow="<%=maxRow%>">Add Single (R)</button>
-                                                                                                <button type="button" class="btn btn-danger add-row-btn" data-fn="removeLastRowExisting" data-section="<%=j+1%>" data-maxrow="<%= maxRow%>">Remove Last</button>
+                                                                                                <button type="button" class="btn btn-secondary" id="addDualRowBtn" onclick="addDualRowExisting(<%=j+1%>, <%=maxRow%>)">Add Dual</button>
+                                                                                                <button type="button" class="btn btn-secondary" id="addSingleLeftRowBtn" onclick="addSingleLeftRowExisting(<%=j+1%>, <%=maxRow%>)">Add Single (L)</button>
+                                                                                                <button type="button" class="btn btn-secondary" id="addSingleRightRowBtn" onclick="addSingleRightRowExisting(<%=j+1%>, <%=maxRow%>)">Add Single (R)</button>
+                                                                                                <button type="button" class="btn btn-danger" id="removeLastRowBtn" onclick="removeLastRowExisting(<%=j+1%>, <%= maxRow%>)">Remove Last</button>
                                                                                             </div>
 
                                                                                             <% } else { %>
@@ -2004,15 +2091,15 @@
                                                                                                 </div>
                                                                                             </div>
                                                                                             <div class="btn-group" id="pbButtons_<%=j+1%>_1" role="group" aria-label="Basic example" style="display:none;">
-                                                                                                <button type="button" class="btn btn-secondary add-row-btn" data-fn="addSingleRowCenterLeftNew" data-section="<%=j+1%>">Add Single (C - L)</button>
-                                                                                                <button type="button" class="btn btn-secondary add-row-btn" data-fn="addSingleRowCenterRightNew" data-section="<%=j+1%>">Add Single (C - R)</button>
+                                                                                                <button type="button" class="btn btn-secondary" id="addSingleCenterLeftRowBtn" onclick="addSingleRowCenterLeftNew(<%=j+1%>)">Add Single (C - L)</button>
+                                                                                                <button type="button" class="btn btn-secondary" id="addSingleCenterRightRowBtn" onclick="addSingleRowCenterRightNew(<%=j+1%>)">Add Single (C - R)</button>
                                                                                             </div>
                                                                                             <div class="btn-group" id="pbButtons_<%=j+1%>_2" role="group" aria-label="Basic example" style="display:none;">
                                                                                                 <!--<button type="button" class="btn btn-secondary" id="addSingleCenterRowBtn" onclick="addSingleRowNew(<%=j+1%>)">Add Single (C)</button>-->
-                                                                                                <button type="button" class="btn btn-secondary add-row-btn" data-fn="addDualRowNew" data-section="<%=j+1%>">Add Dual</button>
-                                                                                                <button type="button" class="btn btn-secondary add-row-btn" data-fn="addSingleLeftRowNew" data-section="<%=j+1%>">Add Single (L)</button>
-                                                                                                <button type="button" class="btn btn-secondary add-row-btn" data-fn="addSingleRightRowNew" data-section="<%=j+1%>">Add Single (R)</button>
-                                                                                                <button type="button" class="btn btn-danger add-row-btn" data-fn="removeLastRowNew" data-section="<%=j+1%>">Remove Last</button>
+                                                                                                <button type="button" class="btn btn-secondary" id="addDualRowBtn" onclick="addDualRowNew(<%=j+1%>)">Add Dual</button>
+                                                                                                <button type="button" class="btn btn-secondary" id="addSingleLeftRowBtn" onclick="addSingleLeftRowNew(<%=j+1%>)">Add Single (L)</button>
+                                                                                                <button type="button" class="btn btn-secondary" id="addSingleRightRowBtn" onclick="addSingleRightRowNew(<%=j+1%>)">Add Single (R)</button>
+                                                                                                <button type="button" class="btn btn-danger" id="removeLastRowBtn" onclick="removeLastRowNew(<%=j+1%>)">Remove Last</button>
                                                                                             </div>
                                                                                             <% } %>
                                                                                         <% } %>
@@ -2459,12 +2546,12 @@
                                                                     <% for (let brkAcc of brkAccDropdownData) { %>
                                                                         <% if (brkAcc.value.length != 0 && brkAcc.value[0] != null) { %>
                                                                         <li style="padding-bottom: 0.5rem;">
-                                                                            <input type="checkbox" class="form-check-input" id="<%=brkAcc.type%>" value="<%=brkAcc.name%>" style="position:relative; top: 2px;" data-fn="accBrk">
+                                                                            <input type="checkbox" class="form-check-input" id="<%=brkAcc.type%>" value="<%=brkAcc.name%>" style="position:relative; top: 2px;" onclick="accBrk(this)">
                                                                             <label class="form-check-label" for="<%=brkAcc.type%>"><%=brkAcc.name%></label>
                                                                             <ul id="<%=brkAcc.type%>Opt" style="display: none;">
                                                                                 <% for (let brkAccOpt of brkAcc.value) { %>
                                                                                 <li style="margin-left: 1.2rem; padding-bottom: 0.5rem; width: 15rem;">
-                                                                                    <input type="hidden" value="0" name="accOpts"><input type="checkbox" class="form-check-input" id="<%=brkAcc.type%>_Opt_<%brkAccOpt%>" style="position:relative; top: 2px;" data-toggle-hidden-prev>
+                                                                                    <input type="hidden" value="0" name="accOpts"><input type="checkbox" class="form-check-input" id="<%=brkAcc.type%>_Opt_<%brkAccOpt%>" style="position:relative; top: 2px;" onclick="this.previousSibling.value=1-this.previousSibling.value">
                                                                                     <label class="form-check-label" for="<%=brkAcc.type%>_Opt_<%brkAccOpt%>"><%=brkAccOpt%></label>
                                                                                 </li>
                                                                                 <% } %>
@@ -2472,7 +2559,7 @@
                                                                         </li>
                                                                         <% } else { %>
                                                                         <li style="padding-bottom: 0.5rem;">
-                                                                            <input type="hidden" value="0" name="accOpts"><input type="checkbox" class="form-check-input" id="<%=brkAcc.type%>" style="position:relative; top: 2px;" data-toggle-hidden-prev>
+                                                                            <input type="hidden" value="0" name="accOpts"><input type="checkbox" class="form-check-input" id="<%=brkAcc.type%>" style="position:relative; top: 2px;" onclick="this.previousSibling.value=1-this.previousSibling.value">
                                                                             <label class="form-check-label" for="<%=brkAcc.type%>"><%=brkAcc.name%></label>
                                                                         </li>
                                                                         <% } %>
@@ -2549,9 +2636,9 @@
                                                                     <td style="display: none;"><%= deviceData[i].devCtrlVolt %></td>
                                                                     <td style="display: none;"><%= deviceData[i].devOperation %></td>
                                                                     <td>
-                                                                        <button id="copyButton" type="submit" class="btn btn-md btn-outline-secondary waves-effect waves-light" formaction="../submittalCopyDevice/?subID=<%=subData[0].jobNum%><%=subData[0].releaseNum%>_<%= layoutData[0].subID %>&layoutID=<%=deviceData[i].layoutID%>&devID=<%= deviceData[i].devID%>">Copy</button>
-                                                                        <input id="editBreakerButton" type="button" value="Edit" class="btn btn-md btn-outline-warning waves-effect waves-light edit-breaker-btn" data-toggle="modal" data-target="#editBreakerModal<%=currentBrk%>" data-brk="<%=currentBrk%>" />
-                                                                        <button id="deleteButton" type="submit" class="btn btn-md btn-outline-danger waves-effect waves-light" formaction="../submittalDeleteDevice/?subID=<%=subData[0].jobNum%><%=subData[0].releaseNum%>_<%= layoutData[0].subID %>&layoutID=<%=deviceData[i].layoutID%>&devID=<%= deviceData[i].devID%>">Delete</button>
+                                                                        <input id="copyButton" type="submit" value="Copy" class="btn btn-md btn-outline-secondary waves-effect waves-light" onclick="this.form.action='../submittalCopyDevice/?subID=<%=subData[0].jobNum%><%=subData[0].releaseNum%>_<%= layoutData[0].subID %>&layoutID=<%=deviceData[i].layoutID%>&devID=<%= deviceData[i].devID%>'"/>
+                                                                        <input id="editBreakerButton" type="button" value="Edit" class="btn btn-md btn-outline-warning waves-effect waves-light" data-toggle="modal" data-target="#editBreakerModal<%=currentBrk%>" onclick="setBreakerPlatformInitial(<%=currentBrk%>)"/>
+                                                                        <input id="deleteButton" type="submit" value="Delete" class="btn btn-md btn-outline-danger waves-effect waves-light" onclick="this.form.action='../submittalDeleteDevice/?subID=<%=subData[0].jobNum%><%=subData[0].releaseNum%>_<%= layoutData[0].subID %>&layoutID=<%=deviceData[i].layoutID%>&devID=<%= deviceData[i].devID%>'"/>
                                                                     </td>
                                                                 </tr>
                                                                 <% if(idDevs.has(currentBrk)){ %>
@@ -3084,18 +3171,18 @@
                                                                                                                 <% if (brkAcc.value.length != 0 && brkAcc.value[0] != null) { %>
                                                                                                                     <% if (checkedAcc.filter(e => e.name == brkAcc.name).length > 0) { %>
                                                                                                                     <li>
-                                                                                                                        <input type="checkbox" class="form-check-input" id="<%=brkAcc.type%>" value="<%=brkAcc.name%>" checked="checked" style="position:relative; top: 2px;" data-fn="accBrkEdit">
+                                                                                                                        <input type="checkbox" class="form-check-input" id="<%=brkAcc.type%>" value="<%=brkAcc.name%>" checked="checked" style="position:relative; top: 2px;" onclick="accBrkEdit(this)">
                                                                                                                         <label class="form-check-label" for="<%=brkAcc.type%>"><%=brkAcc.name%></label>
                                                                                                                         <ul id="<%=brkAcc.type%>Opt_Edit" style="display: block;">
                                                                                                                             <% for (let brkAccOpt of brkAcc.value) { %>
                                                                                                                                 <% if (checkedAcc.filter(e => e.opt == brkAccOpt).length > 0) { %>
                                                                                                                                 <li>
-                                                                                                                                    <input type="hidden" value="1" name="accOpts"><input type="checkbox" class="form-check-input" id="<%=brkAcc.type%>_Opt_<%brkAccOpt%>" style="position:relative; top: 2px;" data-toggle-hidden-prev checked>
+                                                                                                                                    <input type="hidden" value="1" name="accOpts"><input type="checkbox" class="form-check-input" id="<%=brkAcc.type%>_Opt_<%brkAccOpt%>" style="position:relative; top: 2px;" checked="checked" onclick="this.previousSibling.value=1-this.previousSibling.value">
                                                                                                                                     <label class="form-check-label" for="<%=brkAcc.type%>_Opt_<%brkAccOpt%>"><%=brkAccOpt%></label>
                                                                                                                                 </li>
                                                                                                                                 <% } else { %>
                                                                                                                                 <li>
-                                                                                                                                    <input type="hidden" value="0" name="accOpts"><input type="checkbox" class="form-check-input" id="<%=brkAcc.type%>_Opt_<%brkAccOpt%>" style="position:relative; top: 2px;" data-toggle-hidden-prev>
+                                                                                                                                    <input type="hidden" value="0" name="accOpts"><input type="checkbox" class="form-check-input" id="<%=brkAcc.type%>_Opt_<%brkAccOpt%>" style="position:relative; top: 2px;" onclick="this.previousSibling.value=1-this.previousSibling.value">
                                                                                                                                     <label class="form-check-label" for="<%=brkAcc.type%>_Opt_<%brkAccOpt%>"><%=brkAccOpt%></label>
                                                                                                                                 </li>
                                                                                                                                 <% } %>
@@ -3119,12 +3206,12 @@
                                                                                                                 <% } else { %>
                                                                                                                     <% if (checkedAcc.filter(e => e.name == brkAcc.name).length > 0) { %>
                                                                                                                     <li>
-                                                                                                                        <input type="hidden" value="1" name="accOpts"><input type="checkbox" class="form-check-input" id="<%=brkAcc.type%>" style="position:relative; top: 2px;" checked data-toggle-hidden-prev>
+                                                                                                                        <input type="hidden" value="1" name="accOpts"><input type="checkbox" class="form-check-input" id="<%=brkAcc.type%>" style="position:relative; top: 2px;" checked="checked" onclick="this.previousSibling.value=1-this.previousSibling.value">
                                                                                                                         <label class="form-check-label" for="<%=brkAcc.type%>"><%=brkAcc.name%></label>
                                                                                                                     </li>
                                                                                                                     <% } else { %>
                                                                                                                     <li>
-                                                                                                                        <input type="hidden" value="0" name="accOpts"><input type="checkbox" class="form-check-input" id="<%=brkAcc.type%>" style="position:relative; top: 2px;" data-toggle-hidden-prev>
+                                                                                                                        <input type="hidden" value="0" name="accOpts"><input type="checkbox" class="form-check-input" id="<%=brkAcc.type%>" style="position:relative; top: 2px;" onclick="this.previousSibling.value=1-this.previousSibling.value">
                                                                                                                         <label class="form-check-label" for="<%=brkAcc.type%>"><%=brkAcc.name%></label>
                                                                                                                     </li>
                                                                                                                     <% } %>
@@ -3214,94 +3301,6 @@
 <script src="/public/assets/pages/form-advanced.js"></script>
 <script src="/public/assets/js/app.js"></script>
 <script src="/public/assets/js/pdfDxfBinBomCheck.js"></script>
-
-<script>
-    document.addEventListener('DOMContentLoaded', function () {
-        // bind add/remove row buttons (replaces inline onclick with EJS tokens)
-        document.querySelectorAll('.add-row-btn').forEach(function(btn){
-            btn.addEventListener('click', function(e){
-                var fnName = this.getAttribute('data-fn');
-                var section = parseInt(this.getAttribute('data-section'));
-                var maxRow = this.getAttribute('data-maxrow');
-                if (!fnName) return;
-                var fn = window[fnName];
-                if (typeof fn === 'function') {
-                    try {
-                        if (typeof maxRow !== 'undefined' && maxRow !== null && maxRow !== '') fn(section, parseInt(maxRow));
-                        else fn(section);
-                    } catch (err) { console.error('add-row-btn handler error', err); }
-                }
-            });
-        });
-
-        // bind edit-breaker buttons to call setBreakerPlatformInitial when modal opens
-        document.querySelectorAll('.edit-breaker-btn').forEach(function(btn){
-            btn.addEventListener('click', function(e){
-                var brk = this.getAttribute('data-brk');
-                if (!brk) return;
-                if (typeof setBreakerPlatformInitial === 'function') {
-                    try { setBreakerPlatformInitial(parseInt(brk)); } catch(err) { console.error('setBreakerPlatformInitial error', err); }
-                }
-            });
-        });
-
-        // bind data-fn checkboxes/selects: showPB/showPBbrk, accBrk, accBrkEdit and generic change handlers
-        document.querySelectorAll('input[data-fn], input[data-fn-change], select[data-fn-change], input[data-toggle-hidden-prev]').forEach(function(el){
-            // checkbox that calls a function with the element
-            if (el.hasAttribute('data-fn')) {
-                el.addEventListener('change', function(e){
-                    var fnName = this.getAttribute('data-fn');
-                    var fn = window[fnName];
-                    if (typeof fn === 'function') {
-                        try { fn(this); } catch(err) { console.error(fnName + ' handler error', err); }
-                    }
-                });
-            }
-
-            // select elements that should call a change handler
-            if (el.tagName === 'SELECT' && el.hasAttribute('data-fn-change')) {
-                var changeFn = el.getAttribute('data-fn-change');
-                el.addEventListener('change', function(e){
-                    var fn = window[changeFn];
-                    if (typeof fn === 'function') {
-                        try { fn(this); } catch(err) { console.error(changeFn + ' handler error', err); }
-                    }
-                });
-            }
-
-            // checkboxes that toggle the previous hidden input's value
-            if (el.hasAttribute('data-toggle-hidden-prev')) {
-                el.addEventListener('change', function(e){
-                    try {
-                        var prev = this.previousElementSibling;
-                        if (prev && prev.tagName === 'INPUT' && prev.type === 'hidden') {
-                            prev.value = this.checked ? '1' : '0';
-                        }
-                    } catch(err) { console.error('data-toggle-hidden-prev error', err); }
-                });
-            }
-        });
-    });
-</script>
-
-<script>
-    document.addEventListener('DOMContentLoaded', function () {
-        document.querySelectorAll('.section-details-btn').forEach(function(btn){
-            btn.addEventListener('click', function(e){
-                var sec = this.getAttribute('data-section-num');
-                var compTypeEnc = this.getAttribute('data-comp-type-enc') || '';
-                var compType = decodeURIComponent(compTypeEnc || '');
-                // call existing functions if available
-                if (typeof showComp === 'function') {
-                    try { showComp(parseInt(sec)); } catch (err) { /* ignore */ }
-                }
-                if (typeof checkForPB === 'function') {
-                    try { checkForPB(parseInt(sec), compType); } catch (err) { /* ignore */ }
-                }
-            });
-        });
-    });
-</script>
 <script src="/public/assets/js/quoteFilterDropdown.js"></script>
 <script src="/public/assets/js/quoteCheckbox.js"></script>
 <script src="/public/assets/js/submittalLayoutRestrictions.js"></script>

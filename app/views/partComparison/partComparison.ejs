@@ -37,9 +37,96 @@
 
 <body>
 <div id="wrapper">
-    <%- include('../partials/header') %>
+    <!-- Top Bar Start -->
+    <div class="topbar">
 
-    <%- include('../partials/sidebar') %>
+        <!-- LOGO -->
+        <div class="topbar-left" style="background-color: white;">
+            <a href="" class="logo">
+                        <span>
+                            <img src="/public/assets/images/SAI-Logo.JPG" alt="" height="67">
+                        </span>
+                <i>
+                    <img src="/public/assets/images/SAI-Logo.JPG" alt="" height="22">
+                </i>
+            </a>
+        </div>
+
+        <nav class="navbar-custom">
+            <ul class="navbar-right d-flex list-inline float-right mb-0">
+                <li class="dropdown notification-list d-none d-sm-block">
+                    <form role="search" class="app-search">
+                        <div class="form-group mb-0">
+                            <input type="text" class="form-control" placeholder="Search..">
+                            <button type="submit"><i class="fa fa-search"></i></button>
+                        </div>
+                    </form>
+                </li>
+            </ul>
+
+            <ul class="list-inline menu-left mb-0">
+                <li class="float-left">
+                    <button class="button-menu-mobile open-left waves-effect">
+                        <i class="mdi mdi-menu"></i>
+                    </button>
+                </li>
+            </ul>
+
+        </nav>
+
+    </div>
+    <!-- Top Bar End -->
+
+    <!-- ========== Left Sidebar Start ========== -->
+    <div class="left side-menu">
+        <div class="slimscroll-menu" id="remove-scroll">
+
+            <!--- Sidemenu -->
+            <div id="sidebar-menu">
+                <!-- Left Menu Start -->
+                <ul class="metismenu" id="side-menu">
+                    <li class="menu-title">CREO Automation</li>
+                    <li>
+                        <a href="../MBOM" class="waves-effect">
+                            <i class="mdi mdi-content-duplicate"></i> <span> MBOM </span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="../PDF-DXF-BIN_BOM" class="waves-effect">
+                            <i class="mdi mdi-content-duplicate"></i> <span> PDF / DXF / BIN BOM </span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="../submittal" class="waves-effect">
+                            <i class="mdi mdi-file-pdf"></i> <span> Submittal </span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="../slimVAC_NAR" class="waves-effect">
+                            <i class="mdi mdi-content-duplicate"></i> <span> SlimVAC NAR </span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="../partComparison" class="waves-effect">
+                            <i class="mdi mdi-content-duplicate"></i> <span> Part Comparison </span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="../renameMain" class="waves-effect">
+                            <i class="mdi mdi-content-duplicate"></i> <span> Rename </span>
+                        </a>
+                    </li>
+                </ul>
+
+            </div>
+            <!-- Sidebar -->
+            <div class="clearfix"></div>
+
+        </div>
+        <!-- Sidebar -left -->
+
+    </div>
+    <!-- Left Sidebar End -->
 
     <div class="content-page">
         <!-- Content Start -->
@@ -132,7 +219,7 @@
                                                         <input type="text" name="CREO_workingDir" class="form-control" value="<%= workingDir %>" hidden="hidden" required/>
                                                         <input type="text" name="CREO_outputDir" class="form-control" value="<%= outputDir %>" hidden="hidden" required/>
                                                         <input type="text" name="CREO_compareToDir" class="form-control" value="<%= compareToDir %>" hidden="hidden" required/>
-                                                        <button id="loadBtn" type="submit" class="btn btn-lg btn-outline-success waves-effect waves-light" formaction="./compareParts" style="margin-bottom:1%;">Load</button>
+                                                        <input id="loadBtn" type="submit" value="Load" class="btn btn-lg btn-outline-success waves-effect waves-light" onclick="this.form.action='./compareParts'" style="margin-bottom:1%;" />
                                                         <div class="row justify-content-center">
                                                             <div class="col-sm-12">
                                                                 <table id="creoAsmTable" class="table table-bordered dt-responsive nowrap" style="border-collapse: collapse; border-spacing: 0; width: 100%;">
@@ -146,7 +233,7 @@
                                                                     <% for (var i = 0; i < asmList.length; i++) { %>
                                                                         <% if (asmList[i].slice(7,11) == '0000') { %>
                                                                         <tr>
-                                                                            <td><input type="hidden" value="0" name="includeInExportCheck"><input class="form-check-input" type="checkbox" data-toggle-hidden-prev style="margin-left:3%; margin-top:0;"></td>
+                                                                            <td><input type="hidden" value="0" name="includeInExportCheck"><input class="form-check-input" type="checkbox" onclick="this.previousSibling.value=1-this.previousSibling.value" style="margin-left:3%; margin-top:0;"></td>
                                                                             <td><input type="text" name="asmName" value="<%=asmList[i]%>" hidden="hidden" /><%=asmList[i]%></td>
                                                                         </tr>
                                                                         <% } %>
@@ -228,7 +315,7 @@
                                                     <input type="text" name="CREO_partInstance" class="form-control" value="<%= comparePartInstance %>" hidden="hidden" required/>
                                                     <input type="text" name="CREO_partGeneric" class="form-control" value="<%= comparePartGeneric %>" hidden="hidden" required/>
                                                     <input type="text" name="CREO_outputDir" class="form-control" value="<%= outputDir %>" hidden="hidden" required/>
-                                                    <button id="loadPartBtn" type="submit" class="btn btn-lg btn-outline-success waves-effect waves-light" formaction="./compareSinglePart" style="margin-bottom:1%;">Load</button>
+                                                    <input id="loadPartBtn" type="submit" value="Load" class="btn btn-lg btn-outline-success waves-effect waves-light" onclick="this.form.action='./compareSinglePart'" style="margin-bottom:1%;" />
                                                 </form>
                                             </div>
                                         </div>

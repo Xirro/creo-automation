@@ -1,0 +1,16 @@
+var mysql = require('mysql2');
+var dbConfig = require('../app/config/database');
+
+var connection = mysql.createConnection(dbConfig.connection);
+
+connection.query('DROP SCHEMA IF EXISTS ' + dbConfig.database, function(err,rows) { if(err) throw err; }); // DROPS RESIDUAL DATABASE/TABLES
+
+connection.query('CREATE DATABASE ' + dbConfig.database, function(err,rows) { if(err) throw err; }); // CREATES SAI_db SCHEMA
+
+connection.query('USE ' + dbConfig.database, function(err,rows) { if(err) throw err; });
+
+// ...original content truncated in backup
+
+console.log('Success: Schema Created!');
+
+connection.end();

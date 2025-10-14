@@ -15,7 +15,7 @@ Source: "creo-automation.ico"; DestDir: "{app}"; Flags: ignoreversion
 Source: "create-desktop-shortcut.ps1"; DestDir: "{app}"; Flags: ignoreversion
 
 [Tasks]
-Name: "desktopicon"; Description: "Create a desktop icon"; GroupDescription: "Additional icons:"; Flags: checked
+Name: "desktopicon"; Description: "Create a desktop icon"; GroupDescription: "Additional icons:"
 
 [Icons]
 Name: "{group}\Creo Automation"; Filename: "{app}\bin\run-app.bat"; IconFilename: "{app}\creo-automation.ico"
@@ -97,5 +97,4 @@ procedure InitializeWizard();
 begin
   CreateDBPage();
 end;
-
 

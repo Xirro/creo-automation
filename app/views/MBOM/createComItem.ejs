@@ -29,9 +29,33 @@
 
 <body>
 <div id="wrapper">
+    <!-- Top Bar Start -->
     <%- include('../partials/header') %>
+    <!-- Top Bar End -->
 
+
+    <!-- ========== Left Sidebar Start ========== -->
     <%- include('../partials/sidebar') %>
+    <!-- Left Sidebar End -->
+
+    <div class="content-page">
+        <!-- Content Start -->
+        <div class="content">
+            <div class="container-fluid">
+                <div class="row">
+                    <div class="col-sm-12">
+                        <div class="page-title-box">
+                            <h4 class="page-title">Mechanical Engineering - BOM Configure</h4>
+                            <div class="row">
+                                <div class="col-sm-12">
+                                    <div class="card m-b-20">
+                                        <div class="card-body">
+                                            <h4 class="mt-0 header-title">Item Summary</h4>
+                                            <p class="mb-0">
+                                                Fill out the following for each layout, and click "Save" afterwards
+                                            </p>
+                                            <p class="text-muted m-b-30"></p>
+                                            <h6>Commonly Used</h6>
                                             <form id="itemForm" class="itemForm" action="/createComItem" method="POST">
                                                 <div class="form-group">
                                                     <div class="row">
@@ -98,7 +122,7 @@
                                                     </div>
                                                     <div class="row justify-content-center">
                                                         <div class="col-2" style="padding-top:5%;">
-                                                            <input id="uploadBtn" type="submit" value="Save" class="btn-block btn-lg btn-outline-success waves-effect waves-light" />
+                                                            <input id="uploadBtn" type="submit" value="Save" class="btn-block btn-lg btn-outline-success waves-effect waves-light" onclick=""/>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -113,10 +137,7 @@
             </div> <!-- container-fluid -->
         </div> <!-- content -->
     </div> <!-- content-page -->
-    <!-- footer -->
-    <footer class="footer">
-        © 2021 SAI, Advanced Power Solutions Inc.
-    </footer>
+    <%- include('../partials/footer') %>
 </div> <!-- wrapper -->
 
 

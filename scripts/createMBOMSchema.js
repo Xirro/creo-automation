@@ -1,14 +1,10 @@
 let mysql = require('mysql');
-let host = process.env.DB_HOST || require('../app/config/database').connection.host;
-let user = process.env.DB_USER || require('../app/config/database').connection.user;
-let password = process.env.DB_PASS || require('../app/config/database').connection.password;
-let database = process.env.DB_NAME || require('../app/config/database').database;
-let port = process.env.DB_PORT || require('../app/config/database').connection.port || 3306;
-
-if (!host || !user || !password || !database) {
-    console.error('Missing DB credentials. Provide DB_HOST, DB_USER, DB_PASS, DB_NAME environment variables or a configured app/config/database.local.js');
-    process.exit(1);
-}
+let dbConfig = require('../app/config/database');
+let host = dbConfig.connection.host;
+let user = dbConfig.connection.user;
+let password = dbConfig.connection.password;
+let database = dbConfig.connection.database;
+let port = dbConfig.connection.port;
 
 let connection = mysql.createConnection({
     host: host,

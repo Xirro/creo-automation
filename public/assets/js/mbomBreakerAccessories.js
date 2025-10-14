@@ -192,18 +192,27 @@ function editBrkAcc(brkAccID) {
 }
 
 function editBrkAccFromEdit (letiable) {
-    let brkAccID = letiable.id;
+    // letiable may be either the button element (this) or a brkAccID (number/string)
+    var brkAccID = '';
+    if (letiable && typeof letiable === 'object' && typeof letiable.getAttribute === 'function') {
+        // prefer data-acc-id attribute (set on the button), else fall back to id
+        brkAccID = letiable.getAttribute('data-acc-id') || letiable.id || '';
+        // if id contains a prefix like 'saveAcc_123', extract the trailing number
+        var m = String(brkAccID).match(/(\d+)$/);
+        if (m) brkAccID = m[1];
+    } else {
+        brkAccID = String(letiable || '');
+    }
 
-    let form = document.createElement('form');
+    var form = document.createElement('form');
     form.method = "POST";
     form.action = "../editBreakerAccFromEdit";
 
+    var mbomID = document.getElementById('mbomID').value;
+    var jobNum = document.getElementById('jobNum').value;
+    var releaseNum = document.getElementById('releaseNum').value;
 
-    let mbomID = document.getElementById('mbomID').value;
-    let jobNum = document.getElementById('jobNum').value;
-    let releaseNum = document.getElementById('releaseNum').value;
-
-    let element1 = document.createElement('input');
+    var element1 = document.createElement('input');
     element1.value = brkAccID;
     element1.name = 'brkAccID';
     form.appendChild(element1);
@@ -307,7 +316,28 @@ function editBrkAccFromEdit (letiable) {
    form.submit()
 }
 
-function deleteBrkAcc(brkAccPN) {
+function deleteBrkAcc(elOrEvent) {
+    // elOrEvent may be the button element, or an object like { target: element }
+    var btn = null;
+    if (elOrEvent && typeof elOrEvent === 'object' && elOrEvent.target) {
+        btn = elOrEvent.target;
+    } else if (elOrEvent && typeof elOrEvent === 'object' && typeof elOrEvent.getAttribute === 'function') {
+        btn = elOrEvent;
+    }
+
+    if (!btn) {
+        console.error('deleteBrkAcc: missing element');
+        alert('Unable to delete accessory: missing element');
+        return;
+    }
+
+    var brkAccID = btn.getAttribute('data-acc-id') || '';
+    if (!brkAccID) {
+        console.error('deleteBrkAcc: data-acc-id missing on delete button');
+        alert('Unable to delete accessory: missing accessory id');
+        return;
+    }
+
     let mbomID = document.getElementById('mbomID').value;
     let jobNum = document.getElementById('jobNum').value;
     let releaseNum = document.getElementById('releaseNum').value;
@@ -316,10 +346,11 @@ function deleteBrkAcc(brkAccPN) {
     form.method = "POST";
     form.action = "../deleteBreakerAcc";
 
-    let element1 = document.createElement('input');
-    element1.value = brkAccPN.id;
-    element1.name = "pn";
-    form.appendChild(element1);
+    // send arrIndex (in-memory index) instead of brkAccID to avoid ambiguity with DB primary keys
+    let elementIndex = document.createElement('input');
+    elementIndex.value = brkAccID;
+    elementIndex.name = "arrIndex";
+    form.appendChild(elementIndex);
 
     //MBOM DATA
     let element2 = document.createElement('input');
@@ -373,22 +404,55 @@ function deleteBrkAcc(brkAccPN) {
 }
 
 function deleteBrkAccFromEdit(brkAcc) {
-    let brkAccPN = brkAcc.id.split('_')[0];
-    let idDev = brkAcc.id.split('_')[1];
+    // brkAcc may be either the button element, or an object like { target: element }
+    var btn = null;
+    if (brkAcc && typeof brkAcc === 'object' && brkAcc.target) {
+        btn = brkAcc.target;
+    } else if (brkAcc && typeof brkAcc === 'object' && typeof brkAcc.getAttribute === 'function') {
+        btn = brkAcc;
+    }
 
-    let form = document.createElement('form');
+    // Require that the button contains a data-acc-id attribute (primary key). Don't attempt fallbacks.
+    if (!btn) {
+        console.error('deleteBrkAccFromEdit: no button element provided');
+        alert('Unable to delete accessory: missing element');
+        return;
+    }
+
+    var form = document.createElement('form');
     form.method = "POST";
     form.action = "../deleteBreakerAccFromEdit";
 
-    let element1 = document.createElement('input');
-    element1.value = brkAccPN;
-    element1.name = "pn";
-    form.appendChild(element1);
+    // require data-acc-id and send only that to the server
+    var brkAccID = btn.getAttribute('data-acc-id') || '';
+    if (!brkAccID) {
+        console.error('deleteBrkAccFromEdit: data-acc-id missing on delete button');
+        alert('Unable to delete accessory: missing accessory id');
+        return;
+    }
 
-    let element2 = document.createElement('input');
-    element2.value = idDev;
-    element2.name = 'idDev';
-    form.appendChild(element2);
+    var elementId = document.createElement('input');
+    elementId.value = brkAccID;
+    elementId.name = 'brkAccID';
+    form.appendChild(elementId);
+
+    // try to include idDev (from button data-dev) so server can re-query if needed
+    var idDevAttr = btn.getAttribute('data-dev') || '';
+    if (idDevAttr) {
+        var elementIdDev = document.createElement('input');
+        elementIdDev.value = idDevAttr;
+        elementIdDev.name = 'idDev';
+        form.appendChild(elementIdDev);
+    } else {
+        // if data-dev not present, but page has a hidden #idDev field, include that
+        var idDevField = document.getElementById('idDev');
+        if (idDevField && idDevField.value) {
+            var elementIdDev2 = document.createElement('input');
+            elementIdDev2.value = idDevField.value;
+            elementIdDev2.name = 'idDev';
+            form.appendChild(elementIdDev2);
+        }
+    }
 
     //MBOM DATA
     let element3 = document.createElement('input');

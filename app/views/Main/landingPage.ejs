@@ -37,19 +37,117 @@
 
 <body>
 <div id="wrapper">
+    <!-- Top Bar Start -->
     <%- include('../partials/header') %>
+    <!-- Top Bar End -->
+
+    <!-- ========== Left Sidebar Start ========== -->
     <%- include('../partials/sidebar') %>
+    <!-- Left Sidebar End -->
 
     <div class="content-page">
         <!-- Content Start -->
+        <div class="content">
+            <div class="container-fluid">
 
+                <!-- Page title -->
+                <div class="row">
+                    <div class="col-12">
+                        <div class="page-title-box">
+                            <h4 class="page-title">CREO Automation Dashboard</h4>
+                            <p class="text-muted mb-0">Quick access to common tools and recent activity.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Cards -->
+                <div class="row">
+                    <div class="col-lg-4 col-sm-6">
+                        <div class="card">
+                            <div class="card-body">
+                                <h5 class="mt-0">MBOM</h5>
+                                <p class="text-muted">Create and manage manufacturing bills of materials.</p>
+                                <a href="../MBOM" class="btn btn-primary">Open MBOM</a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-lg-4 col-sm-6">
+                        <div class="card">
+                            <div class="card-body">
+                                <h5 class="mt-0">PDF / DXF / BIN BOM</h5>
+                                <p class="text-muted">Generate and download PDFs, DXFs, and BIN BOMs.</p>
+                                <a href="../PDF-DXF-BIN_BOM" class="btn btn-primary">Open PDF/DXF/BIN</a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-lg-4 col-sm-6">
+                        <div class="card">
+                            <div class="card-body">
+                                <h5 class="mt-0">Submittal</h5>
+                                <p class="text-muted">Prepare submittal packages for review.</p>
+                                <a href="../submittal" class="btn btn-primary">Open Submittal</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-lg-4 col-sm-6">
+                        <div class="card">
+                            <div class="card-body">
+                                <h5 class="mt-0">SlimVAC NAR</h5>
+                                <p class="text-muted">SlimVAC NAR tools and exports.</p>
+                                <a href="../slimVAC_NAR" class="btn btn-primary">Open SlimVAC</a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-lg-4 col-sm-6">
+                        <div class="card">
+                            <div class="card-body">
+                                <h5 class="mt-0">Part Comparison</h5>
+                                <p class="text-muted">Compare parts side-by-side to find differences.</p>
+                                <a href="../partComparison" class="btn btn-primary">Open Comparison</a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-lg-4 col-sm-6">
+                        <div class="card">
+                            <div class="card-body">
+                                <h5 class="mt-0">Rename</h5>
+                                <p class="text-muted">Batch rename parts and assemblies.</p>
+                                <a href="../renameMain" class="btn btn-primary">Open Rename</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sidebar widgets: Quick Actions -->
+                <div class="row">
+                    <div class="col-lg-12">
+                        <div class="card">
+                            <div class="card-body">
+                                <h5 class="header-title">Quick Actions</h5>
+                                <div class="d-flex flex-column">
+                                    <a href="../MBOM/create" class="btn btn-outline-secondary mb-2">Create MBOM</a>
+                                    <a href="../PDF-DXF-BIN_BOM/generate" class="btn btn-outline-secondary mb-2">Generate PDF/DXF</a>
+                                    <a href="../submittal/new" class="btn btn-outline-secondary">New Submittal</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div> <!-- container-fluid -->
+        </div> <!-- content -->
 
     </div>
 
 </div> <!-- content-page -->
-<footer class="footer">
-    © 2021 SAI, Advanced Power Solutions Inc.
-</footer>
+<%- include('../partials/footer') %>
 </div> <!-- wrapper -->
 
 

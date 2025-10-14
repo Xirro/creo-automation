@@ -1,12 +1,6 @@
-const mysql = require('mysql');
-const Promise = require("bluebird");
+const mysql = require('mysql2/promise');
 
-Promise.promisifyAll(mysql);
-Promise.promisifyAll(require("mysql/lib/Connection").prototype);
-Promise.promisifyAll(require("mysql/lib/Pool").prototype);
-
-
-//DATABASE INFORMATION (TABLE NAMES)
+// DATABASE INFORMATION (TABLE NAMES)
 // This module now supports runtime initialization of the connection pool
 // via init(connectionOptions). If not initialized, calls will throw.
 let repoConfig = require('./database.js');
@@ -22,7 +16,12 @@ function createPoolFromOptions(connOptions) {
         port: connOptions.port,
         user: connOptions.user,
         password: connOptions.password,
-        database: connOptions.database
+        database: connOptions.database,
+        waitForConnections: true,
+        connectionLimit: connOptions.connectionLimit || 10,
+        queueLimit: 0,
+        // respect ssl flag if provided
+        ssl: connOptions.ssl ? { rejectUnauthorized: false } : undefined
     };
     pool = mysql.createPool(opts);
     // simple signature to detect changes
@@ -37,22 +36,29 @@ function isInitialized() {
     return pool !== null;
 }
 
-function getSqlConnection() {
+async function getSqlConnection() {
     if (!pool) throw new Error('Database pool not initialized. Call init(connOptions) after login.');
-    return pool.getConnectionAsync().disposer(function (connection) {
-        connection.release();
-    });
+    const connection = await pool.getConnection();
+    return connection;
 }
 
-function querySql (query, params) {
-    if (!pool) return Promise.reject(new Error('Database not initialized'));
-    return Promise.using(getSqlConnection(), function (connection) {
-        if (typeof params !== 'undefined'){
-            return connection.queryAsync(query, params);
-        } else {
-            return connection.queryAsync(query);
-        }
-    });
+// querySql returns only the rows to preserve existing call-sites
+async function querySql(query, params) {
+    if (!pool) throw new Error('Database not initialized');
+    if (typeof params !== 'undefined') {
+        const [rows] = await pool.query(query, params);
+        return rows;
+    } else {
+        const [rows] = await pool.query(query);
+        return rows;
+    }
+}
+
+async function close() {
+    if (pool) {
+        try { await pool.end(); } catch (e) { /* ignore */ }
+        pool = null;
+    }
 }
 
 // If the repo default contains connection info (for local dev), initialize
@@ -70,5 +76,6 @@ module.exports = {
     init,
     isInitialized,
     getSqlConnection,
-    querySql
+    querySql,
+    close
 };

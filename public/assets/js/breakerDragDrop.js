@@ -620,29 +620,23 @@
             for (var el of secMap.keys()) {
                 let items = '';
                 let breakers = '';
-                var components = (secMap.get(el) || '').split(',');
+                var components = secMap.get(el).split(',');
                 for (var i = 0; i < components.length; i++) {
-                    var comp = components[i] || '';
-                    // safe prefix and rest extraction
-                    var prefix = comp.length > 0 ? comp.substring(0, 1) : '';
-                    var rest = comp.length > 1 ? comp.substring(1) : (comp.length === 1 ? '' : '');
-
-                    if (prefix === 'I') {
-                        var itemTemp = rest;
+                    if (components[i].substring(0, 1) == 'I') {
+                        var itemTemp = components[i].substring(1, components[i].length);
                         if (items == '') {
                             items = itemTemp;
                         } else {
                             items += ',' + itemTemp;
                         }
-                    } else if (prefix !== '') {
-                        var breakerTemp = rest;
+                    } else {
+                        var breakerTemp = components[i].substring(1, components[i].length);
                         if (breakers == '') {
                             breakers = breakerTemp;
                         } else {
                             breakers += ',' + breakerTemp;
                         }
                     }
-                    // if prefix is empty, skip (no valid component)
                 }
 
                 var element1 = document.createElement('input');
@@ -650,8 +644,7 @@
                 var element3 = document.createElement('input');
                 var element4 = document.createElement('input');
 
-                var elStr = (el == null) ? '' : String(el);
-                element1.value = elStr.length > 7 ? elStr.substring(7) : '';
+                element1.value = el.substring(7, el.length);
                 element1.name = "sectionNum";
                 form.appendChild(element1);
 

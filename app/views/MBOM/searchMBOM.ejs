@@ -36,19 +36,6 @@
         window.onbeforeunload = function(e) {
             localStorage.setItem('scrollpos', window.scrollY);
         };
-    document.addEventListener('DOMContentLoaded', function(){
-        // Bind edit breaker accessory buttons (data-edit-brk-idx)
-        document.querySelectorAll('.edit-brk-acc-btn').forEach(function(btn){
-            btn.addEventListener('click', function(e){
-                // read index from data attribute and call existing function
-                var idx = btn.dataset.editBrkIdx;
-                if(typeof idx !== 'undefined'){
-                    var n = parseInt(idx, 10);
-                    try { editBrkAcc(n); } catch(err) { console.error('editBrkAcc error', err); }
-                }
-            });
-        });
-    });
     </script>
     <style>
         div{
@@ -198,53 +185,6 @@
                             </div>
                         </div>
                     </div>
-                    <script>
-                        // Add Section handler: POST form-encoded to /mbomAddSection and reload on success
-                        document.addEventListener('DOMContentLoaded', function(){
-                            const addBtn = document.getElementById('addSectionBtn');
-                            if(!addBtn) return;
-                            addBtn.addEventListener('click', function(evt){
-                                evt.preventDefault();
-                                // gather hidden inputs from the primary mbomAddSection form region
-                                const jobNum = document.querySelector('input[name="jobNum"]') ? document.querySelector('input[name="jobNum"]').value : '';
-                                const releaseNum = document.querySelector('input[name="releaseNum"]') ? document.querySelector('input[name="releaseNum"]').value : '';
-                                const mbomID = document.querySelector('input[name="mbomID"]') ? document.querySelector('input[name="mbomID"]').value : '';
-                                if(!jobNum || !releaseNum || !mbomID){
-                                    alert('Missing MBOM identifiers. Cannot add section.');
-                                    return;
-                                }
-
-                                // disable button to prevent double submits
-                                addBtn.disabled = true;
-                                addBtn.classList.add('disabled');
-
-                                const body = new URLSearchParams();
-                                body.append('jobNum', jobNum);
-                                body.append('releaseNum', releaseNum);
-                                body.append('mbomID', mbomID);
-
-                                fetch('/mbomAddSection', {
-                                    method: 'POST',
-                                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                                    body: body.toString()
-                                }).then(resp => {
-                                    if(resp.ok){
-                                        // success: reload so UI reflects DB
-                                        window.location.reload();
-                                        return null;
-                                    } else {
-                                        return resp.text().then(t => Promise.reject(t || resp.statusText));
-                                    }
-                                }).catch(err => {
-                                    console.error('Add section failed', err);
-                                    alert('Error adding section: ' + (err && err.toString ? err.toString() : err));
-                                }).finally(() => {
-                                    addBtn.disabled = false;
-                                    addBtn.classList.remove('disabled');
-                                });
-                            });
-                        });
-                    </script>
                     <div class="row">
                         <div class="col-sm-12">
                             <div class="card m-b-20">
@@ -252,7 +192,7 @@
                                     <h4 class="mt-0 header-title">Section Summary</h4>
                                     <form id="mbomAddSection" class="mbomAddSection" action="" method="POST">
                                         <div class="row">
-                                                    <% if(mbomData) { %>
+                                            <% if(mbomData) { %>
                                                 <div class="col-sm-12">
                                                     <input type="text" name="jobNum" class="form-control" value="<%= mbomData.jobNum %>" id="jobNum" hidden="hidden">
                                                     <input type="text" name="releaseNum" class="form-control" value="<%= mbomData.releaseNum %>" id="releaseNum" hidden="hidden">
@@ -262,13 +202,11 @@
                                                     <input type="text" name="boardDesignation" class="form-control" value="<%= mbomData.boardDesignation %>" id="boardDesignation" hidden="hidden">
                                                     <input type="text" name="numSections" class="form-control" value="<%= mbomData.numSections %>" id="numSections" hidden="hidden">
                                                     <input type="text" name="noSectionMBOM" class="form-control" value="<%= mbomData.noSectionMBOM%>" id="noSectionMBOM" hidden="hidden">
-                                                    <!-- Hidden holder for the section to delete. Will be set by the delete button before submit -->
-                                                    <input type="hidden" name="selectedSec" id="selectedSec" value="">
                                                 </div>
                                             <% } %>
                                             <div class="col-sm-2">
                                                 <label for="" class="col-form-label"></label>
-                                                <button id="addSectionBtn" type="button" class="btn-block btn-lg btn-outline-secondary waves-effect waves-light add-button">Add Section</button>
+                                                <button id="addSectionBtn" type="submit" class="btn-block btn-lg btn-outline-secondary waves-effect waves-light add-button" onclick="this.form.action='/mbomAddSection'">Add Section</button>
                                             </div>
                                             <div class="col-sm-2">
                                                 <label for="" class="col-form-label"></label>
@@ -288,7 +226,7 @@
                                                                 Are you sure you want to clear all sections?
                                                             </div>
                                                             <div class="modal-footer justify-content-center">
-                                                                <button id="resetSectionSubmit" type="submit" class="btn-block btn-lg btn-secondary col-sm-5" style="border: 0" formaction="/mbomResetSection">Yes</button>
+                                                                <input id="resetSectionBtn" type="submit" value="Yes" class="btn-block btn-lg btn-secondary col-sm-5" style="border: 0" onclick="this.form.action='/mbomResetSection'" />
                                                                 <button type="button" class="btn-block btn-lg btn-danger col-sm-5" data-dismiss="modal" style="margin-top: 0">No</button>
                                                             </div>
                                                         </div>
@@ -466,11 +404,11 @@
                                                         <div class="col-sm-3">
                                                             <%if( i < 9){%>
                                                             <h6>Section 10<%=i+1%>
-                                                                <input id="deleteSectionBtn" type="button" value="&times;" class="close delete-section-btn" data-section="<%= i+1 %>" style="margin: -2px 25px auto 25px; border: white; background: white" />
+                                                                <input id="deleteSectionBtn" type="submit" value="&times;" class="close" style="margin: -2px 25px auto 25px; border: white; background: white" onclick="this.form.action='../mbomDeleteSection/?selectedSec=<%= i+1 %>&numSections=<%= mbomData.numSections%>'" />
                                                             </h6>
                                                             <% } else{ %>
                                                             <h6>Section 1<%=i+1%>
-                                                                <input id="deleteSectionBtn" type="button" value="&times;" class="close delete-section-btn" data-section="<%= i+1 %>" style="margin: -2px 25px auto 25px; border: white; background: white" />
+                                                                <input id="deleteSectionBtn" type="submit" value="&times;" class="close" style="margin: -2px 25px auto 25px; border: white; background: white" onclick="this.form.action='../mbomDeleteSection/?selectedSec=<%= i+1 %>&numSections=<%= mbomData.numSections%>'" />
                                                             </h6>
                                                             <% } %>
                                                             <ol data-draggable="target" id="section<%=i+1%>" style="width: 100%;">
@@ -562,18 +500,18 @@
                                             <label for="" class="col-form-label"></label>
                                             <button id="saveSectionBtn" class="btn-block btn-lg btn-outline-success waves-effect waves-light">Save Changes</button>
                                         </div>
-                                            <div class="col-sm-3">
-                                                <form id="mbomGenerateForm" class="mbomGenerateForm" action="" method="POST">
-                                                    <% if(mbomData) { %>
-                                                        <input type="text" name="jobNum" class="form-control" value="<%= mbomData.jobNum %>" placeholder="Type Number Here" id="gen_jobNum" readonly="readonly" hidden="hidden">
-                                                        <input type="text" name="releaseNum" class="form-control" value="<%= mbomData.releaseNum %>" placeholder="Type Release Here" id="gen_releaseNum" readonly="readonly" hidden="hidden">
-                                                        <input type="text" name="mbomID" class="form-control" value="<%= mbomData.mbomID %>" placeholder="Type Designation Here" id="gen_mbomID" readonly="readonly" hidden="hidden">
+                                        <div class="col-sm-3">
+                                            <form id="mbomAddSection" class="mbomAddSection" action="" method="POST">
+                                                <% if(mbomData) { %>
+                                                    <input type="text" name="jobNum" class="form-control" value="<%= mbomData.jobNum %>" placeholder="Type Number Here" id="" readonly="readonly" hidden="hidden">
+                                                    <input type="text" name="releaseNum" class="form-control" value="<%= mbomData.releaseNum %>" placeholder="Type Release Here" id="" readonly="readonly" hidden="hidden">
+                                                    <input type="text" name="mbomID" class="form-control" value="<%= mbomData.mbomID %>" placeholder="Type Designation Here" id="" readonly="readonly" hidden="hidden">
 
-                                                        <label for="" class="col-form-label"></label>
-                                                        <button id="generateMBOMBtn" type="submit" class="btn-block btn-lg btn-outline-secondary waves-effect waves-light add-button" formaction="/generateMBOM">Generate MBOM</button>
-                                                    <% } %>
-                                                </form>
-                                            </div>
+                                                    <label for="" class="col-form-label"></label>
+                                                    <button id="generateMBOMBtn" type="submit" class="btn-block btn-lg btn-outline-secondary waves-effect waves-light add-button" onclick="this.form.action='/generateMBOM'">Generate MBOM</button>
+                                                <% } %>
+                                            </form>
+                                        </div>
                                     </div>
                                     <p class="text-muted m-b-30"></p>
                                 </div>
@@ -662,15 +600,15 @@
                                         </div>
                                             <div class="row justify-content-center">
                                                 <div class="col-sm-2">
-                                                        <% if(brkAccData.length != 0){ %>
-                                                        <script> /* open accessories on load if data exists */ try{ if (typeof openBreakerAccessories === 'function') openBreakerAccessories(); } catch(e){} </script>
+                                                    <% if(brkAccData.length != 0){ %>
+                                                        <script> openBreakerAccessories() </script>
                                                         <div class="form-group" style="margin-top: 2.5rem; padding-left: 2.5rem;">
-                                                            <input class="form-check-input open-breaker-acc-checkbox" type="checkbox" name="addBreakerAccessories" id="addAccessories" checked="checked">
+                                                            <input class="form-check-input" type="checkbox" name="addBreakerAccessories" id="addAccessories" checked="checked" onclick="openBreakerAccessories()">
                                                             <label class="form-check-label" for="addAccessories">Add Loose Accessories</label>
                                                         </div>
                                                     <% } else { %>
                                                         <div class="form-group" style="margin-top: 2.5rem; padding-left: 2.5rem;">
-                                                            <input class="form-check-input open-breaker-acc-checkbox" type="checkbox" name="addBreakerAccessories" id="addAccessories">
+                                                            <input class="form-check-input" type="checkbox" name="addBreakerAccessories" id="addAccessories" onclick="openBreakerAccessories()">
                                                             <label class="form-check-label" for="addAccessories">Add Loose Accessories</label>
                                                         </div>
                                                     <% } %>
@@ -716,8 +654,8 @@
                                                     <label for="accessoryPN" class="col-form-label">P/N</label>
                                                     <input type="text" id="accessoryPN" name="accessoryPN" class="form-control" value="" placeholder="Type P/N Here" autocomplete="off" required/>
                                                 </div>
-                                                    <div class="col-sm-2" style="margin-top: 2.2rem;">
-                                                    <button id="addAccessoryBtn" type="button" class="btn btn-md btn-outline-info waves-effect waves-light add-accessory-btn">Add Accessory</button>
+                                                <div class="col-sm-2" style="margin-top: 2.2rem;">
+                                                    <button id="addAccessoryBtn" type="submit" class="btn btn-md btn-outline-info waves-effect waves-light" onclick="addBrkAccessory()">Add Accessory</button>
                                                 </div>
                                             </div>
                                         </div>
@@ -729,8 +667,8 @@
                                                         <span class="badge badge-info"><%=brkAccData[i].qty%></span>  <%=brkAccData[i].desc%>
                                                     </p>
                                                     <p>
-                                                        <input id="editButton" type="submit" value="Edit" class="btn btn-md btn-outline-warning waves-effect waves-light edit-acc-btn" data-toggle="modal" data-target="#editAccModal_<%=i%>" data-acc-index="<%=i%>"/>
-                                                        <button id="delAcc_<%=i%>" type="button" class="btn btn-md btn-outline-danger waves-effect waves-light delete-acc-btn" data-acc-pn="<%=brkAccData[i].pn%>" data-acc-index="<%=i%>">Delete</button>
+                                                        <input id="editButton" type="submit" value="Edit" class="btn btn-md btn-outline-warning waves-effect waves-light" data-toggle="modal" data-target="#editAccModal_<%=i%>"/>
+                                                        <button id="delAcc_<%= i %>" type="button" value="Delete" class="btn btn-md btn-outline-danger waves-effect waves-light" onclick="deleteBrkAcc(this)" data-acc-id="<%= i %>" data-dev="<%= brkAccData[i].idDev || '' %>">Delete</button>
                                                     </p>
                                                 </li>
 
@@ -775,7 +713,7 @@
                                                                         </div>
                                                                     </div>
                                                                     <div class="modal-footer justify-content-center" style="border-top: none;">
-                                                                        <input id="editBrkAccnBtn" type="submit" value="Save Changes" class="btn-block btn-lg btn-success col-sm-5 edit-brk-acc-btn" style="border: 0" data-edit-brk-idx="<%= i %>" />
+                                                                        <input id="editBrkAccnBtn" type="submit" value="Save Changes" class="btn-block btn-lg btn-success col-sm-5 edit-brk-acc-btn" style="border: 0" data-index="<%= i %>" />
                                                                     </div>
                                                                 </div>
                                                             </div>
@@ -848,9 +786,9 @@
                                                             <td><%= mbomBrkData[i].brkPN %></td>
                                                             <td><%= mbomBrkData[i].cradlePN %></td>
                                                             <td>
-                                                                <button id="copyButton" type="submit" class="btn btn-md btn-outline-secondary waves-effect waves-light" formaction="../copyBreaker/?idDev=<%= mbomBrkData[i].idDev%>">Copy</button>
-                                                                <button id="editBrkButton" type="submit" class="btn btn-md btn-outline-warning waves-effect waves-light" formaction="../editBreaker/?idDev=<%= mbomBrkData[i].idDev%>">Edit</button>
-                                                                <button id="deleteButton" type="submit" class="btn btn-md btn-outline-danger waves-effect waves-light" formaction="../deleteBreaker/?idDev=<%= mbomBrkData[i].idDev%>">Delete</button>
+                                                                <input id="copyButton" type="submit" value="Copy" class="btn btn-md btn-outline-secondary waves-effect waves-light" onclick="this.form.action='../copyBreaker/?idDev=<%= mbomBrkData[i].idDev%>'"/>
+                                                                <input id="editBrkButton" type="submit" value="Edit" class="btn btn-md btn-outline-warning waves-effect waves-light" onclick="this.form.action='../editBreaker/?idDev=<%= mbomBrkData[i].idDev%>'"/>
+                                                                <input id="deleteButton" type="submit" value="Delete" class="btn btn-md btn-outline-danger waves-effect waves-light" onclick="this.form.action='../deleteBreaker/?idDev=<%= mbomBrkData[i].idDev%>'"/>
                                                             </td>
                                                         </tr>
                                                         <% if(idDevs.has(currentBrk)){ %>
@@ -975,7 +913,7 @@
                                                 <div class="row justify-content-center">
                                                     <div class="col-sm-2">
                                                         <label for="uploadBtn"></label>
-                                                        <button id="uploadBtn" type="submit" value="Add" class="btn-block btn-lg btn-outline-secondary waves-effect waves-light" formaction="/addComItem">Add</button>
+                                                        <input id="uploadBtn" type="submit" value="Add" onclick="this.form.action='/addComItem'" class="btn-block btn-lg btn-outline-secondary waves-effect waves-light" />
                                                     </div>
                                                 </div>
                                             </div>
@@ -1096,7 +1034,7 @@
                                                 <div class="row justify-content-center">
                                                     <div class="col-sm-2">
                                                         <label for="uploadBtn"></label>
-                                                        <button id="uploadBtn" type="submit" value="Add" class="btn-block btn-lg btn-outline-secondary waves-effect waves-light" formaction="/createUserItem">Add</button>
+                                                        <input id="uploadBtn" type="submit" value="Add" class="btn-block btn-lg btn-outline-secondary waves-effect waves-light" onclick="this.form.action='/createUserItem'"/>
                                                     </div>
                                                 </div>
                                             </div>
@@ -1148,13 +1086,13 @@
                                                                 <td><%= comItemData[j].itemPN %></td>
                                                                 <td><%= mbomItemData[i].shipLoose %></td>
                                                                 <td>
-                                                                    <button id="copyButton" type="submit" class="btn btn-md btn-outline-secondary waves-effect waves-light" formaction="../copyItem/?itemSumID=<%= mbomItemData[i].itemSumID%>">Copy</button>
+                                                                    <input id="copyButton" type="submit" value="Copy" class="btn btn-md btn-outline-secondary waves-effect waves-light" onclick="this.form.action='../copyItem/?itemSumID=<%= mbomItemData[i].itemSumID%>'"/>
                                                                     <% if(mbomItemData[i].userItemID != null){%>
-                                                                        <button id="editButton" type="submit" class="btn btn-md btn-outline-warning waves-effect waves-light" formaction="../editUserItem/?itemSumID=<%= mbomItemData[i].itemSumID%>&userItemID=<%=mbomItemData[i].userItemID%>">Edit</button>
+                                                                        <input id="editButton" type="submit" value="Edit" class="btn btn-md btn-outline-warning waves-effect waves-light" onclick="this.form.action='../editUserItem/?itemSumID=<%= mbomItemData[i].itemSumID%>&userItemID=<%=mbomItemData[i].userItemID%>'"/>
                                                                     <% }else{ %>
-                                                                        <button id="editButton" type="submit" class="btn btn-md btn-outline-warning waves-effect waves-light" formaction="../editComItem/?itemSumID=<%= mbomItemData[i].itemSumID%>&comItemID=<%=mbomItemData[i].comItemID%>">Edit</button>
+                                                                        <input id="editButton" type="submit" value="Edit" class="btn btn-md btn-outline-warning waves-effect waves-light" onclick="this.form.action='../editComItem/?itemSumID=<%= mbomItemData[i].itemSumID%>&comItemID=<%=mbomItemData[i].comItemID%>'"/>
                                                                     <% } %>
-                                                                    <button id="deleteButton" type="submit" class="btn btn-md btn-outline-danger waves-effect waves-light" formaction="../deleteItem/?itemSumID=<%= mbomItemData[i].itemSumID %>">Delete</button>
+                                                                    <input id="deleteButton" type="submit" value="Delete" class="btn btn-md btn-outline-danger waves-effect waves-light" onclick="this.form.action='../deleteItem/?itemSumID=<%= mbomItemData[i].itemSumID %>'"/>
                                                                 </td>
                                                             </tr>
                                                         <% } %>
@@ -1173,13 +1111,13 @@
                                                                 <td><%= userItemData[j].itemPN %></td>
                                                                 <td><%= mbomItemData[i].shipLoose %></td>
                                                                 <td>
-                                                                    <button id="copyButton" type="submit" class="btn btn-md btn-outline-secondary waves-effect waves-light" formaction="../copyItem/?itemSumID=<%= mbomItemData[i].itemSumID%>">Copy</button>
+                                                                    <input id="copyButton" type="submit" value="Copy" class="btn btn-md btn-outline-secondary waves-effect waves-light" onclick="this.form.action='../copyItem/?itemSumID=<%= mbomItemData[i].itemSumID%>'"/>
                                                                     <% if(mbomItemData[i].userItemID != null){%>
-                                                                        <button id="editButton" type="submit" class="btn btn-md btn-outline-warning waves-effect waves-light" formaction="../editUserItem/?itemSumID=<%= mbomItemData[i].itemSumID%>&userItemID=<%=mbomItemData[i].userItemID%>">Edit</button>
+                                                                        <input id="editButton" type="submit" value="Edit" class="btn btn-md btn-outline-warning waves-effect waves-light" onclick="this.form.action='../editUserItem/?itemSumID=<%= mbomItemData[i].itemSumID%>&userItemID=<%=mbomItemData[i].userItemID%>'" />
                                                                     <% }else{ %>
-                                                                        <button id="editButton" type="submit" class="btn btn-md btn-outline-warning waves-effect waves-light" formaction="../editComItem/?itemSumID=<%= mbomItemData[i].itemSumID%>&comItemID=<%=mbomItemData[i].comItemID%>">Edit</button>
+                                                                        <input id="editButton" type="submit" value="Edit" class="btn btn-md btn-outline-warning waves-effect waves-light" onclick="this.form.action='../editComItem/?itemSumID=<%= mbomItemData[i].itemSumID%>&comItemID=<%=mbomItemData[i].comItemID%>'"/>
                                                                     <% } %>
-                                                                    <button id="deleteButton" type="submit" class="btn btn-md btn-outline-danger waves-effect waves-light" formaction="../deleteItem/?itemSumID=<%= mbomItemData[i].itemSumID %>">Delete</button>
+                                                                    <input id="deleteButton" type="submit" value="Delete" class="btn btn-md btn-outline-danger waves-effect waves-light" onclick="this.form.action='../deleteItem/?itemSumID=<%= mbomItemData[i].itemSumID %>'"/>
                                                                 </td>
                                                             </tr>
                                                         <% } %>
@@ -1202,9 +1140,8 @@
         </div> <!-- container-fluid -->
     </div> <!-- content -->
 </div> <!-- content-page -->
-    <footer class="footer">
-        © 2021 SAI, Advanced Power Solutions Inc.
-    </footer>
+    <%- include('../partials/footer') %>
+
 </div> <!-- wrapper -->
 
 
@@ -1254,76 +1191,21 @@
 
 
 
-</script>
-
 <script>
-    document.addEventListener('DOMContentLoaded', function(){
-        // bind Add Accessory buttons on the MBOM page
-        document.querySelectorAll('.add-accessory-btn').forEach(function(btn){
-            btn.addEventListener('click', function(e){
-                // on the searchMBOM page we call addBrkAccessory which reads inputs from the page
-                if (typeof addBrkAccessory === 'function') {
-                    try { addBrkAccessory(); } catch(err) { console.error('addBrkAccessory error', err); }
+    // Bind edit accessory modal save buttons (generated per-accessory) to call editBrkAcc(index)
+    document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('.edit-brk-acc-btn').forEach(function(btn){
+            btn.addEventListener('click', function(ev){
+                // prevent default form submission if editBrkAcc handles the action
+                // allow it to proceed otherwise
+                var idx = btn.getAttribute('data-index');
+                if(typeof editBrkAcc === 'function'){
+                    ev.preventDefault();
+                    editBrkAcc(parseInt(idx, 10));
                 }
             });
         });
     });
 </script>
-
-<!-- Dedicated (non-nested) delete form so delete buttons can reliably submit without depending on surrounding form context -->
-<form id="mbomDeleteForm" action="/mbomDeleteSection" method="POST" style="display:none">
-    <input type="hidden" name="mbomID" id="mbomDelete_mbomID" value="<%= mbomData ? mbomData.mbomID : '' %>">
-    <input type="hidden" name="jobNum" id="mbomDelete_jobNum" value="<%= mbomData ? mbomData.jobNum : '' %>">
-    <input type="hidden" name="releaseNum" id="mbomDelete_releaseNum" value="<%= mbomData ? mbomData.releaseNum : '' %>">
-    <input type="hidden" name="numSections" id="mbomDelete_numSections" value="<%= mbomData ? mbomData.numSections : '' %>">
-    <input type="hidden" name="selectedSec" id="mbomDelete_selectedSec" value="">
-</form>
-
-<script>
-    (function(){
-        function postFormData(url, data){
-            return fetch(url, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'
-                },
-                body: new URLSearchParams(data).toString(),
-                credentials: 'same-origin'
-            }).then(res => {
-                if(!res.ok) throw new Error('Network response was not ok: ' + res.status);
-                return res.text();
-            });
-        }
-
-        document.addEventListener('click', function(e){
-            var btn = e.target.closest && e.target.closest('.delete-section-btn');
-            if(!btn) return;
-            e.preventDefault();
-            var sec = btn.getAttribute('data-section');
-            if(!sec) return;
-            btn.disabled = true;
-
-            var data = {
-                mbomID: document.getElementById('mbomDelete_mbomID').value,
-                jobNum: document.getElementById('mbomDelete_jobNum').value,
-                releaseNum: document.getElementById('mbomDelete_releaseNum').value,
-                numSections: document.getElementById('mbomDelete_numSections').value,
-                selectedSec: sec
-            };
-
-            postFormData('/mbomDeleteSection', data)
-            .then(body => {
-                // success - reload so UI reflects DB
-                window.location.reload();
-            })
-            .catch(err => {
-                console.error('Delete section failed:', err);
-                alert('Unable to delete section: ' + err.message);
-                btn.disabled = false;
-            });
-        }, false);
-    })();
-</script>
-
 </body>
 </html>

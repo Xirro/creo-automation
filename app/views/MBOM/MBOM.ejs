@@ -54,11 +54,13 @@
 
 <body>
 <div id="wrapper">
-
+    <!-- Top Bar Start -->
     <%- include('../partials/header') %>
+    <!-- Top Bar End -->
+
+    <!-- ========== Left Sidebar Start ========== -->
     <%- include('../partials/sidebar') %>
-
-
+    <!-- Left Sidebar End -->
 
 <!-- Content Start -->
 <div class="content-page">
@@ -114,7 +116,7 @@
                                         <div class="form-group">
                                             <div class="row justify-content-center">
                                             <div class="col-6">
-                                                <button id="createBtn" type="submit" class="btn-block btn-lg btn-outline-success waves-effect waves-light" formaction="/createMBOM">Create New</button>
+                                                <input id="createBtn" type="submit" value="Create New" class="btn-block btn-lg btn-outline-success waves-effect waves-light" onclick="this.form.action='/createMBOM'" />
                                             </div>
                                             <div class="col-6">
                                                 <input id="copyBtn" type="button" value="Copy From Existing" class="btn-block btn-lg btn-outline-secondary waves-effect waves-light" data-toggle="modal" data-target="#copyMBOMModal"/>
@@ -152,8 +154,8 @@
                                                                 </form>
                                                             </div>
                                                             <div class="modal-footer justify-content-center">
-                                                                    <div class="w-50">
-                                                                    <button id="copyModalBtn" type="submit" class="btn-block btn-lg btn-info" formaction="/copyMBOM">Copy</button>
+                                                                <div class="w-50">
+                                                                    <input id="copyModalBtn" type="submit" value="Copy" class="btn-block btn-lg btn-info" onclick="this.form.action='/copyMBOM'" />
                                                                 </div>
                                                             </div>
                                                         </div>
@@ -268,10 +270,8 @@
 </div>
 
 </div> <!-- content-page -->
-<!-- footer -->
-<footer class="footer">
-    © 2021 SAI, Advanced Power Solutions Inc.
-</footer>
+    <%- include('../partials/footer') %>
+
 </div> <!-- wrapper -->
 
 

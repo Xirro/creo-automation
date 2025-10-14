@@ -1,24 +1,17 @@
-# Changelog
+(Changelog)
 
-All notable changes to this project will be documented in this file.
+2025-10-14 - Safety and login UX fixes
+- Enforced server-authoritative deletion of MBOM breaker accessories: persistent deletes now require the DB primary key (`brkAccID`). Removed fallback delete-by-(pn + idDev) behavior that could delete multiple accessories.
+- Renamed in-memory delete parameter to `arrIndex` for clarity and to avoid ambiguity with DB primary keys.
+- Hardened `editBreaker.ejs` to guard against undefined rows and avoid template runtime errors.
+- Fixed SQL placeholder parameter binding issues (ensure parameter arrays are passed to the DB wrapper).
+- Improved login error handling and UI: server now logs full errors but surfaces friendly, non-sensitive messages to users; login alert is accessible and the login button/spinner resets correctly after failed attempts.
 
-## [v0.1.0-beta] - 2025-10-03
-### Added
-- Beta release for testing installer workflow and MBOM runtime fixes.
-- CHANGELOG.md and release tag v1.0.0.
+Files changed (high level):
+- `app/controllers/mbomController.js`: enforce brkAccID-based deletes, prefer `arrIndex` for in-memory operations, fixed SQL param binding issues, and added defensive server-side checks.
+- `public/assets/js/mbomBreakerAccessories.js`: renamed client in-memory delete to post `arrIndex`, ensured delete-from-edit posts only `brkAccID`, and strengthened client-side guards.
+- `app/views/MBOM/*`: updated `searchMBOM.ejs`, `editBreaker.ejs`, and other MBOM views to add data attributes and guard against undefined data to avoid EJS runtime errors.
+- `server.js`: improved login error mapping and safe server logging.
 
-### Changed
-- MBOM section add/delete flows are now wrapped in database transactions to ensure atomic renumbering and prevent partial updates.
-- Replaced fragile inline EJS-in-JS patterns with data-* attributes and centralized DOMContentLoaded binders across MBOM and other views.
-- Replaced inline form-action mutations with `button formaction` where appropriate.
-- Fixed malformed EJS placeholders in Submittal templates causing template parse errors.
-- Updated accessory UI: "Add Loose Accessories" checkbox and "Add Accessory" button restored and made robust.
-- Installer filename now includes the Git tag (e.g. `CreoAutomationInstaller-v0.1.0-beta.exe`).
+Note: several other view files and supporting scripts were updated to improve template safety and developer scripts; see git history for a full file list.
 
-### Fixed
-- Prevent Node process crashes during Generate MBOM (XLSX export) and improved file handling around Excel generation.
-- Fixed `TypeError: Cannot read properties of undefined (reading 'secID')` by using stable `secID` PK for section delete and safer DB access patterns.
-
-### Notes
-- Please run MBOM smoke tests (Add Section, Delete Section, Generate MBOM) against a test/development database before deploying to production.
-- The repository `main` branch now contains these changes and a `v1.0.0` git tag has been created.
