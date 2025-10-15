@@ -28,6 +28,10 @@ jobs:
           Set-Content -Path env:BUILD_VERSION -Value $version
         shell: powershell
 
+      - name: Prepare dist folder
+        run: pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\build-dist.ps1 -ProjectRoot $env:GITHUB_WORKSPACE
+        shell: pwsh
+
       - name: Run MSI build
         run: |
           powershell -ExecutionPolicy Bypass -File installer\build-msi.ps1 -Version $env:BUILD_VERSION -SourceDir "dist" -OutDir "installer\output"
