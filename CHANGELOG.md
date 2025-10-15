@@ -29,3 +29,26 @@ Developer notes:
 - To test locally, copy and edit `app/config/database.local.js` with your MySQL/Docker credentials, then run the schema scripts in `scripts/` to initialize the local DB for testing.
 - Use the dev-only login bypass (`simulateLocal`) only in trusted local environments; it requires `DEV_BYPASS_PASSWORD` to be set.
 
+Full list of notable edits (working tree as of this commit):
+
+- Server and auth
+	- `server.js`: improved login error handling, added dev-local login bypass (`simulateLocal`) guard, mapped `sai_eng` and `sai_eng_admin` to production behavior used by `doadmin`.
+
+- MBOM and breaker accessory flows
+	- `app/controllers/mbomController.js`: enforce server-authoritative deletes by `brkAccID`, SELECT server-side `idDev` before DELETE, fix SQL placeholder parameter binding (pass arrays), defensive rendering to avoid template runtime errors.
+	- `public/assets/js/mbomBreakerAccessories.js`: client now posts `brkAccID` for persistent deletes and uses `arrIndex` for in-memory deletes; added stricter DOM data-attribute checks.
+	- `app/views/MBOM/editBreaker.ejs`, `app/views/MBOM/searchMBOM.ejs`, `app/views/MBOM/createComItem.ejs`: added data attributes, guarded array accesses, and hardened templates to avoid TypeErrors.
+
+- Views and templates (misc)
+	- `app/views/Main/login.ejs`, `app/views/Main/landingPage.ejs`, `app/views/MechEng/*`, `app/views/Rename/*`, `app/views/SlimVAC/*`, `app/views/Submittal/*`, `app/views/partComparison/*`: minor rendering and defensive updates to avoid runtime exceptions when data is missing or malformed.
+
+- Configuration and developer convenience
+	- `app/config/database.local.js` (template): new local override template created; it's gitignored. Use it to set host/user/password/database for local testing.
+	- `FUTURE_FIXES.md`: notes appended about further hardening and test plans.
+
+- Misc
+	- `.env` updated locally (not committed) to support new dev bypass env var and other local-only values.
+	- `uploads/12345A MBOM.xlsx` was removed from tracking (deleted from repo index).
+
+If you want a smaller, focused commit per area (server/auth, controller, views, docs), I can split the working-tree changes into multiple commits. Currently this changelog entry records the aggregate of edits made during the safety and UX update work.
+
