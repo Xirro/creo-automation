@@ -15,3 +15,17 @@ Files changed (high level):
 
 Note: several other view files and supporting scripts were updated to improve template safety and developer scripts; see git history for a full file list.
 
+Developer convenience:
+- Added a dev-only login bypass: username `simulateLocal` logs in without attempting a DB connection and sets `req.session.devBypass = true`. Use only for local development.
+	- The bypass requires a password read from `DEV_BYPASS_PASSWORD` (default: 'development') to reduce accidental use.
+
+2025-10-15 - Follow-up fixes and developer convenience
+- Mapped additional engineering usernames (`sai_eng`, `sai_eng_admin`) to the production DB selection path to match existing `doadmin` handling.
+- Added `app/config/database.local.js` template to make local DB overrides explicit (fill with local credentials; this file is gitignored). See README and docs for setup guidance.
+- Performed repository housekeeping: reset last large commit to keep working-tree changes unstaged so edits could be split into smaller, focused commits.
+- Minor template and client-side hardening (see 2025-10-14 entry). Continued to enforce server-authoritative deletes (persistent deletes require `brkAccID`) and rename in-memory delete parameter to `arrIndex`.
+
+Developer notes:
+- To test locally, copy and edit `app/config/database.local.js` with your MySQL/Docker credentials, then run the schema scripts in `scripts/` to initialize the local DB for testing.
+- Use the dev-only login bypass (`simulateLocal`) only in trusted local environments; it requires `DEV_BYPASS_PASSWORD` to be set.
+
