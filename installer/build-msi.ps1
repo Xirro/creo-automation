@@ -115,8 +115,8 @@ if ($env:SIGNING_PFX -or ($env:SIGNING_CERT -and $env:SIGNING_PASSWORD)) {
   $timestamp = 'http://timestamp.digicert.com'
   if ($env:SIGNING_PFX) {
     $pfx = $env:SIGNING_PFX
-    $pwd = $env:SIGNING_PASSWORD
-    & $signtool sign /f $pfx /p $pwd /tr $timestamp /td sha256 /fd sha256 $msiPath
+    $signingPassword = $env:SIGNING_PASSWORD
+    & $signtool sign /f $pfx /p $signingPassword /tr $timestamp /td sha256 /fd sha256 $msiPath
   } else {
     # Placeholder for cert in store
     & $signtool sign /n $env:SIGNING_CERT /tr $timestamp /td sha256 /fd sha256 $msiPath
