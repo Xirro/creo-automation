@@ -86,4 +86,8 @@ Notes:
 Implemented fixes (2025-10-14):
 - See `CHANGELOG.md` for a concise list of safety and login UX fixes applied on 2025-10-14 (delete-by-primary-key enforcement, `arrIndex` rename, EJS hardening, SQL binding fixes, login error improvements).
 
+Developer convenience:
+- A local dev bypass was added: logging in with username `simulateLocal` will skip DB connection and mark the session with `devBypass`. This is intended for developer/testing only and should not be used in production.
+  - The bypass requires a password provided via `DEV_BYPASS_PASSWORD` (default `development`). Set the environment variable to change the password.
+
 

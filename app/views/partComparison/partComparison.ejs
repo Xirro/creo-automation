@@ -38,94 +38,11 @@
 <body>
 <div id="wrapper">
     <!-- Top Bar Start -->
-    <div class="topbar">
-
-        <!-- LOGO -->
-        <div class="topbar-left" style="background-color: white;">
-            <a href="" class="logo">
-                        <span>
-                            <img src="/public/assets/images/SAI-Logo.JPG" alt="" height="67">
-                        </span>
-                <i>
-                    <img src="/public/assets/images/SAI-Logo.JPG" alt="" height="22">
-                </i>
-            </a>
-        </div>
-
-        <nav class="navbar-custom">
-            <ul class="navbar-right d-flex list-inline float-right mb-0">
-                <li class="dropdown notification-list d-none d-sm-block">
-                    <form role="search" class="app-search">
-                        <div class="form-group mb-0">
-                            <input type="text" class="form-control" placeholder="Search..">
-                            <button type="submit"><i class="fa fa-search"></i></button>
-                        </div>
-                    </form>
-                </li>
-            </ul>
-
-            <ul class="list-inline menu-left mb-0">
-                <li class="float-left">
-                    <button class="button-menu-mobile open-left waves-effect">
-                        <i class="mdi mdi-menu"></i>
-                    </button>
-                </li>
-            </ul>
-
-        </nav>
-
-    </div>
+    <%- include('../partials/header') %>
     <!-- Top Bar End -->
 
     <!-- ========== Left Sidebar Start ========== -->
-    <div class="left side-menu">
-        <div class="slimscroll-menu" id="remove-scroll">
-
-            <!--- Sidemenu -->
-            <div id="sidebar-menu">
-                <!-- Left Menu Start -->
-                <ul class="metismenu" id="side-menu">
-                    <li class="menu-title">CREO Automation</li>
-                    <li>
-                        <a href="../MBOM" class="waves-effect">
-                            <i class="mdi mdi-content-duplicate"></i> <span> MBOM </span>
-                        </a>
-                    </li>
-                    <li>
-                        <a href="../PDF-DXF-BIN_BOM" class="waves-effect">
-                            <i class="mdi mdi-content-duplicate"></i> <span> PDF / DXF / BIN BOM </span>
-                        </a>
-                    </li>
-                    <li>
-                        <a href="../submittal" class="waves-effect">
-                            <i class="mdi mdi-file-pdf"></i> <span> Submittal </span>
-                        </a>
-                    </li>
-                    <li>
-                        <a href="../slimVAC_NAR" class="waves-effect">
-                            <i class="mdi mdi-content-duplicate"></i> <span> SlimVAC NAR </span>
-                        </a>
-                    </li>
-                    <li>
-                        <a href="../partComparison" class="waves-effect">
-                            <i class="mdi mdi-content-duplicate"></i> <span> Part Comparison </span>
-                        </a>
-                    </li>
-                    <li>
-                        <a href="../renameMain" class="waves-effect">
-                            <i class="mdi mdi-content-duplicate"></i> <span> Rename </span>
-                        </a>
-                    </li>
-                </ul>
-
-            </div>
-            <!-- Sidebar -->
-            <div class="clearfix"></div>
-
-        </div>
-        <!-- Sidebar -left -->
-
-    </div>
+    <%- include('../partials/sidebar') %>
     <!-- Left Sidebar End -->
 
     <div class="content-page">
@@ -330,9 +247,7 @@
     </div>
 
 </div> <!-- content-page -->
-<footer class="footer">
-    © 2021 SAI, Advanced Power Solutions Inc.
-</footer>
+    <%- include('../partials/footer') %>
 </div> <!-- wrapper -->
 
 
