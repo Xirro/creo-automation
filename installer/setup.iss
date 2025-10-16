@@ -45,7 +45,6 @@ Filename: "{app}\bin\register-service.cmd"; Parameters: "remove"; Flags: runhidd
 function UninstallPreviousInstall(): Boolean; forward;
 
 function InitializeSetup(): Boolean;
-function UninstallPreviousInstall(): Boolean; forward;
 begin
   // Attempt to silently uninstall any existing Creo Automation installation
   Result := True;
