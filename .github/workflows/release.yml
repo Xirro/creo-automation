@@ -11,11 +11,18 @@ on:
     tags:
       - 'v*.*.*'
 
+env:
+  RUN_WORKFLOW: 'true'
+
 jobs:
   build-and-publish:
     runs-on: windows-latest
 
     steps:
+      - name: Check RUN_WORKFLOW toggle
+        run: |
+          if ($env:RUN_WORKFLOW -ne 'true') { Write-Host "RUN_WORKFLOW != 'true' — skipping job"; exit 0 }
+        shell: pwsh
       - name: Checkout code
         uses: actions/checkout@v4
 

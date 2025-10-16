@@ -7,11 +7,18 @@ on:
     branches: [ main ]
   workflow_dispatch: {}
 
+env:
+  RUN_WORKFLOW: 'true'
+
 jobs:
   package-windows:
     name: Package (Windows)
     runs-on: windows-latest
     steps:
+      - name: Check RUN_WORKFLOW toggle
+        run: |
+          if ($env:RUN_WORKFLOW -ne 'true') { Write-Host "RUN_WORKFLOW != 'true' — skipping job"; exit 0 }
+        shell: pwsh
       - name: Checkout
         uses: actions/checkout@v4
 
