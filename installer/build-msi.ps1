@@ -19,6 +19,9 @@
 #>
 [CmdletBinding()]
 param(
+  [Parameter(Mandatory = $false)]
+  [string]$Version = $null,
+
   [Parameter(Mandatory = $true)]
   [string]$SourceDir,
 
@@ -34,16 +37,19 @@ $productWxs = Join-Path $wixDir 'Product.wxs'
 $harvestedWxs = Join-Path $wixDir 'Harvested.wxs'
 
 # Determine version from package.json at the repository root (required)
-$Version = $null
 try {
-  $repoRoot = Resolve-Path -Path (Join-Path $scriptDir "..")
-  $packageJsonPath = Join-Path $repoRoot 'package.json'
-  if (Test-Path $packageJsonPath) {
-    $pkg = Get-Content -Path $packageJsonPath -Raw | ConvertFrom-Json
-    if ($pkg.version) {
-      $Version = $pkg.version
-      Write-Host "Using version from package.json: $Version"
+  if (-not $Version) {
+    $repoRoot = Resolve-Path -Path (Join-Path $scriptDir "..")
+    $packageJsonPath = Join-Path $repoRoot 'package.json'
+    if (Test-Path $packageJsonPath) {
+      $pkg = Get-Content -Path $packageJsonPath -Raw | ConvertFrom-Json
+      if ($pkg.version) {
+        $Version = $pkg.version
+        Write-Host "Using version from package.json: $Version"
+      }
     }
+  } else {
+    Write-Host "Using provided version: $Version"
   }
 } catch {
   Write-Warning "Failed to read package.json for version: $_"
