@@ -19,9 +19,6 @@
 #>
 [CmdletBinding()]
 param(
-  [Parameter(Mandatory = $false)]
-  [string]$Version,
-
   [Parameter(Mandatory = $true)]
   [string]$SourceDir,
 
@@ -36,31 +33,25 @@ $wixDir = Join-Path $scriptDir 'wix'
 $productWxs = Join-Path $wixDir 'Product.wxs'
 $harvestedWxs = Join-Path $wixDir 'Harvested.wxs'
 
-# If Version wasn't supplied, try to read it from package.json at repo root
-if (-not $Version) {
-  try {
-    $repoRoot = Resolve-Path -Path (Join-Path $scriptDir "..")
-    $packageJsonPath = Join-Path $repoRoot 'package.json'
-    if (Test-Path $packageJsonPath) {
-      $pkg = Get-Content -Path $packageJsonPath -Raw | ConvertFrom-Json
-      if ($pkg.version) {
-        $Version = $pkg.version
-        Write-Host "No -Version provided; using version from package.json: $Version"
-      }
+# Determine version from package.json at the repository root (required)
+$Version = $null
+try {
+  $repoRoot = Resolve-Path -Path (Join-Path $scriptDir "..")
+  $packageJsonPath = Join-Path $repoRoot 'package.json'
+  if (Test-Path $packageJsonPath) {
+    $pkg = Get-Content -Path $packageJsonPath -Raw | ConvertFrom-Json
+    if ($pkg.version) {
+      $Version = $pkg.version
+      Write-Host "Using version from package.json: $Version"
     }
-  } catch {
-    Write-Warning "Failed to read package.json for version: $_"
   }
+} catch {
+  Write-Warning "Failed to read package.json for version: $_"
+}
 
-  if (-not $Version -and $env:BUILD_VERSION) {
-    $Version = $env:BUILD_VERSION
-    Write-Host "Using BUILD_VERSION from environment: $Version"
-  }
-
-  if (-not $Version) {
-    Write-Error "Version parameter not supplied and package.json / BUILD_VERSION could not be read. Provide -Version or set BUILD_VERSION in env."
-    exit 1
-  }
+if (-not $Version) {
+  Write-Error "package.json not found or missing 'version' field. Ensure package.json exists at repo root and contains a 'version'."
+  exit 1
 }
 
 if (-not (Test-Path $productWxs)) {
