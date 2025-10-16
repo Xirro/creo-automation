@@ -156,29 +156,24 @@ end;
 
 function FindUninstallStringInRoot(Root: Integer; const DisplayName: String): String;
 var
-  Subkeys: TStrings;
+  Subkeys: TArrayOfString;
   i: Integer;
   KeyPath, val: String;
 begin
   Result := '';
-  Subkeys := TStringList.Create;
-  try
-    if RegGetSubkeyNames(Root, 'SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall', Subkeys) then
+  if RegGetSubkeyNames(Root, 'SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall', Subkeys) then
+  begin
+    for i := 0 to GetArrayLength(Subkeys) - 1 do
     begin
-      for i := 0 to Subkeys.Count - 1 do
+      KeyPath := 'SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\' + Subkeys[i];
+      if RegQueryStringValue(Root, KeyPath, 'DisplayName', val) then
       begin
-        KeyPath := 'SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\' + Subkeys[i];
-        if RegQueryStringValue(Root, KeyPath, 'DisplayName', val) then
+        if val = DisplayName then
         begin
-          if val = DisplayName then
-          begin
-            if RegQueryStringValue(Root, KeyPath, 'UninstallString', Result) then Exit;
-          end;
+          if RegQueryStringValue(Root, KeyPath, 'UninstallString', Result) then Exit;
         end;
       end;
     end;
-  finally
-    Subkeys.Free;
   end;
 end;
 
