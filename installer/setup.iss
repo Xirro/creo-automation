@@ -255,7 +255,8 @@ begin
   begin
     // nothing found
     Log('No previous Creo Automation uninstall entry found.');
-    Exit(False);
+    Result := False;
+    Exit;
   end;
 
   Log('Found uninstall command: ' + UninstCmd);
