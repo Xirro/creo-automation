@@ -2,130 +2,59 @@
 <Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
   <!--
     Product.wxs - WiX installer template for Creo Automation
-    Notes:
-      - Set ProductVersion at build time via -dProductVersion=1.2.3
-      - Uses a stable UpgradeCode so MSIs built with different ProductCode (Id="*")
-        will be treated as the same product family and a MajorUpgrade will remove
-        previous versions automatically.
-      - The actual application files should be harvested into a generated .wxs
-        (e.g. Harvested.wxs) which declares a ComponentGroup with Id="AppComponents".
+    Build-time vars required:
+      -dProductVersion=...    (Product Version)
+      -dSourceDir=...        (path to app files)
+      -dMainExeId=...        (Id of the main exe file inside harvested .wxs)
   -->
+  <Product Id="*"
+           Name="Creo Automation"
+           Language="1033"
+           Version="$(var.ProductVersion)"
+           Manufacturer="Xirro"
+           UpgradeCode="D4A5B3E8-6C2F-4F1A-9B7D-0A1C2E3F4B5C">
 
-  <?xml version="1.0" encoding="UTF-8"?>
-  <Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
-    <!--
-      Product.wxs - WiX installer template for Creo Automation
-      Notes:
-        - Set ProductVersion at build time via -dProductVersion=1.2.3
-        - Uses a stable UpgradeCode so MSIs built with different ProductCode (Id="*")
-          will be treated as the same product family and a MajorUpgrade will remove
-          previous versions automatically.
-        - The actual application files should be harvested into a generated .wxs
-          (e.g. Harvested.wxs) which declares a ComponentGroup with Id="AppComponents".
-    -->
+    <Package InstallerVersion="500" Compressed="yes" InstallScope="perMachine"/>
+    <MajorUpgrade AllowDowngrades="no" AllowSameVersionUpgrades="yes" DowngradeErrorMessage="A newer version of [ProductName] is already installed."/>
+    <MediaTemplate/>
 
-    <Product Id="*"
-             Name="Creo Automation"
-             Language="1033"
-             Version="$(var.ProductVersion)"
-             Manufacturer="Xirro"
-             UpgradeCode="D4A5B3E8-6C2F-4F1A-9B7D-0A1C2E3F4B5C">
+    <!-- Directory structure -->
+    <Directory Id="TARGETDIR" Name="SourceDir">
+      <Directory Id="ProgramFilesFolder">
+        <Directory Id="INSTALLFOLDER" Name="Creo Automation"/>
+      </Directory>
 
-      <Package InstallerVersion="500" Compressed="yes" InstallScope="perMachine"/>
+      <!-- Start Menu shortcut folder -->
+      <Directory Id="ProgramMenuFolder">
+        <Directory Id="ApplicationProgramsFolder" Name="Creo Automation"/>
+      </Directory>
+    </Directory>
 
-      <!-- MajorUpgrade element: remove previous versions that share the same UpgradeCode -->
-      <MajorUpgrade AllowDowngrades="no" AllowSameVersionUpgrades="yes" DowngradeErrorMessage="A newer version of [ProductName] is already installed."/>
+    <!-- Icon (SourceDir provided at build time) -->
+    <Icon Id="AppIcon" SourceFile="$(var.SourceDir)\creo-automation.ico" />
 
-      <MediaTemplate/>
+    <!-- Features and harvested components -->
+    <Feature Id="ProductFeature" Title="Creo Automation" Level="1">
+      <ComponentGroupRef Id="AppComponents" />
+      <ComponentRef Id="AppShortcutComponent" />
+    </Feature>
 
-      <!-- Product directory structure: install under ProgramFilesFolder\Creo Automation -->
-      <Directory Id="TARGETDIR" Name="SourceDir">
-        <Directory Id="ProgramFilesFolder">
-          <Directory Id="INSTALLFOLDER" Name="Creo Automation"/>
-        </Directory>
+    <!-- Shortcut & uninstall cleanup component -->
+    <DirectoryRef Id="INSTALLFOLDER">
+      <Component Id="AppShortcutComponent" Guid="*">
+        <File Id="$(var.MainExeId)" KeyPath="yes" Source="$(var.SourceDir)\CreoAutomation.exe">
+          <Shortcut Id="StartMenuShortcut"
+                    Directory="ApplicationProgramsFolder"
+                    Name="Creo Automation"
+                    Description="Launch Creo Automation"
+                    WorkingDirectory="INSTALLFOLDER"
+                    Icon="AppIcon" />
+        </File>
 
-        <!-- Start Menu shortcut folder -->
-        <?xml version="1.0" encoding="UTF-8"?>
-        <Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
-          <!--
-            Product.wxs - WiX installer template for Creo Automation
-            Notes:
-              - Set ProductVersion at build time via -dProductVersion=1.2.3
-              - Uses a stable UpgradeCode so MSIs built with different ProductCode (Id="*")
-                will be treated as the same product family and a MajorUpgrade will remove
-                previous versions automatically.
-              - The actual application files should be harvested into a generated .wxs
-                (e.g. Harvested.wxs) which declares a ComponentGroup with Id="AppComponents".
-          -->
+        <RemoveFolder Id="RemoveApplicationProgramsFolder" Directory="ApplicationProgramsFolder" On="uninstall"/>
+        <RegistryValue Root="HKLM" Key="Software\Xirro\CreoAutomation" Name="Installed" Type="integer" Value="1" KeyPath="yes"/>
+      </Component>
+    </DirectoryRef>
 
-          <Product Id="*"
-                   Name="Creo Automation"
-                   Language="1033"
-                   Version="$(var.ProductVersion)"
-                   Manufacturer="Xirro"
-                   UpgradeCode="D4A5B3E8-6C2F-4F1A-9B7D-0A1C2E3F4B5C">
-
-            <Package InstallerVersion="500" Compressed="yes" InstallScope="perMachine"/>
-
-            <!-- MajorUpgrade element: remove previous versions that share the same UpgradeCode -->
-            <MajorUpgrade AllowDowngrades="no" AllowSameVersionUpgrades="yes" DowngradeErrorMessage="A newer version of [ProductName] is already installed."/>
-
-            <MediaTemplate/>
-
-            <!-- Product directory structure: install under ProgramFilesFolder\Creo Automation -->
-            <Directory Id="TARGETDIR" Name="SourceDir">
-              <Directory Id="ProgramFilesFolder">
-                <Directory Id="INSTALLFOLDER" Name="Creo Automation"/>
-              </Directory>
-
-              <!-- Start Menu shortcut folder -->
-              <Directory Id="ProgramMenuFolder">
-                <Directory Id="ApplicationProgramsFolder" Name="Creo Automation"/>
-              </Directory>
-            </Directory>
-
-            <!-- Declare an icon (uses SourceDir variable provided by build script) -->
-            <Icon Id="AppIcon" SourceFile="$(var.SourceDir)\\creo-automation.ico" />
-
-            <!-- Features: the harvested ComponentGroup should provide AppComponents -->
-            <Feature Id="ProductFeature" Title="Creo Automation" Level="1">
-              <ComponentGroupRef Id="AppComponents" />
-
-              <!-- Shortcut feature: references a component that will create the Start Menu shortcut.
-                   The build script attempts to discover the main executable's File Id in Harvested.wxs
-                   and pass it to the compiler as the variable MainExeId so the Shortcut can be created
-                   automatically. If automatic discovery isn't used, set -dMainExeId=THE_FILE_ID when
-                   invoking candle.exe. -->
-              <ComponentRef Id="AppShortcutComponent"/>
-            </Feature>
-
-            <!-- Shortcut & uninstall cleanup component. Replace MainExeId via build vars or candle -dMainExeId=... -->
-            <DirectoryRef Id="INSTALLFOLDER">
-              <Component Id="AppShortcutComponent" Guid="*">
-                <!--
-                  The Shortcut element must be a child of a File element. We reference the main executable
-                  File by its Id using the compiler variable $(var.MainExeId). The build script will attempt
-                  to find the File Id for the main exe (default name: CreoAutomation.exe) in the harvested
-                  fragment and pass -dMainExeId to candle. If you prefer, set MainExeId manually.
-                -->
-                <File Id="$(var.MainExeId)" KeyPath="yes" Source="$(var.SourceDir)\\CreoAutomation.exe"/>
-
-                <Shortcut Id="StartMenuShortcut"
-                          Directory="ApplicationProgramsFolder"
-                          Name="Creo Automation"
-                          Description="Launch Creo Automation"
-                          WorkingDirectory="INSTALLFOLDER"
-                          Icon="AppIcon" />
-
-                <!-- Remove the Start Menu folder on uninstall when empty -->
-                <RemoveFolder Id="RemoveApplicationProgramsFolder" Directory="ApplicationProgramsFolder" On="uninstall"/>
-
-                <!-- Create an uninstall registry entry for repair/uninstall reference (helps cleanup) -->
-                <RegistryValue Root="HKLM" Key="Software\\Xirro\\CreoAutomation" Name="Installed" Type="integer" Value="1" KeyPath="yes"/>
-              </Component>
-            </DirectoryRef>
-
-            <!-- UI and basic properties can be extended here if desired -->
-
-          </Product>
-        </Wix>
+  </Product>
+</Wix>
