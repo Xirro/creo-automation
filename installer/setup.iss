@@ -156,7 +156,7 @@ end;
 
 function FindUninstallStringInRoot(Root: Integer; const DisplayName: String): String;
 var
-  Subkeys: TStringList;
+  Subkeys: TStrings;
   i: Integer;
   KeyPath, val: String;
 begin
