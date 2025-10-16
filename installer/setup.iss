@@ -42,6 +42,8 @@ Filename: "{win}\system32\WindowsPowerShell\v1.0\powershell.exe"; \
 Filename: "{app}\bin\register-service.cmd"; Parameters: "remove"; Flags: runhidden; RunOnceId: "UnregisterCreoAutomationService"
 
 [Code]
+function UninstallPreviousInstall(): Boolean; forward;
+
 function InitializeSetup(): Boolean;
 begin
   // Attempt to silently uninstall any existing Creo Automation installation
