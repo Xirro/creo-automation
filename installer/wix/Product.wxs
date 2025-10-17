@@ -24,8 +24,8 @@
         <Directory Id="INSTALLFOLDER" Name="Creo Automation"/>
       </Directory>
 
-      <!-- Start Menu shortcut folder -->
-      <Directory Id="ProgramMenuFolder">
+      <!-- Start Menu shortcut folder (machine-wide CommonProgramsFolder for per-machine installs) -->
+      <Directory Id="CommonProgramsFolder">
         <Directory Id="ApplicationProgramsFolder" Name="Creo Automation"/>
       </Directory>
     </Directory>
@@ -40,7 +40,7 @@
     </Feature>
 
     <!-- Cleanup component to remove Start Menu folder on uninstall (satisfies ICE64) -->
-    <DirectoryRef Id="ProgramMenuFolder">
+    <DirectoryRef Id="CommonProgramsFolder">
       <Component Id="AppMenuCleanup" Guid="*">
         <RemoveFolder Id="RemoveApplicationProgramsFolder" Directory="ApplicationProgramsFolder" On="uninstall" />
         <RegistryValue Root="HKLM" Key="Software\Xirro\CreoAutomation" Name="Installed" Type="integer" Value="1" KeyPath="yes" />
