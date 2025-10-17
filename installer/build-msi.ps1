@@ -156,7 +156,7 @@ Write-Host "Linking into MSI $msiPath..."
 ## Ensure any external cabinet files are written into the output directory by
 ## passing the base path (-b) to light.exe. This causes cab1.cab, cab2.cab, ...
 ## to be created in $OutDirFull so they can be packaged alongside the MSI.
-$lightArgs = @( '-out', $msiPath, '-b', $OutDirFull, '-embed' )
+$lightArgs = @( '-out', $msiPath, '-b', $OutDirFull )
 $lightArgs += $wixObjs
 
 & light.exe @lightArgs
