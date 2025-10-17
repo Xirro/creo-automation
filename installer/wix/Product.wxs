@@ -36,27 +36,7 @@
     <!-- Features and harvested components -->
     <Feature Id="ProductFeature" Title="Creo Automation" Level="1">
       <ComponentGroupRef Id="AppComponents" />
-      <ComponentRef Id="AppShortcutComponent" />
     </Feature>
-
-    <!-- Shortcut & uninstall cleanup component -->
-    <DirectoryRef Id="INSTALLFOLDER">
-      <Component Id="AppShortcutComponent" Guid="*">
-        <!-- Reference the harvested main executable file and attach a shortcut to it. -->
-        <FileRef Id="$(var.MainExeId)">
-          <Shortcut Id="StartMenuShortcut"
-                    Directory="ApplicationProgramsFolder"
-                    Name="Creo Automation"
-                    Description="Launch Creo Automation"
-                    WorkingDirectory="INSTALLFOLDER"
-                    Icon="AppIcon" />
-        </FileRef>
-
-        <RemoveFolder Id="RemoveApplicationProgramsFolder" Directory="ApplicationProgramsFolder" On="uninstall"/>
-        <!-- Registry value used as the component keypath now (required because File is declared in harvested fragment) -->
-        <RegistryValue Root="HKLM" Key="Software\Xirro\CreoAutomation" Name="Installed" Type="integer" Value="1" KeyPath="yes" />
-      </Component>
-    </DirectoryRef>
 
   </Product>
 </Wix>
