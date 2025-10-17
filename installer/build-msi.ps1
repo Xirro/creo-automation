@@ -153,7 +153,10 @@ $wixObjs = Get-ChildItem -Path $OutDirFull -Filter '*.wixobj' -File | ForEach-Ob
 $msiName = "CreoAutomation-$Version.msi"
 $msiPath = Join-Path $OutDirFull $msiName
 Write-Host "Linking into MSI $msiPath..."
-$lightArgs = @( '-out', $msiPath )
+## Ensure any external cabinet files are written into the output directory by
+## passing the base path (-b) to light.exe. This causes cab1.cab, cab2.cab, ...
+## to be created in $OutDirFull so they can be packaged alongside the MSI.
+$lightArgs = @( '-out', $msiPath, '-b', $OutDirFull, '-embed' )
 $lightArgs += $wixObjs
 
 & light.exe @lightArgs
