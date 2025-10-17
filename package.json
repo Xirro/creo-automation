@@ -1,6 +1,6 @@
 {
   "name": "sai-aps-portal",
-  "version": "0.1.1-beta",
+  "version": "0.1.1",
   "description": "SAI-APS-Portal",
   "main": "server.js",
   "scripts": {
