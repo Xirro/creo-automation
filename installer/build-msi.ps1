@@ -78,13 +78,27 @@ if (-not (Test-Path $SourceDir)) {
 }
 $resolvedSourceDir = (Resolve-Path $SourceDir).Path
 
-# If an icon exists in the repo installer folder, copy it into the SourceDir so the WiX Icon element can reference it
-$repoIcon = Join-Path $scriptDir 'creo-automation.ico'
+# Ensure the app icon is present in the SourceDir so the WiX Icon element can reference it.
+# Search a few likely locations in the repo and copy the first match into the resolved SourceDir.
+$iconName = 'creo-automation.ico'
+$possibleIconPaths = @(
+  (Join-Path $scriptDir $iconName),                       # installer/creo-automation.ico
+  (Join-Path (Resolve-Path -Path (Join-Path $scriptDir ".." )).Path $iconName), # repo root
+  (Join-Path (Resolve-Path -Path (Join-Path $scriptDir ".." )).Path "public\images\" $iconName),
+  (Join-Path (Resolve-Path -Path (Join-Path $scriptDir ".." )).Path "public\assets\images\" $iconName)
+)
 try {
-  if ((Test-Path $repoIcon) -and (Test-Path $resolvedSourceDir)) {
-    $destIcon = Join-Path $resolvedSourceDir 'creo-automation.ico'
-    Write-Host "Copying repository icon $repoIcon to $destIcon"
-    Copy-Item -Path $repoIcon -Destination $destIcon -Force
+  $foundIcon = $null
+  foreach ($p in $possibleIconPaths) {
+    if ($p -and (Test-Path $p)) { $foundIcon = (Resolve-Path $p).Path; break }
+  }
+  if ($foundIcon -and (Test-Path $resolvedSourceDir)) {
+    $destIcon = Join-Path $resolvedSourceDir $iconName
+    Write-Host "Copying icon $foundIcon to $destIcon"
+    Copy-Item -Path $foundIcon -Destination $destIcon -Force
+  } else {
+    Write-Host "Icon not found in repo locations; continuing without a custom icon. Searched:"
+    foreach ($p in $possibleIconPaths) { Write-Host "  $p" }
   }
 } catch {
   Write-Warning "Failed to copy icon: $_"

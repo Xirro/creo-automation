@@ -38,6 +38,8 @@
     <Feature Id="ProductFeature" Title="Creo Automation" Level="1">
       <ComponentGroupRef Id="AppComponents" />
       <ComponentRef Id="AppMenuCleanup" />
+      <!-- Start menu shortcut component (references the harvested main exe via MainExeId provided at build time) -->
+      <ComponentRef Id="ApplicationStartMenuShortcut" />
     </Feature>
 
     <!-- Cleanup component to remove Start Menu folder on uninstall (satisfies ICE64) -->
@@ -45,6 +47,22 @@
       <Component Id="AppMenuCleanup" Guid="*">
         <RemoveFolder Id="RemoveApplicationProgramsFolder" Directory="ApplicationProgramsFolder" On="uninstall" />
         <RegistryValue Root="HKLM" Key="Software\Xirro\CreoAutomation" Name="Installed" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+    </DirectoryRef>
+
+    <!-- Component that creates a Start Menu shortcut pointing to the main executable. -->
+    <DirectoryRef Id="ApplicationProgramsFolder">
+      <Component Id="ApplicationStartMenuShortcut" Guid="*">
+        <!-- Target uses the file id captured at build time (MainExeId) so the shortcut points to the installed exe. -->
+        <Shortcut Id="ApplicationStartMenuShortcut.Lnk"
+                  Name="Creo Automation"
+                  Description="Launch Creo Automation"
+                  Target="[#$(var.MainExeId)]"
+                  WorkingDirectory="INSTALLFOLDER"
+                  Icon="AppIcon"
+                  IconIndex="0" />
+        <!-- Registry key as component keypath (required to give the component a keypath) -->
+        <RegistryValue Root="HKLM" Key="Software\Xirro\CreoAutomation" Name="StartMenuShortcut" Type="integer" Value="1" KeyPath="yes" />
       </Component>
     </DirectoryRef>
 
