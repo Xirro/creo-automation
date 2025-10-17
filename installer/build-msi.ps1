@@ -83,9 +83,10 @@ $resolvedSourceDir = (Resolve-Path $SourceDir).Path
 $iconName = 'creo-automation.ico'
 $possibleIconPaths = @(
   (Join-Path $scriptDir $iconName),                       # installer/creo-automation.ico
-  (Join-Path (Resolve-Path -Path (Join-Path $scriptDir ".." )).Path $iconName), # repo root
-  (Join-Path (Resolve-Path -Path (Join-Path $scriptDir ".." )).Path "public\images\" $iconName),
-  (Join-Path (Resolve-Path -Path (Join-Path $scriptDir ".." )).Path "public\assets\images\" $iconName)
+  # repo root and common public image locations
+  (Join-Path (Resolve-Path -Path (Join-Path $scriptDir ".." )).Path $iconName),
+  (Join-Path (Join-Path (Resolve-Path -Path (Join-Path $scriptDir ".." )).Path "public\images") $iconName),
+  (Join-Path (Join-Path (Resolve-Path -Path (Join-Path $scriptDir ".." )).Path "public\assets\images") $iconName)
 )
 try {
   $foundIcon = $null
