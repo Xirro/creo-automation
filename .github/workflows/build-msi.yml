@@ -46,7 +46,7 @@ jobs:
 
       - name: Run MSI build
         run: |
-          powershell -ExecutionPolicy Bypass -File installer\build-msi.ps1 -Version $env:BUILD_VERSION -SourceDir "dist" -OutDir "installer\output"
+          powershell -ExecutionPolicy Bypass -File installer\build-msi.ps1 -Version $env:BUILD_VERSION -SourceDir "$env:GITHUB_WORKSPACE\dist" -OutDir "installer\output"
         shell: powershell
 
       - name: Upload artifact
