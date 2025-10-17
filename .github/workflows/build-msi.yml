@@ -49,9 +49,15 @@ jobs:
           powershell -ExecutionPolicy Bypass -File installer\build-msi.ps1 -Version $env:BUILD_VERSION -SourceDir "$env:GITHUB_WORKSPACE\dist" -OutDir "installer\output"
         shell: powershell
 
-      - name: Upload artifact
+      - name: Package installer output into zip
+        if: always()
+        run: |
+          pwsh -NoProfile -Command "Add-Type -AssemblyName System.IO.Compression.FileSystem; if (Test-Path 'installer\output') { if (Test-Path 'creo-msi.zip') { Remove-Item 'creo-msi.zip' -Force }; [System.IO.Compression.ZipFile]::CreateFromDirectory('installer\output','creo-msi.zip') } else { Write-Error 'installer\output not found' }"
+        shell: powershell
+
+      - name: Upload installer zip artifact
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: creo-msi
-          path: installer\output\*.msi
+          name: creo-msi-zip
+          path: creo-msi.zip
