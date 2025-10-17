@@ -53,11 +53,11 @@
     <!-- Component that creates a Start Menu shortcut pointing to the main executable. -->
     <DirectoryRef Id="ApplicationProgramsFolder">
       <Component Id="ApplicationStartMenuShortcut" Guid="*">
-        <!-- Target uses the file id captured at build time (MainExeId) so the shortcut points to the installed exe. -->
+        <!-- Target uses the file id captured at build time (RunAppBatId) so the shortcut runs run-app.bat installed under the product folder. -->
         <Shortcut Id="ApplicationStartMenuShortcut.Lnk"
                   Name="Creo Automation"
                   Description="Launch Creo Automation"
-                  Target="[#$(var.MainExeId)]"
+                  Target="[#$(var.RunAppBatId)]"
                   WorkingDirectory="INSTALLFOLDER"
                   Icon="AppIcon"
                   IconIndex="0" />

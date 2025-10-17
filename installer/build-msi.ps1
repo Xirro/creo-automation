@@ -135,6 +135,17 @@ if (Test-Path $harvestedWxs) {
   if ($m.Success) { $mainExeId = $m.Groups['id'].Value }
 }
 
+# Also attempt to find the harvested File Id for the run-app.bat launcher (common path: dist\bin\run-app.bat)
+$runAppBatId = $null
+$runBatCandidates = @('dist\\bin\\run-app.bat','run-app.bat')
+if (Test-Path $harvestedWxs) {
+  foreach ($candidate in $runBatCandidates) {
+    $m2 = [regex]::Match($harvestedText, 'File\s+Id="(?<id>[^\"]+)"[^>]*Source="[^\"]*' + [regex]::Escape($candidate) + '"', 'IgnoreCase')
+    if ($m2.Success) { $runAppBatId = $m2.Groups['id'].Value; break }
+  }
+  if ($runAppBatId) { Write-Host "Detected run-app.bat File Id: $runAppBatId" }
+}
+
 ## Pass defines to candle.exe. Use the already-resolved path string to ensure the preprocessor
 ## variable SourceDir is defined (so $(var.SourceDir) in Product.wxs is not undefined).
 $candleArgs = @()
@@ -150,6 +161,9 @@ $candleArgs += $candleOut
 if ($mainExeId) {
   Write-Host "Detected main exe File Id: $mainExeId"
   $candleArgs += ("-dMainExeId=$mainExeId")
+}
+if ($runAppBatId) {
+  $candleArgs += ("-dRunAppBatId=$runAppBatId")
 }
 $candleArgs += $productWxs
 $candleArgs += $harvestedWxs
