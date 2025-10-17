@@ -74,7 +74,9 @@ $OutDirFull = $OutDirFull.Path
 $repoIcon = Join-Path $scriptDir 'creo-automation.ico'
 try {
   if ((Test-Path $repoIcon) -and (Test-Path $SourceDir)) {
-    $destIcon = Join-Path (Resolve-Path $SourceDir) 'creo-automation.ico'
+    # Resolve SourceDir to a string path once and reuse it; this avoids passing a PathInfo object
+    $resolvedSourceDir = (Resolve-Path $SourceDir).Path
+    $destIcon = Join-Path $resolvedSourceDir 'creo-automation.ico'
     Write-Host "Copying repository icon $repoIcon to $destIcon"
     Copy-Item -Path $repoIcon -Destination $destIcon -Force
   }
@@ -84,7 +86,10 @@ try {
 
 # Harvest files with heat.exe (create a fragment with a ComponentGroup Id=AppComponents)
 Write-Host "Harvesting files from $SourceDir..."
-$heatArgs = @( 'dir', (Resolve-Path $SourceDir),
+## Use the resolved SourceDir path when calling heat and candle. heat.exe's -var var.SourceDir
+## causes harvested paths to be emitted as $(var.SourceDir) in the fragment; candle must be
+## passed -dSourceDir so Product.wxs can also reference $(var.SourceDir).
+$heatArgs = @( 'dir', $resolvedSourceDir,
   '-cg', 'AppComponents',
   '-dr', 'INSTALLFOLDER',
   '-sfrag',
@@ -109,10 +114,20 @@ if (Test-Path $harvestedWxs) {
   if ($m.Success) { $mainExeId = $m.Groups['id'].Value }
 }
 
-$candleArgs = @( '-dProductVersion=' + $Version, '-dSourceDir=' + (Resolve-Path $SourceDir), '-out', $OutDirFull )
+## Pass defines to candle.exe. Use the already-resolved path string to ensure the preprocessor
+## variable SourceDir is defined (so $(var.SourceDir) in Product.wxs is not undefined).
+$candleArgs = @( '-dProductVersion=' + $Version, ('-dSourceDir=' + $resolvedSourceDir), '-out', $OutDirFull )
 if ($mainExeId) { Write-Host "Detected main exe File Id: $mainExeId"; $candleArgs += ('-dMainExeId=' + $mainExeId) }
 $candleArgs += $productWxs
 $candleArgs += $harvestedWxs
+
+## Print the full candle.exe command for debugging in CI (each arg quoted)
+try {
+  $quotedArgs = $candleArgs | ForEach-Object { '"' + ($_ -replace '"','\"') + '"' }
+  Write-Host "Running: candle.exe $($quotedArgs -join ' ')"
+} catch {
+  Write-Host "Running: candle.exe (unable to quote args for display)"; Write-Host $candleArgs
+}
 
 & candle.exe @candleArgs
 if ($LASTEXITCODE -ne 0) { Write-Error "candle.exe failed with exit code $LASTEXITCODE"; exit $LASTEXITCODE }
