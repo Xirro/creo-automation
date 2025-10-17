@@ -125,8 +125,13 @@ if (Test-Path $harvestedWxs) {
 $candleArgs = @()
 $candleArgs += ("-dProductVersion=$Version")
 $candleArgs += ("-dSourceDir=$resolvedSourceDir")
+# candle.exe requires the -out argument to be a directory (ending with '\') when multiple
+# source files are provided. Ensure the out path ends with a backslash so candle treats it
+# as an output directory instead of a single output file.
+$candleOut = $OutDirFull
+if (-not $candleOut.EndsWith('\')) { $candleOut = $candleOut + '\' }
 $candleArgs += ("-out")
-$candleArgs += $OutDirFull
+$candleArgs += $candleOut
 if ($mainExeId) {
   Write-Host "Detected main exe File Id: $mainExeId"
   $candleArgs += ("-dMainExeId=$mainExeId")
