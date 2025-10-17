@@ -17,7 +17,7 @@
     <Package InstallerVersion="500" Compressed="yes" InstallScope="perMachine"/>
   <MajorUpgrade AllowDowngrades="no" AllowSameVersionUpgrades="yes" DowngradeErrorMessage="A newer version of [ProductName] is already installed."/>
   <!-- Request WiX embed cabinet into the MSI to avoid external .cab files at install time -->
-  <MediaTemplate EmbedCab="yes" CabinetName="creo-cab.cab"/>
+  <MediaTemplate EmbedCab="yes"/>
 
     <!-- Directory structure -->
     <Directory Id="TARGETDIR" Name="SourceDir">
