@@ -1,14 +1,7 @@
 name: Build MSI
 
 on:
-  push:
-    branches: [ main ]
-    tags: ['v*']
-  release:
-    types: [ published ]
-  workflow_dispatch:
-env:
-  RUN_WORKFLOW: 'true'
+  workflow_dispatch: {}
 jobs:
   build-msi:
     runs-on: windows-latest
@@ -16,10 +9,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Check RUN_WORKFLOW toggle
-        run: |
-          if ($env:RUN_WORKFLOW -ne 'true') { Write-Host "RUN_WORKFLOW != 'true' — skipping job"; exit 0 }
-        shell: pwsh
+      # job-level `if` will skip this job when RUN_WORKFLOW is false
 
       - name: Set up WiX
         run: |

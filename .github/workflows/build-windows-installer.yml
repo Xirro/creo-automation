@@ -1,12 +1,7 @@
 name: Build Windows installer
 
 on:
-  push:
-    branches: [ main ]
   workflow_dispatch: {}
-
-env:
-  RUN_WORKFLOW: 'false'
 
 jobs:
   build-installer:
@@ -15,10 +10,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Check RUN_WORKFLOW toggle
-        run: |
-          if ($env:RUN_WORKFLOW -ne 'true') { Write-Host "RUN_WORKFLOW != 'true' — skipping job"; exit 0 }
-        shell: pwsh
+      # job-level `if` will skip this job when RUN_WORKFLOW is false
 
       - name: Setup Node
         uses: actions/setup-node@v4

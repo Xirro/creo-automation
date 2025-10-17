@@ -7,22 +7,14 @@
 name: Build and publish release asset
 
 on:
-  push:
-    tags:
-      - 'v*.*.*'
-
-env:
-  RUN_WORKFLOW: 'true'
+  workflow_dispatch: {}
 
 jobs:
   build-and-publish:
     runs-on: windows-latest
 
     steps:
-      - name: Check RUN_WORKFLOW toggle
-        run: |
-          if ($env:RUN_WORKFLOW -ne 'true') { Write-Host "RUN_WORKFLOW != 'true' — skipping job"; exit 0 }
-        shell: pwsh
+      # This workflow runs only when manually triggered via the UI
       - name: Checkout code
         uses: actions/checkout@v4
 
