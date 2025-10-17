@@ -68,6 +68,6 @@
   "repository": {}
   ,
   "devDependencies": {
-    "pkg": "^5.8.0"
+    "pkg": "^5.8.1"
   }
 }
