@@ -70,12 +70,18 @@ $OutDirFull = Resolve-Path -Path $OutDir -ErrorAction SilentlyContinue
 if (-not $OutDirFull) { New-Item -ItemType Directory -Path $OutDir -Force | Out-Null; $OutDirFull = Resolve-Path -Path $OutDir }
 $OutDirFull = $OutDirFull.Path
 
+# Resolve SourceDir to an absolute path and ensure it exists. This must be done
+# before calling heat/candle so the preprocessor define -dSourceDir can be passed.
+if (-not (Test-Path $SourceDir)) {
+  Write-Error "SourceDir not found: $SourceDir"
+  exit 1
+}
+$resolvedSourceDir = (Resolve-Path $SourceDir).Path
+
 # If an icon exists in the repo installer folder, copy it into the SourceDir so the WiX Icon element can reference it
 $repoIcon = Join-Path $scriptDir 'creo-automation.ico'
 try {
-  if ((Test-Path $repoIcon) -and (Test-Path $SourceDir)) {
-    # Resolve SourceDir to a string path once and reuse it; this avoids passing a PathInfo object
-    $resolvedSourceDir = (Resolve-Path $SourceDir).Path
+  if ((Test-Path $repoIcon) -and (Test-Path $resolvedSourceDir)) {
     $destIcon = Join-Path $resolvedSourceDir 'creo-automation.ico'
     Write-Host "Copying repository icon $repoIcon to $destIcon"
     Copy-Item -Path $repoIcon -Destination $destIcon -Force
