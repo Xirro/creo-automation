@@ -52,7 +52,7 @@
         </File>
 
         <RemoveFolder Id="RemoveApplicationProgramsFolder" Directory="ApplicationProgramsFolder" On="uninstall"/>
-        <RegistryValue Root="HKLM" Key="Software\Xirro\CreoAutomation" Name="Installed" Type="integer" Value="1" KeyPath="yes"/>
+        <RegistryValue Root="HKLM" Key="Software\Xirro\CreoAutomation" Name="Installed" Type="integer" Value="1" />
       </Component>
     </DirectoryRef>
 
