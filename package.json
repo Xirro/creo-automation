@@ -1,5 +1,5 @@
 {
-  "name": "SAI-APS-Portal",
+  "name": "sai-aps-portal",
   "version": "0.1.1-beta",
   "description": "SAI-APS-Portal",
   "main": "server.js",
@@ -66,4 +66,8 @@
     "util": "^0.12.1"
   },
   "repository": {}
+  ,
+  "devDependencies": {
+    "pkg": "^5.8.0"
+  }
 }
