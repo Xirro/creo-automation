@@ -122,18 +122,21 @@ if (Test-Path $harvestedWxs) {
 
 ## Pass defines to candle.exe. Use the already-resolved path string to ensure the preprocessor
 ## variable SourceDir is defined (so $(var.SourceDir) in Product.wxs is not undefined).
-$candleArgs = @( '-dProductVersion=' + $Version, ('-dSourceDir=' + $resolvedSourceDir), '-out', $OutDirFull )
-if ($mainExeId) { Write-Host "Detected main exe File Id: $mainExeId"; $candleArgs += ('-dMainExeId=' + $mainExeId) }
+$candleArgs = @()
+$candleArgs += ("-dProductVersion=$Version")
+$candleArgs += ("-dSourceDir=$resolvedSourceDir")
+$candleArgs += ("-out")
+$candleArgs += $OutDirFull
+if ($mainExeId) {
+  Write-Host "Detected main exe File Id: $mainExeId"
+  $candleArgs += ("-dMainExeId=$mainExeId")
+}
 $candleArgs += $productWxs
 $candleArgs += $harvestedWxs
 
-## Print the full candle.exe command for debugging in CI (each arg quoted)
-try {
-  $quotedArgs = $candleArgs | ForEach-Object { '"' + ($_ -replace '"','\"') + '"' }
-  Write-Host "Running: candle.exe $($quotedArgs -join ' ')"
-} catch {
-  Write-Host "Running: candle.exe (unable to quote args for display)"; Write-Host $candleArgs
-}
+## Print the full candle.exe command for debugging in CI (each arg on its own line)
+Write-Host "Running: candle.exe with args:"
+foreach ($arg in $candleArgs) { Write-Host "  $arg" }
 
 & candle.exe @candleArgs
 if ($LASTEXITCODE -ne 0) { Write-Error "candle.exe failed with exit code $LASTEXITCODE"; exit $LASTEXITCODE }
