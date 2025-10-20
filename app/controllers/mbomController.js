@@ -3385,13 +3385,19 @@ exports.generateMBOM = function (req, res) {
                 });
 
 
-                //write workbook to a file located "temporarily" in the uploads folder of the app.
-                //Afterwards send that file to the client's downloads folder via the built-in res.download node.js function
-                workbook.xlsx.writeFile('uploads/' + mbomData.jobNum + mbomData.releaseNum + ' MBOM.xlsx').then(function () {
-                    const remoteFilePath = 'uploads/';
-                    const remoteFilename = mbomData.jobNum + mbomData.releaseNum + ' MBOM.xlsx';
-                    res.download(remoteFilePath + remoteFilename);
-                });
+                //write workbook to a file in the user's Downloads folder and then send it to the client's downloads
+                //build the Downloads path using the OS home directory
+                const remoteFilename = mbomData.jobNum + mbomData.releaseNum + ' MBOM.xlsx';
+                workbook.xlsx.writeBuffer()
+                    .then(function (buffer) {
+                        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+                        res.setHeader('Content-Disposition', 'attachment; filename="' + remoteFilename + '"');
+                        res.send(Buffer.from(buffer));
+                    })
+                    .catch(function (err) {
+                        console.log('Error generating workbook buffer (sections):', err);
+                        if (!res.headersSent) res.status(500).send('Error generating MBOM');
+                    });
 
                 return null;
             } else {
@@ -3807,13 +3813,19 @@ exports.generateMBOM = function (req, res) {
                     cell.alignment = {wrapText: true};
                 });
 
-                //write workbook to a file located "temporarily" in the uploads folder of the app.
-                //Afterwards send that file to the client's downloads folder via the built-in res.download node.js function
-                workbook.xlsx.writeFile('uploads/' + mbomData.jobNum + mbomData.releaseNum + ' MBOM.xlsx').then(function () {
-                    const remoteFilePath = 'uploads/';
-                    const remoteFilename = mbomData.jobNum + mbomData.releaseNum + ' MBOM.xlsx';
-                    res.download(remoteFilePath + remoteFilename);
-                });
+                //write workbook to a file in the user's Downloads folder and then send it to the client's downloads
+                //build the Downloads path using the OS home directory
+                const remoteFilename = mbomData.jobNum + mbomData.releaseNum + ' MBOM.xlsx';
+                workbook.xlsx.writeBuffer()
+                    .then(function (buffer) {
+                        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+                        res.setHeader('Content-Disposition', 'attachment; filename="' + remoteFilename + '"');
+                        res.send(Buffer.from(buffer));
+                    })
+                    .catch(function (err) {
+                        console.log('Error generating workbook buffer (no-section):', err);
+                        if (!res.headersSent) res.status(500).send('Error generating MBOM');
+                    });
 
                 return null;
             }
