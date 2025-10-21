@@ -36,6 +36,18 @@ app.use(bodyParser.json({
 //directs app to use cookieParser
 app.use(cookieParser());
 
+// Track active requests to support graceful shutdown coordination
+let activeRequests = 0;
+app.use((req, res, next) => {
+    // don't count internal endpoints used for health/shutdown polling
+    if (req.path && req.path.startsWith('/__')) return next();
+    activeRequests++;
+    res.on('finish', () => {
+        try { activeRequests = Math.max(0, activeRequests - 1); } catch (e) { activeRequests = 0; }
+    });
+    next();
+});
+
 //directs app to use/initialize the session
 // session secret should come from environment in production. Provide a safe dev fallback.
 const sessionSecret = process.env.SESSION_SECRET || 'dev-local-session-secret-change-me';
@@ -224,7 +236,8 @@ app.post('/login', async function(req, res) {
 // Middleware to require login for all subsequent routes
 function requireLogin(req, res, next) {
     // Allow health, login and static asset routes
-    if (req.path === '/login' || req.path.startsWith('/public') || req.path === '/favicon.ico') return next();
+    // Allow internal launcher endpoints that begin with /__ (status/shutdown) without auth
+    if (req.path === '/login' || req.path.startsWith('/public') || req.path === '/favicon.ico' || req.path.startsWith('/__')) return next();
     if (req.session && req.session.loggedIn) return next();
     return res.redirect('/login');
 }
@@ -255,9 +268,51 @@ app.get('/logout', function(req, res) {
 });
 
 //starts up app and sets up listening on port 3000
-app.listen(3000, function(err) {
+// Expose a private shutdown endpoint (only accessible from localhost) to allow graceful shutdown from the launcher
+app.post('/__shutdown', function(req, res) {
+    // Ensure the request originates from localhost
+    const remote = req.ip || req.connection.remoteAddress || '';
+    if (!(remote === '127.0.0.1' || remote === '::1' || remote === '::ffff:127.0.0.1')) {
+        res.status(403).send('Forbidden');
+        return;
+    }
+
+    res.send({ status: 'shutting down', activeRequests: activeRequests });
+    // Close the server gracefully then exit
+    if (server) {
+        server.close(() => {
+            console.log('Server closed via /__shutdown');
+            process.exit(0);
+        });
+        // Force exit if it doesn't close in reasonable time
+        setTimeout(() => {
+            console.log('Force exiting after shutdown timeout');
+            process.exit(0);
+        }, 5000);
+    } else {
+        process.exit(0);
+    }
+});
+
+// Status endpoint used by launcher to determine if server is idle
+app.get('/__status', function(req, res) {
+    const remote = req.ip || req.connection.remoteAddress || '';
+    if (!(remote === '127.0.0.1' || remote === '::1' || remote === '::ffff:127.0.0.1')) {
+        res.status(403).send('Forbidden');
+        return;
+    }
+    res.send({ activeRequests: activeRequests });
+});
+
+// Start the HTTP server through Node's http module so we can call server.close() later for graceful shutdown
+const http = require('http');
+const server = http.createServer(app);
+// Bind explicitly to 127.0.0.1 (loopback) to avoid listening on all interfaces
+const LISTEN_HOST = process.env.LISTEN_HOST || '127.0.0.1';0
+const LISTEN_PORT = process.env.LISTEN_PORT || 3000;
+server.listen(LISTEN_PORT, LISTEN_HOST, function(err) {
     if (!err)
-        console.log("App is live at localhost:3000/");
+        console.log(`App is live at http://${LISTEN_HOST}:${LISTEN_PORT}/`);
     else console.log(err)
 });
 
