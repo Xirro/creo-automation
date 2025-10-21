@@ -1,9 +1,10 @@
-const { app, BrowserWindow, Menu, MenuItem, shell } = require('electron');
+const { app, BrowserWindow, Menu, MenuItem, shell, Tray, Notification } = require('electron');
 const path = require('path');
 const child_process = require('child_process');
 
 let serverProcess = null;
 let mainWindow = null;
+let tray = null;
 // Load launcher secret from env or packaged metadata (package.json -> launcherSecret or build.launcherSecret)
 let LAUNCHER_SECRET = process.env.LAUNCHER_SECRET || null;
 if (!LAUNCHER_SECRET) {
@@ -18,6 +19,20 @@ const gotSingleInstanceLock = app.requestSingleInstanceLock();
 if (!gotSingleInstanceLock) {
   console.log('Another instance is already running - exiting this instance');
   app.quit();
+}
+
+// If the exe is invoked with --shutdown we should stop any running server and exit (used by uninstallers)
+if (process.argv && process.argv.includes('--shutdown')) {
+  // Try to notify running instance via /__shutdown
+  (async () => {
+    try {
+      const http = require('http');
+      const options = { hostname: '127.0.0.1', port: process.env.LISTEN_PORT || 3000, path: '/__shutdown', method: 'POST', timeout: 3000 };
+      const req = http.request(options, (res) => { res.on('data',()=>{}); res.on('end', ()=> process.exit(0)); });
+      req.on('error', ()=> process.exit(0));
+      req.end();
+    } catch (e) { process.exit(0); }
+  })();
 }
 
 function startServer() {
@@ -47,12 +62,29 @@ function startServer() {
 
   appendLog('Starting server process', { serverPath, exec: process.execPath, packaged: app.isPackaged });
 
+  // Show a small tray notification (balloon on Windows) or a native notification as fallback
+  function showTrayNotification(title, body) {
+    try {
+      if (tray && typeof tray.displayBalloon === 'function') {
+        // Windows: displayBalloon expects { title, content }
+        tray.displayBalloon({ title: title, content: body });
+      } else if (Notification) {
+        // Cross-platform fallback: native notification
+        try { new Notification({ title: title, body: body }).show(); } catch (e) { console.log(title + ': ' + body); }
+      } else {
+        console.log(title + ': ' + body);
+      }
+    } catch (e) { console.error('showTrayNotification failed', e); }
+  }
+
   if (app.isPackaged) {
     // When packaged, Node binary may not be available separately. Start the server in-process.
     try {
       appendLog('Requiring server in-process', serverPath);
       require(serverPath);
       appendLog('Server required successfully (in-process)');
+      // notify user
+      showTrayNotification('Creo Automation', 'Server started');
     } catch (err) {
       appendLog('Failed to require server in-process:', (err && err.stack) || err);
       console.error('Failed to require server in-process:', err);
@@ -68,6 +100,10 @@ function startServer() {
     serverProcess.on('error', (err) => {
       appendLog('Failed to start server process:', (err && err.stack) || err);
       console.error('Failed to start server process:', err);
+    });
+    // notify on spawn
+    serverProcess.on('spawn', () => {
+      try { showTrayNotification('Creo Automation', 'Server started'); } catch (e) {}
     });
   }
 }
@@ -164,6 +200,7 @@ function stopServer() {
             console.error('Error killing server process after shutdown error:', e);
           }
           serverProcess = null;
+          try { showTrayNotification('Creo Automation', 'Server stopped'); } catch (e) {}
         });
         req.on('timeout', () => req.abort());
         req.end();
@@ -175,6 +212,7 @@ function stopServer() {
           console.error('Error killing server process in catch:', e);
         }
         serverProcess = null;
+        try { showTrayNotification('Creo Automation', 'Server stopped'); } catch (e) {}
       }
     };
 
@@ -195,6 +233,25 @@ function createWindow() {
 
   const baseUrl = `http://${process.env.LISTEN_HOST || '127.0.0.1'}:${process.env.LISTEN_PORT || 3000}`;
   mainWindow.loadURL(baseUrl);
+  // Ensure the window shows up for users
+  mainWindow.once('ready-to-show', () => {
+    try { mainWindow.show(); } catch (e) {}
+  });
+
+  // Create a system tray so users can quit the background process without Task Manager
+  // icon now lives in the electron/ folder alongside this file
+  const iconPath = path.join(__dirname, 'creo-automation.ico');
+  try {
+    tray = new Tray(iconPath);
+    const trayMenu = Menu.buildFromTemplate([
+      { label: 'Show', click: () => { if (mainWindow) { mainWindow.show(); mainWindow.focus(); } } },
+      { label: 'Quit', click: () => { try { showTrayNotification('Creo Automation', 'Stopping server...'); stopServer(); } catch (e) { console.error(e); } try { app.quit(); } catch (e) { console.error(e); } } }
+    ]);
+    tray.setToolTip('Creo Automation');
+    tray.setContextMenu(trayMenu);
+  } catch (e) {
+    console.warn('Tray not available:', e);
+  }
 
   // Application menu: add a View menu item to open the current page in external browser
   const template = [

@@ -81,6 +81,16 @@
       "**/*",
       "!node_modules/electron-builder/**/*"
     ],
+    "artifactName": "CreoAutomation_${version}.${ext}",
+    "win": {
+      "icon": "electron/creo-automation.ico"
+    },
+    "nsis": {
+      "artifactName": "CreoAutomation_${version}_Setup.${ext}",
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true
+    },
     "extraMetadata": {}
   }
 }
