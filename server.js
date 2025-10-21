@@ -90,14 +90,16 @@ if (db.isInitialized()) {
     attachDbMiddleware({ host, user, password, port, database });
 }
 
-//directing the app where to look for the views, and also instructing it that the content is EJS (embedded javascript)
-//EJS allows us to use dynamic values we pass in the render() calls to our otherwise static HTML files
-app.set('views', './app/views');
+// directing the app where to look for the views, and instructing it that the content is EJS
+// Use absolute paths based on __dirname so this works when running inside ASAR (packaged)
+const viewsPath = path.join(__dirname, 'app', 'views');
+app.set('views', viewsPath);
 app.set('view engine', 'ejs');
 
-//gives app access to the public folder from root
-app.use(express.static(path.join(__dirname, '/public')));
-app.use('/public', express.static('public'));
+// give app access to the public folder from root; use absolute paths for packaged runs
+const publicPath = path.join(__dirname, 'public');
+app.use(express.static(publicPath));
+app.use('/public', express.static(publicPath));
 
 //initial route => executed when someone goes to localhost:3000/
 app.get('/', function(req, res) {
