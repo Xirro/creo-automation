@@ -85,7 +85,7 @@
     ],
     "artifactName": "CreoAutomation_${version}.${ext}",
     "win": {
-      "icon": "build/creo-automation.ico"
+      "icon": "electron/creo-automation.ico"
     },
     "nsis": {
       "artifactName": "CreoAutomation_${version}_Setup.${ext}",
