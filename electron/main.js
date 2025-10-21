@@ -363,10 +363,39 @@ function createWindow() {
 
 app.on('ready', () => {
   startServer();
-  // give the server a moment to start
-  setTimeout(() => {
-    createWindow();
-  }, 700);
+  // Wait for the embedded server to become reachable before creating the BrowserWindow.
+  // This is more reliable for packaged builds where server startup may be slower or run in-process.
+  (function waitForServerThenCreate() {
+    const http = require('http');
+    const host = process.env.LISTEN_HOST || '127.0.0.1';
+    const port = parseInt(process.env.LISTEN_PORT || '3000', 10);
+    const maxWaitMs = 15000; // total max wait
+    const intervalMs = 500;
+    let waited = 0;
+
+    const check = () => {
+      const options = { hostname: host, port: port, path: '/__status', method: 'GET', timeout: 2000 };
+      const req = http.request(options, (res) => {
+        // If we get any response, assume server is up and create the window
+        try { res.resume(); } catch (e) {}
+        createWindow();
+      });
+      req.on('error', (err) => {
+        waited += intervalMs;
+        if (waited >= maxWaitMs) {
+          // Give up and create the window anyway (server might be unavailable but we don't want to block startup)
+          createWindow();
+        } else {
+          setTimeout(check, intervalMs);
+        }
+      });
+      req.on('timeout', () => { req.abort(); });
+      try { req.end(); } catch (e) { /* ignore */ }
+    };
+
+    // start first check after a short delay to allow in-process server creation
+    setTimeout(check, 300);
+  })();
 });
 
 // Handle attempts to start a second instance: focus the existing window
