@@ -23,15 +23,53 @@ if (!gotSingleInstanceLock) {
 function startServer() {
   // Start the existing server.js using the same Node that runs Electron
   // We spawn a child process so we can stop it when the app quits
-  const serverPath = path.join(__dirname, '..', 'server.js');
-  serverProcess = child_process.spawn(process.execPath, [serverPath], {
-    cwd: path.join(__dirname, '..'),
-    stdio: 'inherit'
-  });
+  // Resolve serverPath differently when packaged: electron-builder places unpacked files
+  // in resources/app.asar.unpacked/<path>. Use that when available.
+  let serverPath = path.join(__dirname, '..', 'server.js');
+  if (app.isPackaged) {
+    // resourcesPath points to resources directory next to the exe
+    // asarUnpack will place server.js into resources/app.asar.unpacked/server.js
+    const unpacked = path.join(process.resourcesPath, 'app.asar.unpacked', 'server.js');
+    if (require('fs').existsSync(unpacked)) {
+      serverPath = unpacked;
+    } else {
+      // Fallback: try resources/server.js
+      const alt = path.join(process.resourcesPath, 'server.js');
+      if (require('fs').existsSync(alt)) serverPath = alt;
+    }
+  }
 
-  serverProcess.on('error', (err) => {
-    console.error('Failed to start server process:', err);
-  });
+  // create a small log file so packaged runs can be diagnosed
+  const logPath = path.join(app.getPath('userData'), 'launcher.log');
+  function appendLog(...args) {
+    try { require('fs').appendFileSync(logPath, new Date().toISOString() + ' ' + args.map(a => (typeof a === 'string' ? a : JSON.stringify(a))).join(' ') + '\n'); } catch (e) {}
+  }
+
+  appendLog('Starting server process', { serverPath, exec: process.execPath, packaged: app.isPackaged });
+
+  if (app.isPackaged) {
+    // When packaged, Node binary may not be available separately. Start the server in-process.
+    try {
+      appendLog('Requiring server in-process', serverPath);
+      require(serverPath);
+      appendLog('Server required successfully (in-process)');
+    } catch (err) {
+      appendLog('Failed to require server in-process:', (err && err.stack) || err);
+      console.error('Failed to require server in-process:', err);
+    }
+  } else {
+    serverProcess = child_process.spawn(process.execPath, [serverPath], {
+      cwd: path.join(__dirname, '..'),
+      stdio: ['ignore','pipe','pipe']
+    });
+
+    serverProcess.stdout && serverProcess.stdout.on('data', d => appendLog('server.stdout', d.toString()));
+    serverProcess.stderr && serverProcess.stderr.on('data', d => appendLog('server.stderr', d.toString()));
+    serverProcess.on('error', (err) => {
+      appendLog('Failed to start server process:', (err && err.stack) || err);
+      console.error('Failed to start server process:', err);
+    });
+  }
 }
 
 function stopServer() {

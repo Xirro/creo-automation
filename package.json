@@ -74,4 +74,13 @@
     "electron": "^26.2.0",
     "electron-builder": "^24.0.0"
   }
+  ,
+  "build": {
+    "asarUnpack": ["server.js"],
+    "files": [
+      "**/*",
+      "!node_modules/electron-builder/**/*"
+    ],
+    "extraMetadata": {}
+  }
 }
