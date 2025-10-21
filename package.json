@@ -1,7 +1,7 @@
 {
-  "name": "sai-aps-portal",
+  "name": "creo_automation",
   "version": "0.1.1",
-  "description": "SAI-APS-Portal",
+  "description": "Creo Automation Portal",
   "main": "server.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
@@ -10,7 +10,7 @@
     ,"electron:dev": "electron ./electron/main.js"
     ,"build:electron": "node ./scripts/build-with-secret.js"
   },
-  "author": "CODERTHEMES",
+  "author": "Xirro",
   "license": "ISC",
   "dependencies": {
     "@mdi/js": "^4.7.95",
@@ -76,6 +76,8 @@
   }
   ,
   "build": {
+    "appId": "creoautomation_${version}",
+    "productName": "CreoAutomation_${version}",
     "asarUnpack": ["server.js"],
     "files": [
       "**/*",
@@ -83,7 +85,7 @@
     ],
     "artifactName": "CreoAutomation_${version}.${ext}",
     "win": {
-      "icon": "electron/creo-automation.ico"
+      "icon": "build/creo-automation.ico"
     },
     "nsis": {
       "artifactName": "CreoAutomation_${version}_Setup.${ext}",
