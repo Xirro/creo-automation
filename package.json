@@ -76,8 +76,8 @@
   }
   ,
   "build": {
-    "appId": "creoautomation_${version}",
-    "productName": "CreoAutomation_${version}",
+    "appId": "creoautomation",
+    "productName": "CreoAutomation",
     "asarUnpack": ["server.js"],
     "files": [
       "**/*",
@@ -91,7 +91,7 @@
       "artifactName": "CreoAutomation_${version}_Setup.${ext}",
       "oneClick": false,
       "perMachine": false,
-      "allowToChangeInstallationDirectory": true
+      "allowToChangeInstallationDirectory": false
     },
     "extraMetadata": {}
   }
