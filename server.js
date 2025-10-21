@@ -277,6 +277,11 @@ app.post('/__shutdown', function(req, res) {
         return;
     }
 
+    if (!validateLauncherSecret(req)) {
+        res.status(403).send('Forbidden - invalid launcher secret');
+        return;
+    }
+
     res.send({ status: 'shutting down', activeRequests: activeRequests });
     // Close the server gracefully then exit
     if (server) {
@@ -304,11 +309,98 @@ app.get('/__status', function(req, res) {
     res.send({ activeRequests: activeRequests });
 });
 
+// In-memory one-time token store for cross-browser login. Keys are tokens, values hold session info.
+// Launcher secret (optional). If set, launcher must send X-Launcher-Secret header matching this value.
+// Support embedding the secret into package.json at build time (electron-builder extraMetadata)
+const fs = require('fs');
+let LAUNCHER_SECRET = process.env.LAUNCHER_SECRET || null;
+if (!LAUNCHER_SECRET) {
+    try {
+        // Attempt to read from package.json (packaged apps will include this)
+        const pkgPath = path.join(__dirname, 'package.json');
+        if (fs.existsSync(pkgPath)) {
+            const pkg = require(pkgPath);
+            LAUNCHER_SECRET = pkg.launcherSecret || (pkg.build && pkg.build.launcherSecret) || null;
+        }
+    } catch (e) {
+        // ignore
+        LAUNCHER_SECRET = LAUNCHER_SECRET || null;
+    }
+}
+let warnedNoLauncherSecret = false;
+
+function validateLauncherSecret(req) {
+    if (!LAUNCHER_SECRET) {
+        if (!warnedNoLauncherSecret) {
+            console.warn('LAUNCHER_SECRET not set: launcher-secret header not enforced. Set LAUNCHER_SECRET in env for stricter security.');
+            warnedNoLauncherSecret = true;
+        }
+        return true;
+    }
+    const header = req.get('X-Launcher-Secret') || req.get('x-launcher-secret') || '';
+    return header === LAUNCHER_SECRET;
+}
+
+const oneTimeTokens = new Map();
+
+// Create a one-time login token tied to the current session. Launcher will POST to this endpoint
+// while including the session cookie so the server can map the token to the logged-in session.
+// Token is single-use and expires shortly.
+app.post('/__create_token', function(req, res) {
+    const remote = req.ip || req.connection.remoteAddress || '';
+    if (!(remote === '127.0.0.1' || remote === '::1' || remote === '::ffff:127.0.0.1')) {
+        res.status(403).send('Forbidden');
+        return;
+    }
+
+    if (!validateLauncherSecret(req)) {
+        res.status(403).send('Forbidden - invalid launcher secret');
+        return;
+    }
+
+    if (!req.session || !req.session.loggedIn) {
+        return res.status(400).send({ error: 'Not logged in' });
+    }
+
+    const crypto = require('crypto');
+    const token = crypto.randomBytes(24).toString('hex');
+    // Store minimal session state needed to rehydrate in external browser.
+    const payload = {
+        dbConn: req.session.dbConn || null,
+        loggedIn: true
+    };
+    oneTimeTokens.set(token, payload);
+    // Auto-expire after 30s
+    setTimeout(() => oneTimeTokens.delete(token), 30000);
+
+    res.send({ token });
+});
+
+// Consume a one-time token and establish a session for the requesting browser, then redirect.
+app.get('/__login_with_token', function(req, res) {
+    const token = req.query && req.query.token ? String(req.query.token) : null;
+    const dest = req.query && req.query.dest ? String(req.query.dest) : '/home';
+
+    if (!token) return res.status(400).send('Missing token');
+
+    const payload = oneTimeTokens.get(token);
+    if (!payload) return res.status(400).send('Invalid or expired token');
+
+    // Delete the token immediately to enforce single-use
+    oneTimeTokens.delete(token);
+
+    // Rehydrate session for this browser
+    req.session.loggedIn = !!payload.loggedIn;
+    if (payload.dbConn) req.session.dbConn = payload.dbConn;
+
+    return res.redirect(dest);
+});
+
 // Start the HTTP server through Node's http module so we can call server.close() later for graceful shutdown
 const http = require('http');
 const server = http.createServer(app);
 // Bind explicitly to 127.0.0.1 (loopback) to avoid listening on all interfaces
-const LISTEN_HOST = process.env.LISTEN_HOST || '127.0.0.1';0
+const LISTEN_HOST = process.env.LISTEN_HOST || '127.0.0.1';
 const LISTEN_PORT = process.env.LISTEN_PORT || 3000;
 server.listen(LISTEN_PORT, LISTEN_HOST, function(err) {
     if (!err)

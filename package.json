@@ -8,6 +8,7 @@
     "start": "node server.js",
     "dev": "nodemon server.js"
     ,"electron:dev": "electron ./electron/main.js"
+    ,"build:electron": "node ./scripts/build-with-secret.js"
   },
   "author": "CODERTHEMES",
   "license": "ISC",
@@ -70,6 +71,7 @@
   ,
   "devDependencies": {
     "pkg": "^5.8.1",
-    "electron": "^26.2.0"
+    "electron": "^26.2.0",
+    "electron-builder": "^24.0.0"
   }
 }

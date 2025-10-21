@@ -1,9 +1,17 @@
-const { app, BrowserWindow } = require('electron');
+const { app, BrowserWindow, Menu, MenuItem, shell } = require('electron');
 const path = require('path');
 const child_process = require('child_process');
 
 let serverProcess = null;
 let mainWindow = null;
+// Load launcher secret from env or packaged metadata (package.json -> launcherSecret or build.launcherSecret)
+let LAUNCHER_SECRET = process.env.LAUNCHER_SECRET || null;
+if (!LAUNCHER_SECRET) {
+  try {
+    const pkg = require(path.join(__dirname, '..', 'package.json'));
+    LAUNCHER_SECRET = pkg.launcherSecret || (pkg.build && pkg.build.launcherSecret) || null;
+  } catch (e) { LAUNCHER_SECRET = null; }
+}
 
 // Single-instance lock: prevent multiple instances starting the server
 const gotSingleInstanceLock = app.requestSingleInstanceLock();
@@ -147,7 +155,103 @@ function createWindow() {
     }
   });
 
-  mainWindow.loadURL('http://localhost:3000');
+  const baseUrl = `http://${process.env.LISTEN_HOST || '127.0.0.1'}:${process.env.LISTEN_PORT || 3000}`;
+  mainWindow.loadURL(baseUrl);
+
+  // Application menu: add a View menu item to open the current page in external browser
+  const template = [
+    {
+      label: 'File',
+      submenu: [
+        { role: 'quit' }
+      ]
+    },
+    {
+      label: 'View',
+      submenu: [
+        {
+          label: 'Open in External Browser',
+          click: () => {
+            openInExternalBrowserPreserveLogin();
+          }
+        },
+        { type: 'separator' },
+        { role: 'toggledevtools' },
+        { role: 'reload' }
+      ]
+    }
+  ];
+  const menu = Menu.buildFromTemplate(template);
+  Menu.setApplicationMenu(menu);
+
+  // Context menu (right-click) to open current URL externally
+  const ctxMenu = new Menu();
+  ctxMenu.append(new MenuItem({
+    label: 'Open in External Browser',
+    click: () => {
+      openInExternalBrowserPreserveLogin();
+    }
+  }));
+
+  // Opens the current page in the external browser while attempting to preserve the logged-in session
+  async function openInExternalBrowserPreserveLogin(dest) {
+    try {
+      const baseUrl = `http://${process.env.LISTEN_HOST || '127.0.0.1'}:${process.env.LISTEN_PORT || 3000}`;
+      // Get cookies for the app origin (connect.sid)
+      const ses = mainWindow.webContents.session;
+      const cookies = await ses.cookies.get({ url: baseUrl });
+      const cookieHeader = cookies.map(c => `${c.name}=${c.value}`).join('; ');
+
+      // POST to /__create_token with the Cookie header so the server can map token to this session
+      const http = require('http');
+      const postData = '';
+      const options = {
+        hostname: '127.0.0.1',
+        port: process.env.LISTEN_PORT || 3000,
+        path: '/__create_token',
+        method: 'POST',
+        headers: Object.assign({
+          'Cookie': cookieHeader,
+          'Content-Length': Buffer.byteLength(postData)
+        }, (process.env.LAUNCHER_SECRET ? { 'X-Launcher-Secret': process.env.LAUNCHER_SECRET } : {})),
+        timeout: 3000
+      };
+
+      const token = await new Promise((resolve, reject) => {
+        const req = http.request(options, (res) => {
+          let body = '';
+          res.on('data', chunk => body += chunk);
+          res.on('end', () => {
+            try {
+              if (res.statusCode !== 200) return reject(new Error('Failed to create token: ' + res.statusCode));
+              const data = JSON.parse(body);
+              resolve(data.token);
+            } catch (e) { reject(e); }
+          });
+        });
+        req.on('error', reject);
+        req.on('timeout', () => { req.abort(); reject(new Error('timeout')); });
+        req.write(postData);
+        req.end();
+      });
+
+      if (!token) throw new Error('No token returned');
+
+      const destPath = dest || mainWindow.webContents.getURL() || '/home';
+      const loginUrl = `${baseUrl}/__login_with_token?token=${encodeURIComponent(token)}&dest=${encodeURIComponent(destPath)}`;
+      shell.openExternal(loginUrl);
+    } catch (e) {
+      console.error('Failed to open in external browser while preserving login, falling back to regular open:', e);
+      try {
+        const url = mainWindow.webContents.getURL();
+        if (url) shell.openExternal(url);
+      } catch (e2) { console.error('Fallback open failed:', e2); }
+    }
+  }
+
+  mainWindow.webContents.on('context-menu', (e, params) => {
+    ctxMenu.popup({ window: mainWindow });
+  });
 
   mainWindow.on('closed', function () {
     mainWindow = null;
