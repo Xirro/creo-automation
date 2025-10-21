@@ -22,11 +22,18 @@ const path = require('path');
 
     const projectRoot = path.join(__dirname, '..');
     const tmpConfigPath = path.join(projectRoot, 'electron-builder.tmp.json');
-    const config = {
-      "extraMetadata": {
-        "launcherSecret": secret
-      }
-    };
+
+    // Read existing package.json build config so we don't accidentally drop fields
+    let baseBuildConfig = {};
+    try {
+      const pkg = JSON.parse(fs.readFileSync(path.join(projectRoot, 'package.json'), 'utf8'));
+      if (pkg && pkg.build) baseBuildConfig = pkg.build;
+    } catch (e) {
+      // ignore - we'll just write the extraMetadata
+    }
+
+    // Merge extraMetadata into the build config so electron-builder receives the full config
+    const config = Object.assign({}, baseBuildConfig, { extraMetadata: Object.assign({}, baseBuildConfig.extraMetadata || {}, { launcherSecret: secret }) });
 
     fs.writeFileSync(tmpConfigPath, JSON.stringify(config, null, 2));
     console.log('Wrote temporary electron-builder config to', tmpConfigPath);
