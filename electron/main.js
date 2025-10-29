@@ -55,7 +55,7 @@ function startServer() {
   }
 
   // create a small log file so packaged runs can be diagnosed
-  const logPath = path.join(app.getPath('userData'), 'launcher.log');
+  const logPath = path.join(path.dirname(app.getPath('exe')), 'launcher.log');
   function appendLog(...args) {
     try { require('fs').appendFileSync(logPath, new Date().toISOString() + ' ' + args.map(a => (typeof a === 'string' ? a : JSON.stringify(a))).join(' ') + '\n'); } catch (e) {}
   }
