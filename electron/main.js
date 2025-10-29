@@ -70,11 +70,11 @@ function startServer() {
         tray.displayBalloon({ title: title, content: body });
       } else if (Notification) {
         // Cross-platform fallback: native notification
-        try { new Notification({ title: title, body: body }).show(); } catch (e) { console.log(title + ': ' + body); }
+        try { new Notification({ title: title, body: body }).show(); } catch (e) { appendLog(`${title}: ${body}`); }
       } else {
-        console.log(title + ': ' + body);
+        appendLog(`${title}: ${body}`);
       }
-    } catch (e) { console.error('showTrayNotification failed', e); }
+    } catch (e) { appendLog('showTrayNotification failed', e); }
   }
 
   if (app.isPackaged) {
@@ -250,7 +250,7 @@ function createWindow() {
     tray.setToolTip('Creo Automation');
     tray.setContextMenu(trayMenu);
   } catch (e) {
-    console.warn('Tray not available:', e);
+    appendLog('Tray not available:', e);
   }
 
   // Application menu: add a View menu item to open the current page in external browser
