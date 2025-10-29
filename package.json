@@ -78,7 +78,7 @@
   "build": {
     "appId": "creoautomation",
     "productName": "CreoAutomation",
-    "asarUnpack": ["server.js"],
+  "asarUnpack": [],
     "files": [
       "**/*",
       "!node_modules/electron-builder/**/*"
