@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Admin - Pending Requests</title>
+  <link rel="stylesheet" href="/public/assets/css/bootstrap.min.css">
+  <style> body{ padding:20px } .box{ max-width:1000px; margin: 0 auto }</style>
+</head>
+<body>
+  <div class="container box">
+    <h3>Pending Account Requests</h3>
+    <% if (!requests || requests.length === 0) { %>
+      <div class="alert alert-info">No pending requests.</div>
+    <% } else { %>
+      <table class="table table-striped">
+        <thead>
+          <tr><th>Email</th><th>Requested</th><th>Token</th><th>Actions</th></tr>
+        </thead>
+        <tbody>
+          <% requests.forEach(function(r){ %>
+            <tr>
+              <td><%= r.email %></td>
+              <td><%= r.created_at %></td>
+              <td><%= r.token %></td>
+              <td>
+                <form method="post" action="/admin/requests/<%= r.id %>/approve" style="display:inline-block; margin-right:8px;">
+                  <select name="role" class="form-control" style="display:inline-block; width:auto;">
+                    <option value="user">user</option>
+                    <option value="it">it</option>
+                    <option value="admin">admin</option>
+                  </select>
+                  <button class="btn btn-success btn-sm" type="submit">Approve</button>
+                </form>
+                <form method="post" action="/admin/requests/<%= r.id %>/deny" style="display:inline-block; margin-right:8px;">
+                  <input type="hidden" name="reason" value="Denied by admin">
+                  <button class="btn btn-danger btn-sm" type="submit">Deny</button>
+                </form>
+              </td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    <% } %>
+    <a href="/home" class="btn btn-secondary">Back</a>
+  </div>
+</body>
+</html>

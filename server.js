@@ -90,6 +90,24 @@ if (db.isInitialized()) {
     attachDbMiddleware({ host, user, password, port, database });
 }
 
+// --- Public route DB middleware (guest) ---
+// Mount a restricted DB connection only for the public /request-account path.
+// Configure via environment variables to avoid storing secrets in repo.
+// Env vars: PENDING_DB_HOST, PENDING_DB_PORT, PENDING_DB_USER, PENDING_DB_PASS, PENDING_DB_NAME
+const guestDbOptions = {
+    // Resolve guest DB options from environment where possible.
+    // Prefer explicit PENDING_* env vars for the public route, then fall back to the project's DB_* env vars or config file.
+    host: process.env.DB_HOST || (dbConfig.connection && dbConfig.connection.host) || '127.0.0.1',
+    user: 'app_guest',
+    password: process.env.DB_GUEST_PASSWORD || (dbConfig.connection && dbConfig.connection.password) || '',
+    port: process.env.DB_PORT ? parseInt(process.env.DB_PORT, 10) : (dbConfig.connection && dbConfig.connection.port) || 3306,
+    database: process.env.DB_NAME || (dbConfig.connection && dbConfig.connection.database) || 'saidb'
+};
+
+// Attach express-myconnection middleware only for the public request page so anonymous
+// visitors can INSERT into the requests table using a minimally-privileged DB user.
+app.use('/request-account', myConnection(mysql, guestDbOptions, 'pool'));
+
 // directing the app where to look for the views, and instructing it that the content is EJS
 // Use absolute paths based on __dirname so this works when running inside ASAR (packaged)
 const viewsPath = path.join(__dirname, 'app', 'views');
@@ -206,10 +224,14 @@ app.post('/login', async function(req, res) {
             await conn.end();
         })();
 
-        // If test connection succeeded, initialize app DB helpers and middleware
+    // If test connection succeeded, initialize app DB helpers and middleware
         db.init(connInfo);
         attachDbMiddleware(connInfo);
         req.session.loggedIn = true;
+    // Record the username used to login so middleware can enforce RBAC.
+    req.session.username = user;
+    // Short-circuit admin access for the special DB admin user(s)
+    req.session.isAdmin = (user === 'doadmin');
         req.session.dbConn = { host: connInfo.host, port: connInfo.port, database: connInfo.database, user: connInfo.user };
         res.redirect('/home');
     } catch (e) {
@@ -240,6 +262,20 @@ function requireLogin(req, res, next) {
     // Allow health, login and static asset routes
     // Allow internal launcher endpoints that begin with /__ (status/shutdown) without auth
     if (req.path === '/login' || req.path.startsWith('/public') || req.path === '/favicon.ico' || req.path.startsWith('/__')) return next();
+    // Allow public pages that must be reachable without authentication:
+    // - login page
+    // - static assets under /public
+    // - favicon
+    // - internal endpoints starting with /__
+    // - account request page (/request-account) so new users can request accounts
+    if (
+        req.path === '/login' ||
+        req.path.startsWith('/public') ||
+        req.path === '/favicon.ico' ||
+        req.path.startsWith('/__') ||
+        req.path === '/request-account' ||
+        req.path.startsWith('/request-account')
+    ) return next();
     if (req.session && req.session.loggedIn) return next();
     return res.redirect('/login');
 }
@@ -250,6 +286,7 @@ app.use(requireLogin);
 //routes used for different components of the app - split up to make it easier to work with
 //look at the app/routes folder for where to be directed to next
 require('./app/routes/main.js')(app); //Main Router
+require('./app/routes/admin.js')(app); // Admin Router (RBAC)
 require('./app/routes/pdfDxfBinBom.js')(app); //PDF DXF BIN BOM Router
 require('./app/routes/submittal.js')(app); //Submittal Router
 require('./app/routes/mbom.js')(app); //MBOM router

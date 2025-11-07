@@ -7,6 +7,10 @@ module.exports = function(app) {
     //get request to /home url => landingPage()
     app.get('/home', mainController.landingPage);
 
+    // Account request routes (public)
+    app.get('/request-account', mainController.requestAccountForm);
+    app.post('/request-account', mainController.submitRequestAccount);
+
     // debug routes removed in cleanup
 
     //we can also bypass the extra file in mainController.js for simple functions by using it directly

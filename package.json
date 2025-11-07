@@ -6,9 +6,9 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node server.js",
-    "dev": "nodemon server.js"
-    ,"electron:dev": "electron ./electron/main.js"
-    ,"build:electron": "node ./scripts/build-with-secret.js"
+    "dev": "nodemon server.js",
+    "electron:dev": "electron ./electron/main.js",
+    "build:electron": "node ./scripts/build-with-secret.js"
   },
   "author": "Xirro",
   "license": "ISC",
@@ -51,7 +51,7 @@
     "mysql": "^2.17.1",
     "mysql2": "^3.15.0",
     "node-input-validator": "^4.1.0",
-    "nodemailer": "^7.0.9",
+    "nodemailer": "^7.0.10",
     "nodemon": "3.1.10",
     "passport": "0.7.0",
     "passport-local": "^1.0.0",
@@ -67,18 +67,16 @@
     "url": "^0.11.0",
     "util": "^0.12.1"
   },
-  "repository": {}
-  ,
+  "repository": {},
   "devDependencies": {
-    "pkg": "^5.8.1",
     "electron": "^26.2.0",
-    "electron-builder": "^24.0.0"
-  }
-  ,
+    "electron-builder": "^24.0.0",
+    "pkg": "^5.8.1"
+  },
   "build": {
     "appId": "creoautomation",
     "productName": "CreoAutomation",
-  "asarUnpack": [],
+    "asarUnpack": [],
     "files": [
       "**/*",
       "!node_modules/electron-builder/**/*"
