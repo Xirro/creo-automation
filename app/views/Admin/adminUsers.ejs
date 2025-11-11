@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=0, minimal-ui">
+    <title>Admin - Users</title>
+    <link rel="shortcut icon" href="/public/assets/images/SAI-Logo.JPG">
+    <link href="/public/assets/css/metismenu.min.css" rel="stylesheet" type="text/css">
+    <link href="/public/assets/css/icons.css" rel="stylesheet" type="text/css">
+    <link href="/public/assets/css/bootstrap.min.css" rel="stylesheet" type="text/css">
+    <link href="/public/assets/css/style.css" rel="stylesheet" type="text/css">
+</head>
+<body>
+<div id="wrapper">
+    <%- include('../partials/header') %>
+  <%- include('./partials/adminSidebar') %>
+
+    <div class="content-page">
+        <div class="content">
+            <div class="container-fluid">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h3>Manage Users</h3>
+                </div>
+
+                <form class="form-inline mb-3" method="get" action="/admin/users">
+                  <div class="form-group">
+                    <input type="text" name="q" class="form-control form-control-sm" placeholder="Search by email or username" value="<%= typeof q !== 'undefined' ? q : '' %>" style="width:320px; display:inline-block;" />
+                    <button class="btn btn-primary btn-sm ml-2" type="submit">Search</button>
+                    <a href="/admin/users" class="btn btn-secondary btn-sm ml-2">Clear</a>
+                  </div>
+                </form>
+
+                <% if (!users || users.length === 0) { %>
+                  <div class="alert alert-info">No users found.</div>
+                <% } else { %>
+                  <div class="table-responsive">
+                  <table class="table table-striped table-sm">
+                    <thead>
+                      <tr>
+                        <th>
+                          <% function sortLink(col){
+                               var newDir = 'DESC';
+                               if (typeof sort !== 'undefined' && sort === col){ newDir = (dir === 'DESC' ? 'ASC' : 'DESC'); }
+                               var qp = '?page=1&pageSize=' + (pageSize || 25) + '&sort=' + col + '&dir=' + newDir;
+                               if (q) qp += '&q=' + encodeURIComponent(q);
+                               return '/admin/users' + qp;
+                            }
+                          %>
+                          <a href="<%= sortLink('username') %>">Username<% if (sort==='username'){ %> <%= dir==='ASC' ? '▲' : '▼' %><% } %></a>
+                        </th>
+                        <th><a href="<%= sortLink('email') %>">Email<% if (sort==='email'){ %> <%= dir==='ASC' ? '▲' : '▼' %><% } %></a></th>
+                        <th><a href="<%= sortLink('role') %>">Role<% if (sort==='role'){ %> <%= dir==='ASC' ? '▲' : '▼' %><% } %></a></th>
+                        <th>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <% users.forEach(function(u){ %>
+                        <tr>
+                          <td><%= u.username %></td>
+                          <td><%= u.email %></td>
+                          <td><%= u.role %></td>
+                          <td>
+                            <form method="post" action="/admin/users/<%= u.id %>/update" style="display:inline-block; margin-right:6px;">
+                              <input type="text" name="username" value="<%= u.username %>" class="form-control form-control-sm" style="width:120px; display:inline-block;" />
+                              <input type="email" name="email" value="<%= u.email %>" class="form-control form-control-sm" style="width:180px; display:inline-block; margin-left:6px;" />
+                              <select name="role" class="form-control form-control-sm" style="width:110px; display:inline-block; margin-left:6px;">
+                                <% 
+                                  var roleLower = (u.role || '').toLowerCase();
+                                  var predefined = ['Admin','Engineer','Project Manager'];
+                                  var predefinedLower = predefined.map(function(r){ return r.toLowerCase(); });
+                                  // If current role is not in predefined list, include it as first selected option
+                                  if (roleLower && predefinedLower.indexOf(roleLower) === -1) { %>
+                                    <option value="<%= u.role %>" selected><%= u.role %></option>
+                                <% } %>
+                                <option value="Admin" <%= (u.role||'').toLowerCase() === 'admin' ? 'selected' : '' %>>Admin</option>
+                                <option value="Engineer" <%= (u.role||'').toLowerCase() === 'engineer' ? 'selected' : '' %>>Engineer</option>
+                                <option value="Project Manager" <%= (u.role||'').toLowerCase() === 'project manager' ? 'selected' : '' %>>Project Manager</option>
+                              </select>
+                              <button class="btn btn-success btn-sm" type="submit" style="margin-left:6px;">Save</button>
+                            </form>
+
+                            <form method="post" action="/admin/users/<%= u.id %>/reset-password" style="display:inline-block; margin-right:6px;">
+                              <input type="password" name="newPassword" placeholder="New Password" class="form-control form-control-sm" style="width:120px; display:inline-block;" />
+                              <button class="btn btn-warning btn-sm" type="submit" style="margin-left:6px;">Reset</button>
+                            </form>
+
+                            <form method="post" action="/admin/users/<%= u.id %>/delete" style="display:inline-block;" onsubmit="return confirm('Delete user <%= u.username %>?');">
+                              <button class="btn btn-danger btn-sm" type="submit">Delete</button>
+                            </form>
+                          </td>
+                        </tr>
+                      <% }) %>
+                    </tbody>
+                  </table>
+                  </div>
+
+                  <!-- Pagination -->
+                  <div class="d-flex justify-content-between align-items-center mt-2">
+                    <div class="text-muted small">
+                      Showing <%= totalCount === 0 ? 0 : ((page-1)*pageSize)+1 %> - <%= Math.min(page*pageSize, totalCount) %> of <%= totalCount %>
+                    </div>
+                    <div class="d-flex align-items-center">
+                      <nav aria-label="Page navigation" class="mr-3">
+                        <ul class="pagination pagination-sm mb-0">
+                          <% function pageLink(p){
+                               var qp = '?page=' + p + '&pageSize=' + pageSize;
+                               if (q) qp += '&q=' + encodeURIComponent(q);
+                               if (sort) qp += '&sort=' + sort;
+                               if (dir) qp += '&dir=' + dir;
+                               return '/admin/users' + qp;
+                             }
+                          %>
+                          <li class="page-item <%= page <= 1 ? 'disabled' : '' %>"><a class="page-link" href="<%= page > 1 ? pageLink(1) : '#' %>">First</a></li>
+                          <li class="page-item <%= page <= 1 ? 'disabled' : '' %>"><a class="page-link" href="<%= page > 1 ? pageLink(page-1) : '#' %>">Previous</a></li>
+                          <% 
+                            var start = Math.max(1, page - 2);
+                            var end = Math.min(totalPages, page + 2);
+                            for (var p = start; p <= end; p++) { %>
+                              <li class="page-item <%= p === page ? 'active' : '' %>"><a class="page-link" href="<%= pageLink(p) %>"><%= p %></a></li>
+                          <% } %>
+                          <li class="page-item <%= page >= totalPages ? 'disabled' : '' %>"><a class="page-link" href="<%= page < totalPages ? pageLink(page+1) : '#' %>">Next</a></li>
+                          <li class="page-item <%= page >= totalPages ? 'disabled' : '' %>"><a class="page-link" href="<%= page < totalPages ? pageLink(totalPages) : '#' %>">Last</a></li>
+                        </ul>
+                      </nav>
+
+                      <!-- Jump to page -->
+                      <form method="get" action="/admin/users" class="form-inline">
+                        <input type="number" name="page" min="1" max="<%= totalPages %>" value="<%= page %>" class="form-control form-control-sm mr-2" style="width:80px;" />
+                        <input type="hidden" name="pageSize" value="<%= pageSize %>" />
+                        <% if (q) { %><input type="hidden" name="q" value="<%= q %>" /><% } %>
+                        <% if (sort) { %><input type="hidden" name="sort" value="<%= sort %>" /><% } %>
+                        <% if (dir) { %><input type="hidden" name="dir" value="<%= dir %>" /><% } %>
+                        <button class="btn btn-outline-primary btn-sm" type="submit">Go</button>
+                      </form>
+                    </div>
+                  </div>
+
+                <% } %>
+            </div>
+        </div>
+    </div>
+
+</div>
+<%- include('../partials/footer') %>
+</body>
+</html>

@@ -283,6 +283,59 @@ function requireLogin(req, res, next) {
 // Apply auth middleware before route registration
 app.use(requireLogin);
 
+// Expose session info to views (so EJS can show/hide admin links)
+app.use(async function(req, res, next) {
+    res.locals.currentUser = req.session && req.session.username ? req.session.username : null;
+    res.locals.isAdmin = false;
+
+    try {
+        // Fast path: session-level isAdmin (set at login for doadmin)
+        if (req.session && req.session.isAdmin) {
+            res.locals.isAdmin = true;
+            return next();
+        }
+
+        // If we have a logged-in username, attempt to check users.role in the DB.
+        const username = req.session && req.session.username ? req.session.username : null;
+        if (!username) return next();
+
+        // Helper to run a single query using either req.getConnection or the promise pool
+        async function queryRole() {
+            // Use express-myconnection if present on the request
+            if (typeof req.getConnection === 'function') {
+                return await new Promise((resolve, reject) => {
+                    req.getConnection(function(err, conn) {
+                        if (err) return reject(err);
+                        conn.query('SELECT role FROM users WHERE username = ? LIMIT 1', [username], function(qErr, rows) {
+                            if (qErr) return reject(qErr);
+                            resolve(rows);
+                        });
+                    });
+                });
+            }
+
+            // Fallback to app-level pool if initialized
+            if (db.isInitialized()) {
+                return await db.querySql('SELECT role FROM users WHERE username = ? LIMIT 1', [username]);
+            }
+
+            // No DB available
+            return null;
+        }
+
+        const rows = await queryRole();
+        if (rows && rows.length > 0) {
+            const role = rows[0].role || '';
+            if (role === 'admin') res.locals.isAdmin = true;
+        }
+    } catch (ex) {
+        // Non-fatal: if role check fails, don't break page render — just keep isAdmin false
+        console.warn('Failed to determine admin role for user in view middleware:', ex && ex.message ? ex.message : ex);
+    }
+
+    return next();
+});
+
 //routes used for different components of the app - split up to make it easier to work with
 //look at the app/routes folder for where to be directed to next
 require('./app/routes/main.js')(app); //Main Router

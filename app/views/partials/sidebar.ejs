@@ -11,6 +11,13 @@
 						<i class="mdi mdi-home"></i> <span> Home </span>
 					</a>
 				</li>
+				<% if (typeof isAdmin !== 'undefined' && isAdmin) { %>
+				<li>
+					<a href="/admin" class="waves-effect">
+						<i class="mdi mdi-account-cog"></i> <span> Admin </span>
+					</a>
+				</li>
+				<% } %>
 				<li>
 					<a href="../MBOM" class="waves-effect">
 						<i class="mdi mdi-file-pdf"></i> <span> MBOM </span>

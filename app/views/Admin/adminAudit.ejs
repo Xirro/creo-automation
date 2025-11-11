@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=0, minimal-ui">
+    <title>Admin - Audit Log</title>
+    <link rel="shortcut icon" href="/public/assets/images/SAI-Logo.JPG">
+    <link href="/public/assets/css/metismenu.min.css" rel="stylesheet" type="text/css">
+    <link href="/public/assets/css/icons.css" rel="stylesheet" type="text/css">
+    <link href="/public/assets/css/bootstrap.min.css" rel="stylesheet" type="text/css">
+    <link href="/public/assets/css/style.css" rel="stylesheet" type="text/css">
+</head>
+<body>
+<div id="wrapper">
+    <%- include('../partials/header') %>
+  <%- include('./partials/adminSidebar') %>
+
+    <div class="content-page">
+        <div class="content">
+            <div class="container-fluid">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h3>Admin Audit Log</h3>
+                </div>
+
+                <% if (!audits || audits.length === 0) { %>
+                  <div class="alert alert-info">No audit records found.</div>
+                <% } else { %>
+                  <div class="table-responsive">
+                  <table class="table table-sm table-striped">
+                    <thead>
+                      <tr>
+                        <th>When</th>
+                        <th>Admin</th>
+                        <th>Action</th>
+                        <th>Target Email</th>
+                        <th>Target User ID</th>
+                        <th>Target Request ID</th>
+                        <th>Details</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <% audits.forEach(function(a){ %>
+                        <tr>
+                          <td><%= a.created_at %></td>
+                          <td><%= a.admin_user %></td>
+                          <td><%= a.action %></td>
+                          <td><%= a.target_email %></td>
+                          <td><%= a.target_user_id %></td>
+                          <td><%= a.target_request_id %></td>
+                          <td><%= a.details %></td>
+                        </tr>
+                      <% }) %>
+                    </tbody>
+                  </table>
+                  </div>
+                <% } %>
+            </div>
+        </div>
+    </div>
+
+</div>
+<%- include('../partials/footer') %>
+</body>
+</html>

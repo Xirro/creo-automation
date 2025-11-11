@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=0, minimal-ui">
+    <title>Admin - Pending Requests</title>
+    <link rel="shortcut icon" href="/public/assets/images/SAI-Logo.JPG">
+    <link href="/public/assets/css/metismenu.min.css" rel="stylesheet" type="text/css">
+    <link href="/public/assets/css/icons.css" rel="stylesheet" type="text/css">
+    <link href="/public/assets/css/bootstrap.min.css" rel="stylesheet" type="text/css">
+    <link href="/public/assets/css/style.css" rel="stylesheet" type="text/css">
+</head>
+<body>
+<div id="wrapper">
+    <%- include('../partials/header') %>
+
+  <!-- Admin Sidebar -->
+  <%- include('./partials/adminSidebar') %>
+
+    <div class="content-page">
+        <div class="content">
+            <div class="container-fluid">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h3>Pending Account Requests</h3>
+                </div>
+                <% if (!requests || requests.length === 0) { %>
+                  <div class="alert alert-info">No pending requests.</div>
+                <% } else { %>
+                  <div class="table-responsive">
+                  <table class="table table-striped">
+                    <thead>
+                      <tr><th>Email</th><th>Username</th><th>Requested</th><th>Actions</th></tr>
+                    </thead>
+                    <tbody>
+                      <% requests.forEach(function(r){ %>
+                        <tr>
+                          <td><%= r.email %></td>
+                          <td><%= r.username || '' %></td>
+                          <td><%= r.created_at %></td>
+                          <td>
+                            <form method="post" action="/admin/requests/<%= r.id %>/approve" style="display:inline-block; margin-right:8px;">
+                              <select name="role" class="form-control" style="display:inline-block; width:auto;">
+                                <option value="Engineer">Engineer</option>
+                                <option value="Project Manager">Project Manager</option>
+                                <option value="Admin">Admin</option>
+                              </select>
+                              <button class="btn btn-success btn-sm" type="submit">Approve</button>
+                            </form>
+                            <form method="post" action="/admin/requests/<%= r.id %>/deny" style="display:inline-block; margin-right:8px;">
+                              <input type="hidden" name="reason" value="Denied by admin">
+                              <button class="btn btn-danger btn-sm" type="submit">Deny</button>
+                            </form>
+                          </td>
+                        </tr>
+                      <% }) %>
+                    </tbody>
+                  </table>
+                  </div>
+                <% } %>
+            </div>
+        </div>
+    </div>
+
+</div>
+<%- include('../partials/footer') %>
+</body>
+</html>
