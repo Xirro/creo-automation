@@ -72,6 +72,8 @@ let dbOptions = {
 
 // Database helper module (supports runtime init)
 const db = require('./app/config/db.js');
+// Helper to open short-lived role-based DB connections (reads SAI_* env vars)
+const withRoleConn = require('./app/config/roleConn');
 
 // Helper to initialize express-myconnection using current db pool config
 function attachDbMiddleware(connOptions) {
@@ -144,7 +146,7 @@ app.post('/login', async function(req, res) {
     // e.g. 'doadmin' -> production, 'root' -> development
     const cfg = require('./app/config/config.json');
     let connInfo = null;
-    if (user === 'doadmin' || user === 'sai_eng' || user === 'sai_eng_admin') {
+    if (user === 'doadmin' || user === 'sai_eng' || user === 'sai_admin') {
         connInfo = {
             host: cfg.production.host,
             port: cfg.production.port || 3306,
@@ -206,10 +208,264 @@ app.post('/login', async function(req, res) {
             req.session.loggedIn = true;
             req.session.devBypass = true;
             req.session.dbConn = { host: 'local-bypass', database: '', user: user };
+            if (req.session && typeof req.session.regenerate === 'function') {
+                return req.session.regenerate(function(err) {
+                    if (err) console.warn('session.regenerate error (developer bypass):', err);
+                    req.session.loggedIn = true;
+                    req.session.devBypass = true;
+                    req.session.dbConn = { host: 'local-bypass', database: '', user: user };
+                    try { console.info('session after regenerate (developer bypass):', req.sessionID, JSON.stringify(req.session)); } catch (e) {}
+                    return req.session.save(function(err2) { if (err2) console.warn('session.save error (developer bypass):', err2); return res.redirect('/home'); });
+                });
+            }
+            if (req.session && typeof req.session.save === 'function') {
+                return req.session.save(function(err) { if (err) console.warn('session.save error (developer bypass fallback):', err); return res.redirect('/home'); });
+            }
             return res.redirect('/home');
         }
-        // First, verify the credentials by attempting a short test connection.
-        // Use mysql2 to test connection using promise-based API
+        // If the username is one of the special DB users (doadmin/root/etc), keep the existing
+        // behavior of attempting a DB connection using the provided credentials.
+        const isSpecialDbUser = (user === 'doadmin' || user === 'sai_eng' || user === 'sai_eng_admin' || user === 'root' || user === cfg.production.username);
+
+        // Helper to initialize DB pool and middleware after successful authentication
+        const finalizeLogin = (connInfoToUse, sessionUser, isAdminFlag) => {
+            try {
+                db.init(connInfoToUse);
+                attachDbMiddleware(connInfoToUse);
+            } catch (e) {
+                console.warn('Failed to init DB pool after login:', e && e.message ? e.message : e);
+            }
+            req.session.loggedIn = true;
+            req.session.username = sessionUser;
+            req.session.isAdmin = !!isAdminFlag;
+            req.session.dbConn = { host: connInfoToUse.host, port: connInfoToUse.port, database: connInfoToUse.database, user: connInfoToUse.user };
+            try {
+                console.info('finalizeLogin: session set for', sessionUser, 'isAdmin=', !!isAdminFlag);
+            } catch (e) { /* ignore logging errors */ }
+        };
+
+        // If this is a special DB user, attempt the original DB connection test using provided credentials.
+        if (isSpecialDbUser) {
+            await (async () => {
+                const mysql2 = require('mysql2/promise');
+                const conn = await mysql2.createConnection({
+                    host: connInfo.host,
+                    port: connInfo.port,
+                    user: connInfo.user,
+                    password: connInfo.password,
+                    database: connInfo.database,
+                    connectTimeout: 7000,
+                    ssl: connInfo.ssl ? { rejectUnauthorized: false } : undefined
+                });
+                await conn.end();
+            })();
+
+            // If test connection succeeded, initialize app DB helpers and middleware
+            finalizeLogin(connInfo, user, (user === 'doadmin'));
+            // Regenerate the session to ensure a clean, persisted session state then save
+            if (req.session && typeof req.session.regenerate === 'function') {
+                return req.session.regenerate(function(err) {
+                    if (err) console.warn('session.regenerate error (special DB user):', err);
+                    req.session.loggedIn = true;
+                    req.session.username = user;
+                    req.session.isAdmin = (user === 'doadmin');
+                    req.session.dbConn = { host: connInfo.host, port: connInfo.port, database: connInfo.database, user: connInfo.user };
+                    try { console.info('session after regenerate (special DB user):', req.sessionID, JSON.stringify(req.session)); } catch (e) {}
+                    return req.session.save(function(err2) { if (err2) console.warn('session.save error (special DB user):', err2); return res.redirect('/home'); });
+                });
+            }
+            if (req.session && typeof req.session.save === 'function') {
+                return req.session.save(function(err) { if (err) console.warn('session.save error (special DB user fallback):', err); return res.redirect('/home'); });
+            }
+            return res.redirect('/home');
+        }
+
+        // Otherwise, try to authenticate against the application's `users` table.
+        // Prefer using the existing pool if already initialized; otherwise use the repo config connection.
+        const bcrypt = require('bcryptjs');
+        const appDbConfig = require('./app/config/database.js').connection || {};
+        let userRow = null;
+
+        try {
+            // Always use the minimally-privileged app_guest short-lived connection to read the users table for authentication.
+            // This ensures authentication does not depend on any existing app pool.
+            const mysql2 = require('mysql2/promise');
+            const conn = await mysql2.createConnection({
+                host: guestDbOptions.host,
+                port: guestDbOptions.port,
+                user: guestDbOptions.user,
+                password: guestDbOptions.password,
+                database: guestDbOptions.database,
+                connectTimeout: 7000,
+                ssl: guestDbOptions.ssl ? { rejectUnauthorized: false } : undefined
+            });
+                try {
+                // Note: intentionally do NOT select `role` here because the minimal 'app_guest'
+                // account may not have SELECT privileges for that column. The authoritative
+                // role will be re-read later using a short-lived sai_user connection when available.
+                const [rows] = await conn.query('SELECT id, username, password, email FROM ' + (require('./app/config/database.js').users_table || 'users') + ' WHERE username = ? LIMIT 1', [user]);
+                if (rows && rows.length > 0) userRow = rows[0];
+            } finally {
+                try { await conn.end(); } catch (e) { /* ignore */ }
+            }
+        } catch (guestErr) {
+            // If the app_guest read fails, treat as authentication failure; do NOT fall back to an existing pool.
+            console.warn('Guest DB read failed for users-table auth; authentication cannot proceed using existing pools:', guestErr && guestErr.message ? guestErr.message : guestErr);
+            userRow = null;
+        }
+
+        if (userRow) {
+                // Compare provided password with stored hash
+            const match = await bcrypt.compare(password, userRow.password || userRow.password_hash || '');
+            if (match) {
+                // Successful auth against users table. We do NOT rely on the guest read for the
+                // user's role (the guest account may not have SELECT permission on the role
+                // column). Start with an empty role and then attempt to re-read the authoritative
+                // role using a short-lived sai_user connection if available.
+                let roleLower = '';
+                console.info('User authenticated via users table (guest read):', userRow.username || user, 'role(from guest)=<omitted>');
+
+                // Try to re-query the role under a short-lived sai_user connection so role-based pool
+                // initialization/upgrades use the value obtained by the sai_user service account.
+                try {
+                    await withRoleConn('user', async (conn) => {
+                        try {
+                            const [rrows] = await conn.query('SELECT role FROM ' + (require('./app/config/database.js').users_table || 'users') + ' WHERE username = ? LIMIT 1', [userRow.username || user]);
+                            if (rrows && rrows.length > 0) {
+                                roleLower = String(rrows[0].role || '').toLowerCase();
+                            }
+                        } catch (qerr) {
+                            // Query error inside role-conn: log and continue using guest-provided role
+                            console.warn('sai_user role read query failed:', qerr && qerr.message ? qerr.message : qerr);
+                        }
+                    });
+                    console.info('Role re-read via sai_user (if configured):', roleLower);
+                } catch (e) {
+                    // If withRoleConn fails (e.g., env not configured), continue using the guest-provided role
+                    console.warn('Failed to re-read role using sai_user short-lived connection; continuing with guest role:', e && e.message ? e.message : e);
+                }
+
+                // Build base connection info values (host/port/database).
+                // Prefer explicit environment overrides (DB_HOST/DB_PORT/DB_NAME), then app config, then development cfg, then guestDbOptions.
+                const baseHost = process.env.DB_HOST || (appDbConfig && appDbConfig.host) || (cfg.development && cfg.development.host) || guestDbOptions.host || '127.0.0.1';
+                const basePort = process.env.DB_PORT ? parseInt(process.env.DB_PORT, 10) : ((appDbConfig && appDbConfig.port) || (cfg.development && cfg.development.port) || guestDbOptions.port || 3306);
+                const baseDatabase = process.env.DB_NAME || (appDbConfig && appDbConfig.database) || (cfg.development && cfg.development.database) || guestDbOptions.database || 'saidb';
+
+                // Helper to build connInfo objects
+                function makeConnInfo(u, p) {
+                    return { host: baseHost, port: basePort, database: baseDatabase, user: u, password: p, ssl: (appDbConfig && appDbConfig.ssl) || false };
+                }
+
+                // Preferred: initialize the pool under a minimally-privileged 'sai_user' service account if configured.
+                const saiUserEnvUser = process.env.SAI_USER_DB_USER;
+                const saiUserEnvPass = process.env.SAI_USER_DB_PASS;
+
+                // Role-based upgrade credentials
+                const saiEngUser = process.env.SAI_ENG_DB_USER;
+                const saiEngPass = process.env.SAI_ENG_DB_PASS;
+                const saiAdminUser = process.env.SAI_ADMIN_DB_USER;
+                const saiAdminPass = process.env.SAI_ADMIN_DB_PASS;
+
+                // Regenerate session to avoid fixation and persist a clean session state after pool init(s)
+                if (req.session && typeof req.session.regenerate === 'function') {
+                    return req.session.regenerate(async function(err) {
+                        if (err) console.warn('session.regenerate error (users-table flow):', err);
+
+                        // Default session fields
+                        req.session.loggedIn = true;
+                        req.session.username = userRow.username || user;
+                        req.session.isAdmin = (roleLower === 'admin' || roleLower === 'administrator');
+
+                        try {
+                            // Initialize pool with sai_user if available
+                            if (saiUserEnvUser && saiUserEnvPass) {
+                                try {
+                                    const connInfo = makeConnInfo(saiUserEnvUser, saiUserEnvPass);
+                                    db.init(connInfo);
+                                    attachDbMiddleware(connInfo);
+                                    req.session.dbConn = { host: connInfo.host, port: connInfo.port, database: connInfo.database, user: connInfo.user };
+                                    console.info('Initialized pool with sai_user for basic reads');
+                                } catch (e) {
+                                    console.warn('Failed to init pool with sai_user credentials:', e && e.message ? e.message : e);
+                                }
+                            }
+
+                            // Upgrade to role-specific service account if configured
+                            if (roleLower === 'engineer' && saiEngUser && saiEngPass) {
+                                try {
+                                    const connInfo = makeConnInfo(saiEngUser, saiEngPass);
+                                    db.init(connInfo);
+                                    attachDbMiddleware(connInfo);
+                                    req.session.dbConn = { host: connInfo.host, port: connInfo.port, database: connInfo.database, user: connInfo.user };
+                                    console.info('Upgraded pool to sai_eng for engineer role');
+                                } catch (e) {
+                                    console.warn('Failed to upgrade pool to sai_eng:', e && e.message ? e.message : e);
+                                }
+                            } else if ((roleLower === 'admin' || roleLower === 'administrator') && saiAdminUser && saiAdminPass) {
+                                try {
+                                    const connInfo = makeConnInfo(saiAdminUser, saiAdminPass);
+                                    db.init(connInfo);
+                                    attachDbMiddleware(connInfo);
+                                    req.session.dbConn = { host: connInfo.host, port: connInfo.port, database: connInfo.database, user: connInfo.user };
+                                    console.info('Upgraded pool to sai_admin for admin role');
+                                } catch (e) {
+                                    console.warn('Failed to upgrade pool to sai_admin:', e && e.message ? e.message : e);
+                                }
+                            }
+                        } catch (flowErr) {
+                            console.warn('Error during users-table post-auth pool init/upgrade:', flowErr && flowErr.message ? flowErr.message : flowErr);
+                        }
+
+                        // Persist session and redirect
+                        try { console.info('session after regenerate (users-table):', req.sessionID, JSON.stringify(req.session)); } catch (e) {}
+                        return req.session.save(function(err2) {
+                            if (err2) console.warn('session.save error (users-table final):', err2);
+                            return res.redirect('/home');
+                        });
+                    });
+                }
+
+                // Fallback if regenerate not available: set session fields and attempt pool init synchronously
+                req.session = req.session || {};
+                req.session.loggedIn = true;
+                req.session.username = userRow.username || user;
+                req.session.isAdmin = (roleLower === 'admin' || roleLower === 'administrator');
+                try {
+                    if (saiUserEnvUser && saiUserEnvPass) {
+                        const connInfo = makeConnInfo(saiUserEnvUser, saiUserEnvPass);
+                        db.init(connInfo);
+                        attachDbMiddleware(connInfo);
+                        req.session.dbConn = { host: connInfo.host, port: connInfo.port, database: connInfo.database, user: connInfo.user };
+                    }
+                    if (roleLower === 'engineer' && saiEngUser && saiEngPass) {
+                        const connInfo = makeConnInfo(saiEngUser, saiEngPass);
+                        db.init(connInfo);
+                        attachDbMiddleware(connInfo);
+                        req.session.dbConn = { host: connInfo.host, port: connInfo.port, database: connInfo.database, user: connInfo.user };
+                    } else if ((roleLower === 'admin' || roleLower === 'administrator') && saiAdminUser && saiAdminPass) {
+                        const connInfo = makeConnInfo(saiAdminUser, saiAdminPass);
+                        db.init(connInfo);
+                        attachDbMiddleware(connInfo);
+                        req.session.dbConn = { host: connInfo.host, port: connInfo.port, database: connInfo.database, user: connInfo.user };
+                    }
+                } catch (e) {
+                    console.warn('Fallback users-table pool init failed:', e && e.message ? e.message : e);
+                }
+
+                // Final save/redirect
+                try { console.info('session before save (users-table fallback):', req.sessionID, JSON.stringify(req.session)); } catch (e) {}
+                if (req.session && typeof req.session.save === 'function') {
+                    return req.session.save(function(err) { if (err) console.warn('session.save error (users-table fallback):', err); return res.redirect('/home'); });
+                }
+                return res.redirect('/home');
+            }
+            // Password mismatch: return a clear login error rather than falling back silently
+            console.warn('Authentication failed: password mismatch for user', user);
+            if (req.session) req.session.loginError = 'Username or password are incorrect.';
+            return res.redirect('/login');
+        }
+
+        // If users-table auth didn't succeed, fall back to original behavior: attempt to connect to DB using provided credentials
         await (async () => {
             const mysql2 = require('mysql2/promise');
             const conn = await mysql2.createConnection({
@@ -224,16 +480,25 @@ app.post('/login', async function(req, res) {
             await conn.end();
         })();
 
-    // If test connection succeeded, initialize app DB helpers and middleware
-        db.init(connInfo);
-        attachDbMiddleware(connInfo);
-        req.session.loggedIn = true;
-    // Record the username used to login so middleware can enforce RBAC.
-    req.session.username = user;
-    // Short-circuit admin access for the special DB admin user(s)
-    req.session.isAdmin = (user === 'doadmin');
-        req.session.dbConn = { host: connInfo.host, port: connInfo.port, database: connInfo.database, user: connInfo.user };
-        res.redirect('/home');
+        // If test connection succeeded, initialize app DB helpers and middleware
+        finalizeLogin(connInfo, user, (user === 'doadmin'));
+        // Regenerate session and persist auth fields so the store contains loggedIn=true
+        if (req.session && typeof req.session.regenerate === 'function') {
+            return req.session.regenerate(function(err) {
+                if (err) console.warn('session.regenerate error (finalizeLogin fallback):', err);
+                req.session.loggedIn = true;
+                req.session.username = user;
+                req.session.isAdmin = (user === 'doadmin');
+                req.session.dbConn = { host: connInfo.host, port: connInfo.port, database: connInfo.database, user: connInfo.user };
+                try { console.info('session after regenerate (finalizeLogin fallback):', req.sessionID, JSON.stringify(req.session)); } catch (e) {}
+                return req.session.save(function(err2) { if (err2) console.warn('session.save error (finalizeLogin fallback):', err2); return res.redirect('/home'); });
+            });
+        }
+        if (req.session && typeof req.session.save === 'function') {
+            try { console.info('session before save (finalizeLogin fallback):', req.sessionID, JSON.stringify(req.session)); } catch (e) {}
+            return req.session.save(function(err) { try { console.info('session after save (finalizeLogin fallback):', req.sessionID, JSON.stringify(req.session)); } catch (e) {} return res.redirect('/home'); });
+        }
+        return res.redirect('/home');
     } catch (e) {
         // On failure, log the error server-side and set a friendly, non-sensitive message for the UI.
         console.error('Login DB init/test failed:', e && e.stack ? e.stack : e);
@@ -276,8 +541,24 @@ function requireLogin(req, res, next) {
         req.path === '/request-account' ||
         req.path.startsWith('/request-account')
     ) return next();
-    if (req.session && req.session.loggedIn) return next();
-    return res.redirect('/login');
+        if (req.session && req.session.loggedIn) {
+            return next();
+        }
+        // Debug logging: show when a request is rejected due to missing session
+        try {
+            const s = req.session || {};
+            console.info('requireLogin: blocking request for', req.path, 'sessionExists=', !!req.session, 'sessionID=', req.sessionID, 'loggedIn=', !!s.loggedIn, 'username=', s.username || null, 'cookie=', req.headers && req.headers.cookie ? req.headers.cookie : '(none)');
+            // Also attempt to read the session directly from the session store for the given sessionID
+            try {
+                if (req.sessionID && req.sessionStore && typeof req.sessionStore.get === 'function') {
+                    req.sessionStore.get(req.sessionID, function(storeErr, storeData) {
+                        if (storeErr) console.warn('requireLogin: sessionStore.get error:', storeErr);
+                        console.info('requireLogin: sessionStore.get for', req.sessionID, '=>', storeData);
+                    });
+                }
+            } catch (se) { /* ignore */ }
+        } catch (e) { /* ignore logging errors */ }
+        return res.redirect('/login');
 }
 
 // Apply auth middleware before route registration
@@ -299,8 +580,29 @@ app.use(async function(req, res, next) {
         const username = req.session && req.session.username ? req.session.username : null;
         if (!username) return next();
 
-        // Helper to run a single query using either req.getConnection or the promise pool
+        // Helper to run a single query using a short-lived sai_user connection when available,
+        // otherwise fall back to req.getConnection or the app-level pool.
         async function queryRole() {
+            // Prefer an authoritative read using the sai_user short-lived connection if configured.
+            try {
+                // Attempt to use withRoleConn('user') which will read SAI_USER_* env vars if present.
+                if (typeof withRoleConn === 'function') {
+                    try {
+                        const rows = await withRoleConn('user', async (conn) => {
+                            const [r] = await conn.query('SELECT role FROM ' + (require('./app/config/database.js').users_table || 'users') + ' WHERE username = ? LIMIT 1', [username]);
+                            return r;
+                        });
+                        if (rows && rows.length > 0) return rows;
+                    } catch (wcErr) {
+                        // If withRoleConn failed (not configured or connection error), log and continue to fallback paths
+                        console.warn('withRoleConn(sai_user) failed while querying role:', wcErr && wcErr.message ? wcErr.message : wcErr);
+                    }
+                }
+            } catch (e) {
+                // Continue to fallback logic
+                console.warn('Unexpected error attempting sai_user role read:', e && e.message ? e.message : e);
+            }
+
             // Use express-myconnection if present on the request
             if (typeof req.getConnection === 'function') {
                 return await new Promise((resolve, reject) => {
@@ -352,6 +654,15 @@ app.get('/logout', function(req, res) {
     if (req.session) {
         req.session.destroy(function(err) {
             res.clearCookie && res.clearCookie('connect.sid');
+            try {
+                // Reset DB pool on logout so next login re-initializes connection options
+                const db = require('./app/config/db');
+                if (db && typeof db.close === 'function') {
+                    db.close().catch(function(e) { /* ignore close errors */ });
+                }
+            } catch (e) {
+                // ignore
+            }
             return res.redirect('/login');
         });
     } else {
@@ -399,6 +710,38 @@ app.get('/__status', function(req, res) {
         return;
     }
     res.send({ activeRequests: activeRequests });
+});
+
+// Debug session inspector (local-only). Returns the current req.session and the store entry for troubleshooting.
+app.get('/__debug_session', function(req, res) {
+    const remote = req.ip || req.connection.remoteAddress || '';
+    if (!(remote === '127.0.0.1' || remote === '::1' || remote === '::ffff:127.0.0.1')) {
+        res.status(403).send('Forbidden');
+        return;
+    }
+    const info = {
+        sessionID: req.sessionID || null,
+        reqSession: req.session || null,
+        storeData: null,
+        storeType: req.sessionStore && req.sessionStore.constructor ? req.sessionStore.constructor.name : null
+    };
+    try {
+        if (req.sessionID && req.sessionStore && typeof req.sessionStore.get === 'function') {
+            req.sessionStore.get(req.sessionID, function(err, data) {
+                if (err) {
+                    info.storeData = { error: String(err) };
+                    return res.json(info);
+                }
+                info.storeData = data || null;
+                return res.json(info);
+            });
+            return;
+        }
+    } catch (e) {
+        info.storeData = { error: String(e) };
+        return res.json(info);
+    }
+    return res.json(info);
 });
 
 // In-memory one-time token store for cross-browser login. Keys are tokens, values hold session info.

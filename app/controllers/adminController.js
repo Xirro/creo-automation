@@ -1,5 +1,6 @@
 const bcrypt = require('bcryptjs');
 const db = require('../config/db');
+const withRoleConn = require('../config/roleConn');
 
 // Helper to obtain a connection with promise-friendly queryAsync and release
 async function getConn(req) {
@@ -186,43 +187,44 @@ exports.resetPassword = async function(req, res) {
     const newPassword = req.body.newPassword || null;
     if (!newPassword) return res.status(400).send('New password required');
     const hash = await bcrypt.hash(newPassword, 10);
-    let conn;
+
     try {
-        conn = await getConn(req);
-    await conn.queryAsync('UPDATE users SET password = ? WHERE id = ?', [hash, userId]);
+        // Use a short-lived elevated connection under the admin role to perform the password reset and audit.
+        await withRoleConn('admin', async (conn) => {
+            // Update password
+            await conn.query('UPDATE users SET password = ? WHERE id = ?', [hash, userId]);
 
-        // Fetch target user info for audit
-        let targetEmail = null;
-        try {
-            const urows = await conn.queryAsync('SELECT email, username FROM users WHERE id = ? LIMIT 1', [userId]);
-            if (urows && urows.length > 0) targetEmail = urows[0].email || urows[0].username || null;
-        } catch (fetchErr) {
-            // ignore
-        }
+            // Fetch target user info for audit
+            let targetEmail = null;
+            try {
+                const [urows] = await conn.query('SELECT email, username FROM users WHERE id = ? LIMIT 1', [userId]);
+                if (urows && urows.length > 0) targetEmail = urows[0].email || urows[0].username || null;
+            } catch (fetchErr) {
+                // ignore
+            }
 
-        // Write audit row
-        try {
-            const now = new Date();
-            await conn.queryAsync('INSERT INTO admin_actions (admin_user, action, target_email, target_user_id, details, created_at) VALUES (?, ?, ?, ?, ?, ?)', [
-                req.session.username || null,
-                'reset_password',
-                targetEmail,
-                userId,
-                null,
-                now
-            ]);
-        } catch (auditErr) {
-            console.warn('Admin reset: failed to write audit row:', auditErr && auditErr.message ? auditErr.message : auditErr);
-        }
+            // Write audit row
+            try {
+                const now = new Date();
+                await conn.query('INSERT INTO admin_actions (admin_user, action, target_email, target_user_id, details, created_at) VALUES (?, ?, ?, ?, ?, ?)', [
+                    req.session.username || null,
+                    'reset_password',
+                    targetEmail,
+                    userId,
+                    null,
+                    now
+                ]);
+            } catch (auditErr) {
+                console.warn('Admin reset: failed to write audit row:', auditErr && auditErr.message ? auditErr.message : auditErr);
+            }
+        });
 
-    console.info('Admin reset password for user id', userId, 'by', req.session.username);
-    // After resetting a user's password, redirect back to the users list for convenience
-    return res.redirect('/admin/users');
+        console.info('Admin reset password for user id', userId, 'by', req.session.username);
+        // After resetting a user's password, redirect back to the users list for convenience
+        return res.redirect('/admin/users');
     } catch (err) {
-        console.error('Admin reset: DB connection error:', err);
+        console.error('Admin reset: DB connection error (admin conn):', err);
         return res.status(500).send('Server error');
-    } finally {
-        try { if (conn) await conn._release(); } catch (e) {}
     }
 };
 

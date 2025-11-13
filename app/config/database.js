@@ -254,7 +254,12 @@ let repoConfig = {
     'MBOM_item_table': 'mbomItemSum',
     'MBOM_common_items': 'mbomComItem',
     'MBOM_user_items': 'mbomUserItem',
-    'MBOM_section_sum': 'mbomSectionSum',
+    // Legacy mapping: replaced by the newer MBOM section table used by the app.
+    // Historically the table was named `mbomSectionSum` and referenced by the key
+    // 'MBOM_section_sum'. The application now uses `MBOM_new_section_sum` (value
+    // `mbomNewSectionSum`) and all code + schema scripts operate on that table.
+    // Keep this commented mapping here for historical reference only.
+    // 'MBOM_section_sum': 'mbomSectionSum',
     'MBOM_new_section_sum' : 'mbomNewSectionSum',
 
     //Mechanical Eng Submittal Tables

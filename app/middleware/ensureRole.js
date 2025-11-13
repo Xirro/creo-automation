@@ -11,7 +11,11 @@ module.exports = function(requiredRole) {
 
             // If username is not available, deny.
             if (!req.session || !req.session.username) {
-                return res.status(403).send('Forbidden');
+                // Respond with JSON for XHR clients, otherwise render an Access Denied page
+                if (req.xhr || (req.get && req.get('Accept') && req.get('Accept').includes('application/json'))) {
+                    return res.status(403).json({ error: 'Access denied' });
+                }
+                return res.status(403).render('Main/accessDenied', { message: 'Access denied' });
             }
 
             const username = req.session.username;
@@ -53,16 +57,27 @@ module.exports = function(requiredRole) {
             try {
                 const rows = await conn.queryAsync('SELECT role FROM users WHERE username = ? LIMIT 1', [username]);
                 if (!rows || rows.length === 0) {
-                    return res.status(403).send('Forbidden');
+                    if (req.xhr || (req.get && req.get('Accept') && req.get('Accept').includes('application/json'))) {
+                        return res.status(403).json({ error: 'Access denied' });
+                    }
+                    return res.status(403).render('Main/accessDenied', { message: 'Access denied' });
                 }
                 const role = rows[0].role || '';
                 if (role === requiredRole) return next();
-                return res.status(403).send('Forbidden');
+                if (req.xhr || (req.get && req.get('Accept') && req.get('Accept').includes('application/json'))) {
+                    return res.status(403).json({ error: 'Access denied' });
+                }
+                return res.status(403).render('Main/accessDenied', { message: 'Access denied' });
             } finally {
                 try { await conn._release(); } catch (e) {}
             }
         } catch (ex) {
             console.error('RBAC middleware error:', ex && ex.stack ? ex.stack : ex);
+            // If the underlying error is a DB permission/auth error, return Access denied
+            const msg = (ex && ex.message) ? ex.message.toLowerCase() : '';
+            if (ex && (ex.code === 'ER_DBACCESS_DENIED_ERROR' || ex.code === 'ER_TABLEACCESS_DENIED_ERROR' || msg.includes('access denied') || msg.includes('permission'))) {
+                return res.status(403).send('Access denied');
+            }
             return res.status(500).send('Server error');
         }
     };
