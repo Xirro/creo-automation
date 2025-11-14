@@ -87,6 +87,115 @@ function attachDbMiddleware(connOptions) {
     app.use(myConnection(mysql, options, 'pool'));
 }
 
+// Update users.last_login helper. Use ONLY the short-lived sai_user connection via withRoleConn('user').
+async function updateLastLogin(req, username) {
+    if (!username) return;
+    const usersTable = (require('./app/config/database.js').users_table || 'users');
+    const now = new Date();
+
+    if (typeof withRoleConn !== 'function') {
+        // Not configured; log and skip. This helper is intentionally limited to sai_user.
+        console.warn('updateLastLogin skipped: withRoleConn not configured');
+        return;
+    }
+
+    try {
+        await withRoleConn('user', async (conn) => {
+            try {
+                await conn.query('UPDATE ' + usersTable + ' SET last_login = ? WHERE username = ?', [now, username]);
+            } catch (e) {
+                // Log but do not throw to avoid breaking login flow
+                console.warn('updateLastLogin: query failed via withRoleConn:', e && e.message ? e.message : e);
+            }
+        });
+    } catch (e) {
+        console.warn('updateLastLogin via withRoleConn failed:', e && e.message ? e.message : e);
+    }
+}
+
+// Reset failed_login_attempts to 0 for a username. Prefer sai_user short-lived connection,
+async function resetFailedAttempts(username) {
+    if (!username) return;
+    const usersTable = (require('./app/config/database.js').users_table || 'users');
+
+    // Prefer sai_user short-lived connection
+    try {
+        if (typeof withRoleConn === 'function') {
+            await withRoleConn('user', async (conn) => {
+                try {
+                    await conn.query('UPDATE ' + usersTable + ' SET failed_login_attempts = 0 WHERE username = ?', [username]);
+                } catch (e) {
+                    console.warn('resetFailedAttempts query failed via withRoleConn:', e && e.message ? e.message : e);
+                }
+            });
+            return;
+        }
+    } catch (e) {
+        console.warn('resetFailedAttempts via withRoleConn failed:', e && e.message ? e.message : e);
+    }
+}
+
+// Helper: read account lock status and failed attempt count (best-effort)
+async function getAccountStatus(username) {
+    if (!username) return null;
+    const usersTable = (require('./app/config/database.js').users_table || 'users');
+
+    // Use the minimally-privileged guest connection (guestDbOptions) to read account status.
+    try {
+        const mysql2 = require('mysql2/promise');
+        const conn = await mysql2.createConnection({
+            host: guestDbOptions.host,
+            port: guestDbOptions.port,
+            user: guestDbOptions.user,
+            password: guestDbOptions.password,
+            database: guestDbOptions.database,
+            connectTimeout: 7000,
+            ssl: guestDbOptions.ssl ? { rejectUnauthorized: false } : undefined
+        });
+        try {
+            const [rows] = await conn.query('SELECT locked, failed_login_attempts FROM ' + usersTable + ' WHERE username = ? LIMIT 1', [username]);
+            if (rows && rows.length > 0) return { locked: !!rows[0].locked, attempts: rows[0].failed_login_attempts || 0 };
+        } finally {
+            try { await conn.end(); } catch (e) { /* ignore */ }
+        }
+    } catch (e) {
+        console.warn('getAccountStatus via guestDbOptions failed:', e && e.message ? e.message : e);
+    }
+
+    // Could not determine status
+    return null;
+}
+
+// Helper: increment failed_login_attempts and lock account at threshold (best-effort).
+async function recordFailedLogin(username) {
+    if (!username) return null;
+    const usersTable = (require('./app/config/database.js').users_table || 'users');
+    // Use the minimally-privileged guest connection (guestDbOptions) to record failed attempts.
+    try {
+        const mysql2 = require('mysql2/promise');
+        const conn = await mysql2.createConnection({
+            host: guestDbOptions.host,
+            port: guestDbOptions.port,
+            user: guestDbOptions.user,
+            password: guestDbOptions.password,
+            database: guestDbOptions.database,
+            connectTimeout: 7000,
+            ssl: guestDbOptions.ssl ? { rejectUnauthorized: false } : undefined
+        });
+        try {
+            // Only increment failed_login_attempts here. The DB trigger will set `locked`.
+            await conn.query('UPDATE ' + usersTable + ' SET failed_login_attempts = COALESCE(failed_login_attempts,0) + 1 WHERE username = ?', [username]);
+            return true;
+        } finally {
+            // Ensure the DB connection is always closed even if the query throws.
+            try { await conn.end(); } catch (e) { /* ignore errors during close */ }
+        }
+    } catch (e) {
+        console.warn('recordFailedLogin via guestDbOptions failed:', e && e.message ? e.message : e);
+        return null;
+    }
+}
+
 // If db module already initialized (dev environment), attach middleware
 if (db.isInitialized()) {
     attachDbMiddleware({ host, user, password, port, database });
@@ -315,7 +424,18 @@ app.post('/login', async function(req, res) {
         }
 
         if (userRow) {
-                // Compare provided password with stored hash
+                // Before attempting password verification, check if account is locked (best-effort)
+            try {
+                const status = await getAccountStatus(userRow.username || user);
+                if (status && status.locked) {
+                    if (req.session) req.session.loginError = 'Your account has been locked due to repeated failed login attempts. Contact your administrator to unlock and reset your password.';
+                    return res.redirect('/login');
+                }
+            } catch (e) {
+                console.warn('Failed to check account lock status before authenticate:', e && e.message ? e.message : e);
+            }
+
+            // Compare provided password with stored hash
             const match = await bcrypt.compare(password, userRow.password || userRow.password_hash || '');
             if (match) {
                 // Successful auth against users table. We do NOT rely on the guest read for the
@@ -416,6 +536,20 @@ app.post('/login', async function(req, res) {
                             console.warn('Error during users-table post-auth pool init/upgrade:', flowErr && flowErr.message ? flowErr.message : flowErr);
                         }
 
+                        // Best-effort: update last_login now that pools (possibly) initialized
+                        try {
+                            await updateLastLogin(req, req.session.username);
+                        } catch (e) {
+                            console.warn('updateLastLogin failed (users-table regenerate):', e && e.message ? e.message : e);
+                        }
+
+                        // Reset failed login attempts on successful login
+                        try {
+                            await resetFailedAttempts(req.session.username);
+                        } catch (e) {
+                            console.warn('resetFailedAttempts failed (users-table regenerate):', e && e.message ? e.message : e);
+                        }
+
                         // Persist session and redirect
                         try { console.info('session after regenerate (users-table):', req.sessionID, JSON.stringify(req.session)); } catch (e) {}
                         return req.session.save(function(err2) {
@@ -452,6 +586,20 @@ app.post('/login', async function(req, res) {
                     console.warn('Fallback users-table pool init failed:', e && e.message ? e.message : e);
                 }
 
+                // Best-effort update last_login before saving session
+                try {
+                    await updateLastLogin(req, req.session.username);
+                } catch (e) {
+                    console.warn('updateLastLogin failed (users-table fallback):', e && e.message ? e.message : e);
+                }
+
+                // Reset failed login attempts on successful login (fallback path)
+                try {
+                    await resetFailedAttempts(req.session.username);
+                } catch (e) {
+                    console.warn('resetFailedAttempts failed (users-table fallback):', e && e.message ? e.message : e);
+                }
+
                 // Final save/redirect
                 try { console.info('session before save (users-table fallback):', req.sessionID, JSON.stringify(req.session)); } catch (e) {}
                 if (req.session && typeof req.session.save === 'function') {
@@ -459,9 +607,26 @@ app.post('/login', async function(req, res) {
                 }
                 return res.redirect('/home');
             }
-            // Password mismatch: return a clear login error rather than falling back silently
+            // Password mismatch: increment failed count and possibly lock the account
             console.warn('Authentication failed: password mismatch for user', user);
-            if (req.session) req.session.loginError = 'Username or password are incorrect.';
+            try {
+                await recordFailedLogin(user);
+                // Check lock status (read-only) using guest account
+                try {
+                    const status = await getAccountStatus(user);
+                    if (status && status.locked) {
+                        if (req.session) req.session.loginError = 'Your account has been locked after too many failed login attempts. Contact admin to unlock and reset your password.';
+                    } else {
+                        if (req.session) req.session.loginError = 'Username or password are incorrect.';
+                    }
+                } catch (e2) {
+                    console.warn('Failed to read account status after failed login:', e2 && e2.message ? e2.message : e2);
+                    if (req.session) req.session.loginError = 'Username or password are incorrect.';
+                }
+            } catch (e) {
+                console.warn('recordFailedLogin failed:', e && e.message ? e.message : e);
+                if (req.session) req.session.loginError = 'Username or password are incorrect.';
+            }
             return res.redirect('/login');
         }
 
@@ -538,6 +703,8 @@ function requireLogin(req, res, next) {
         req.path.startsWith('/public') ||
         req.path === '/favicon.ico' ||
         req.path.startsWith('/__') ||
+        req.path === '/reset-password' ||
+        req.path.startsWith('/reset-password') ||
         req.path === '/request-account' ||
         req.path.startsWith('/request-account')
     ) return next();

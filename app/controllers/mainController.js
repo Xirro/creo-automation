@@ -8,6 +8,8 @@ module.exports = exports;
 
 const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
+const mysql = require('mysql2/promise');
+const dbConfig = require('../config/database.js');
 // Nodemailer usage temporarily disabled so account-request creation does not send emails.
 // Uncomment the following line to re-enable email notifications and ensure SMTP env vars are configured.
 // const nodemailer = require('nodemailer');
@@ -22,6 +24,100 @@ exports.landingPage = function(req, res) {
 // Render the request account form
 exports.requestAccountForm = function(req, res) {
     res.render('Main/requestAccount', { error: null, email: '', username: '' });
+};
+
+// Render the reset-password form (public)
+exports.renderResetPasswordForm = function(req, res) {
+    // allow pre-filling username via query string
+    const username = (req.query.username || '').trim();
+    res.render('Main/resetPassword', { error: null, username: username });
+};
+
+// Handle reset-password submission (public)
+exports.submitResetPassword = async function(req, res) {
+    try {
+        const username = (req.body.username || '').trim();
+        const oldPassword = req.body.oldPassword || '';
+        const newPassword = req.body.newPassword || '';
+        const confirm = req.body.confirm || '';
+
+        if (!username || !oldPassword || !newPassword || !confirm) {
+            return res.render('Main/resetPassword', { error: 'All fields are required.', username });
+        }
+
+        if (newPassword !== confirm) {
+            return res.render('Main/resetPassword', { error: 'New password and confirmation do not match.', username });
+        }
+
+        // Use same minimal policy as account request: at least 8 characters
+        if (newPassword.length < 8) {
+            return res.render('Main/resetPassword', { error: 'New password must be at least 8 characters.', username });
+        }
+
+        // Create a short-lived connection using the minimally-privileged app_guest account.
+        // Note: express-myconnection is only mounted for /request-account, so don't rely on req.getConnection here.
+        const guestOptions = {
+            host: process.env.DB_HOST || (dbConfig.connection && dbConfig.connection.host) || '127.0.0.1',
+            port: process.env.DB_PORT ? parseInt(process.env.DB_PORT, 10) : (dbConfig.connection && dbConfig.connection.port) || 3306,
+            user: 'app_guest',
+            password: process.env.DB_GUEST_PASSWORD || (dbConfig.connection && dbConfig.connection.password) || '',
+            database: process.env.DB_NAME || (dbConfig.connection && dbConfig.connection.database) || 'saidb'
+        };
+
+        let conn;
+        try {
+            conn = await mysql.createConnection(guestOptions);
+
+            // Query user by username (exact match) and check locked flag first
+            const [rows] = await conn.execute('SELECT id, password, locked FROM users WHERE username = ? LIMIT 1', [username]);
+            if (!rows || rows.length === 0) {
+                await conn.end().catch(()=>{});
+                return res.render('Main/resetPassword', { error: 'Unknown username.', username });
+            }
+
+            const user = rows[0];
+            if (user.locked) {
+                await conn.end().catch(()=>{});
+                return res.render('Main/resetPassword', { error: 'Account is locked. Contact your administrator to unlock the account.', username });
+            }
+
+            const match = await bcrypt.compare(oldPassword, user.password || '');
+            if (!match) {
+                await conn.end().catch(()=>{});
+                return res.render('Main/resetPassword', { error: 'Old password does not match.', username });
+            }
+
+            // Hash new password and update user record; reset failed attempts and clear lock
+            const newHash = await bcrypt.hash(newPassword, 10);
+            const now = new Date();
+            await conn.execute('UPDATE users SET password = ?, failed_login_attempts = 0, updatedAt = ? WHERE id = ?', [newHash, now, user.id]);
+
+            // Optionally write an audit row if admin_actions exists (best-effort)
+            try {
+                await conn.execute('INSERT INTO admin_actions (admin_user, action, target_email, target_user_id, details, created_at) VALUES (?, ?, ?, ?, ?, ?)', [
+                    null,
+                    'user_reset_password',
+                    username,
+                    user.id,
+                    null,
+                    now
+                ]);
+            } catch (aErr) {
+                console.warn('Reset password: failed to write audit row (non-fatal):', aErr && aErr.message ? aErr.message : aErr);
+            }
+
+            await conn.end().catch(()=>{});
+            return res.render('Main/resetSuccess', { message: 'Password updated. You may now login with your new password.' });
+        } catch (dbErr) {
+            console.error('Reset password: DB error:', dbErr);
+            try { if (conn) await conn.end().catch(()=>{}); } catch (e) {}
+            return res.render('Main/resetPassword', { error: 'Server error. Try again later.', username });
+        }
+
+    } catch (ex) {
+        console.error('Reset password: handler error:', ex);
+        return res.render('Main/resetPassword', { error: 'Server error. Try again later.', username: (req.body && req.body.username) ? req.body.username : '' });
+    }
 };
 
 // Handle form submission for account requests

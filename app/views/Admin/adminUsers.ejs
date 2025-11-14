@@ -51,6 +51,7 @@
                         </th>
                         <th><a href="<%= sortLink('email') %>">Email<% if (sort==='email'){ %> <%= dir==='ASC' ? '▲' : '▼' %><% } %></a></th>
                         <th><a href="<%= sortLink('role') %>">Role<% if (sort==='role'){ %> <%= dir==='ASC' ? '▲' : '▼' %><% } %></a></th>
+                        <th><a href="<%= sortLink('locked') %>">Locked<% if (sort==='locked'){ %> <%= dir==='ASC' ? '▲' : '▼' %><% } %></a></th>
                         <th>Actions</th>
                       </tr>
                     </thead>
@@ -60,6 +61,13 @@
                           <td><%= u.username %></td>
                           <td><%= u.email %></td>
                           <td><%= u.role %></td>
+                          <td>
+                            <% if (u.locked) { %>
+                              <span class="badge badge-danger">Locked</span>
+                            <% } else { %>
+                              <span class="badge badge-success">Active</span>
+                            <% } %>
+                          </td>
                           <td>
                             <form method="post" action="/admin/users/<%= u.id %>/update" style="display:inline-block; margin-right:6px;">
                               <input type="text" name="username" value="<%= u.username %>" class="form-control form-control-sm" style="width:120px; display:inline-block;" />

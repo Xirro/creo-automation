@@ -191,8 +191,9 @@ exports.resetPassword = async function(req, res) {
     try {
         // Use a short-lived elevated connection under the admin role to perform the password reset and audit.
         await withRoleConn('admin', async (conn) => {
-            // Update password
-            await conn.query('UPDATE users SET password = ? WHERE id = ?', [hash, userId]);
+            // Update password and reset failed login counters / locked flag
+            const now = new Date();
+            await conn.query('UPDATE users SET password = ?, failed_login_attempts = 0, locked = 0, updatedAt = ? WHERE id = ?', [hash, now, userId]);
 
             // Fetch target user info for audit
             let targetEmail = null;
@@ -253,6 +254,8 @@ exports.listUsers = async function(req, res) {
 
     // Sorting: whitelist allowed sort columns to avoid SQL injection
     const allowedSort = { username: 'username', email: 'email', role: 'role', createdAt: 'createdAt', id: 'id' };
+    // Allow sorting by locked state as well
+    allowedSort.locked = 'locked';
     let sort = (req.query.sort || 'createdAt');
     if (!allowedSort[sort]) sort = 'createdAt';
     let dir = (req.query.dir || 'DESC').toUpperCase();
@@ -261,7 +264,7 @@ exports.listUsers = async function(req, res) {
     // Fetch paginated rows with ORDER BY using validated column and direction
     const offset = (page - 1) * pageSize;
     const sortCol = allowedSort[sort];
-    const listSql = 'SELECT id, username, email, role, createdAt FROM users' + where + ` ORDER BY ${sortCol} ${dir} LIMIT ? OFFSET ?`;
+    const listSql = 'SELECT id, username, email, role, createdAt, locked FROM users' + where + ` ORDER BY ${sortCol} ${dir} LIMIT ? OFFSET ?`;
     const listParams = params.concat([pageSize, offset]);
     const rows = await conn.queryAsync(listSql, listParams);
 

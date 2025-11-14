@@ -11,6 +11,10 @@ module.exports = function(app) {
     app.get('/request-account', mainController.requestAccountForm);
     app.post('/request-account', mainController.submitRequestAccount);
 
+    // Password reset (public) - allow a user with a temporary password to set a new password
+    app.get('/reset-password', mainController.renderResetPasswordForm);
+    app.post('/reset-password', mainController.submitResetPassword);
+
     // debug routes removed in cleanup
 
     //we can also bypass the extra file in mainController.js for simple functions by using it directly
