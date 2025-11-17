@@ -205,15 +205,58 @@ if (db.isInitialized()) {
 // Mount a restricted DB connection only for the public /request-account path.
 // Configure via environment variables to avoid storing secrets in repo.
 // Env vars: PENDING_DB_HOST, PENDING_DB_PORT, PENDING_DB_USER, PENDING_DB_PASS, PENDING_DB_NAME
+// For development we require explicit env vars for the public guest DB connection.
+// Do NOT silently fall back to repo defaults here; fail fast if missing in non-production.
 const guestDbOptions = {
-    // Resolve guest DB options from environment where possible.
-    // Prefer explicit PENDING_* env vars for the public route, then fall back to the project's DB_* env vars or config file.
-    host: process.env.DB_HOST || (dbConfig.connection && dbConfig.connection.host) || '127.0.0.1',
+    host: process.env.DB_HOST || undefined,
     user: 'app_guest',
-    password: process.env.DB_GUEST_PASSWORD || (dbConfig.connection && dbConfig.connection.password) || '',
-    port: process.env.DB_PORT ? parseInt(process.env.DB_PORT, 10) : (dbConfig.connection && dbConfig.connection.port) || 3306,
-    database: process.env.DB_NAME || (dbConfig.connection && dbConfig.connection.database) || 'saidb'
+    password: process.env.DB_GUEST_PASSWORD || undefined,
+    port: process.env.DB_PORT ? parseInt(process.env.DB_PORT, 10) : undefined,
+    database: process.env.DB_NAME || undefined,
+    ssl: process.env.DB_SSL === 'true' || false
 };
+
+// Determine if we're running a packaging/build step for Electron. Packaging tools often set
+// lifecycle env vars (npm_lifecycle_event) or electron-builder specific env vars. If we're
+// packaging, treat it like a strict environment (require required env vars) so builds fail fast.
+const lifecycle = (process.env.npm_lifecycle_event || '').toLowerCase();
+const isPackaging = !!(
+    process.env.ELECTRON_BUILD === 'true' ||
+    process.env.ELECTRON_BUILDER === 'true' ||
+    process.env.ELECTRON_BUILDER_BIN ||
+    lifecycle.includes('dist') || lifecycle.includes('pack') || lifecycle.includes('electron') || lifecycle.includes('build')
+);
+
+// In development (non-production) or during packaging require explicit DB env vars to be set
+// so developers and CI builds don't rely on hidden defaults.
+if ((process.env.NODE_ENV || 'development') !== 'production' || isPackaging) {
+    const required = [
+        'DB_GUEST_PASSWORD',
+        'DB_HOST',
+        'DB_NAME',
+        'DB_PORT',
+        'SAI_ADMIN_DB_USER',
+        'SAI_ADMIN_DB_PASS',
+        'SAI_ENG_DB_USER',
+        'SAI_ENG_DB_PASS',
+        'SAI_USER_DB_USER',
+        'SAI_USER_DB_PASS'
+    ];
+    const missing = required.filter(k => !process.env[k]);
+    if (missing.length > 0) {
+        console.error('Startup abort: missing required environment variables:');
+        missing.forEach(m => console.error(' - ' + m));
+        console.error('Set these environment variables before starting or packaging the app. Example (PowerShell):');
+        console.error("$env:DB_HOST='127.0.0.1'; $env:DB_PORT='3306'; $env:DB_GUEST_PASSWORD='guestpass'; $env:DB_NAME='saidb';");
+        console.error("$env:SAI_ADMIN_DB_USER='sai_admin'; $env:SAI_ADMIN_DB_PASS='adminpass'; $env:SAI_ENG_DB_USER='sai_eng'; $env:SAI_ENG_DB_PASS='engpass';");
+        console.error("$env:SAI_USER_DB_USER='sai_user'; $env:SAI_USER_DB_PASS='userpass'; node server.js");
+        if (isPackaging) {
+            console.error('Packaging detected (npm lifecycle: ' + lifecycle + '). Aborting packaging to avoid creating a build with missing secrets.');
+        }
+        // Terminate initialization to avoid surprising behavior with implicit defaults
+        process.exit(1);
+    }
+}
 
 // Attach express-myconnection middleware only for the public request page so anonymous
 // visitors can INSERT into the requests table using a minimally-privileged DB user.
@@ -815,6 +858,16 @@ require('./app/routes/mbom.js')(app); //MBOM router
 require('./app/routes/slimVAC.js')(app); //SlimVAC Router
 require('./app/routes/partComparison.js')(app); //partComparison Router
 require('./app/routes/rename.js')(app); //Rename Router
+
+// Profile routes (user-facing)
+try {
+    const profileController = require('./app/controllers/profileController');
+    if (profileController && typeof profileController.routes === 'function') {
+        profileController.routes(app);
+    }
+} catch (e) {
+    console.warn('Failed to mount profileController routes:', e && e.message ? e.message : e);
+}
 
 // Logout route - destroys session and redirects to login
 app.get('/logout', function(req, res) {
