@@ -334,7 +334,7 @@ app.post('/login', async function(req, res) {
         }
         // If the username is one of the special DB users (doadmin/root/etc), keep the existing
         // behavior of attempting a DB connection using the provided credentials.
-        const isSpecialDbUser = (user === 'doadmin' || user === 'sai_eng' || user === 'sai_eng_admin' || user === 'root' || user === cfg.production.username);
+        const isSpecialDbUser = (user === 'doadmin' || user === cfg.production.username);
 
         // Helper to initialize DB pool and middleware after successful authentication
         const finalizeLogin = (connInfoToUse, sessionUser, isAdminFlag) => {
