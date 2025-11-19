@@ -328,4 +328,11 @@ try {
     // swallow
 }
 
+// Ensure scripts that reference `connection.database` will have a sensible
+// default when only the top-level `database` property is set in the repo
+// config. This avoids ambiguity between `dbConfig.database` and
+// `dbConfig.connection.database` when running the schema scripts.
+if (!repoConfig.connection) repoConfig.connection = {};
+if (!repoConfig.connection.database) repoConfig.connection.database = repoConfig.database;
+
 module.exports = repoConfig;

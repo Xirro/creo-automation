@@ -10,7 +10,7 @@
 const fs = require('fs');
 const path = require('path');
 const mysql = require('mysql2/promise');
-const dbConfig = require('../app/config/database');
+const dbConfig = require('../../app/config/database');
 
 const args = process.argv.slice(2);
 const DRY_RUN = args.includes('--dry-run') || args.includes('-n');

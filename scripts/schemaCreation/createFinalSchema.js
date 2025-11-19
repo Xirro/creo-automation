@@ -1,5 +1,5 @@
 let mysql = require('mysql');
-let dbConfig = require('../app/config/database');
+let dbConfig = require('../../app/config/database');
 let host = dbConfig.connection.host;
 let user = dbConfig.connection.user;
 let password = dbConfig.connection.password;

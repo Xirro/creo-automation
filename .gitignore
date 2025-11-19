@@ -5,5 +5,5 @@ package-lock.json
 app/config/db_pass.enc
 
 .env
- .creo-automation.env
- creo-automation.env
+.creo-automation.env
+creo-automation.env
