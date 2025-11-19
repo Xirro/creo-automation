@@ -1024,6 +1024,24 @@ if (!LAUNCHER_SECRET) {
         LAUNCHER_SECRET = LAUNCHER_SECRET || null;
     }
 }
+// Load runtime env overrides from package.json extraMetadata (runtimeEnv) when process.env lacks them.
+// This allows CI to inject required DB values at build time so the packaged app can start.
+try {
+    const pkgPath2 = path.join(__dirname, 'package.json');
+    if (fs.existsSync(pkgPath2)) {
+        const pkg2 = require(pkgPath2);
+        const runtimeEnv = pkg2.runtimeEnv || (pkg2.build && pkg2.build.runtimeEnv) || null;
+        if (runtimeEnv && typeof runtimeEnv === 'object') {
+            Object.keys(runtimeEnv).forEach(k => {
+                try {
+                    if ((!process.env[k] || process.env[k] === '') && runtimeEnv[k] != null) {
+                        process.env[k] = String(runtimeEnv[k]);
+                    }
+                } catch (e) { /* ignore per-key errors */ }
+            });
+        }
+    }
+} catch (e) { /* ignore */ }
 let warnedNoLauncherSecret = false;
 
 function validateLauncherSecret(req) {
