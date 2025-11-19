@@ -17,7 +17,7 @@ const dbConfig = require('../config/database.js');
 //landingPage function
 exports.landingPage = function(req, res) {
     //render the landingPage (does not require any additional data to be sent)
-    res.locals = {title: 'CREO Automation'};
+    res.locals.title = 'CREO Automation';
     res.render('Main/landingPage');
 };
 

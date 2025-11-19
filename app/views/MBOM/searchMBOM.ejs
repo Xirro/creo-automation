@@ -46,6 +46,7 @@
 
 <body>
 <div id="wrapper">
+
     <!-- Top Bar Start -->
     <%- include('../partials/header') %>
     <!-- Top Bar End -->
@@ -209,13 +210,17 @@
                                                     <input type="text" name="noSectionMBOM" class="form-control" value="<%= mbomData.noSectionMBOM%>" id="noSectionMBOM" hidden="hidden">
                                                 </div>
                                             <% } %>
-                                            <div class="col-sm-2">
-                                                <label for="" class="col-form-label"></label>
-                                                <button id="addSectionBtn" type="submit" class="btn-block btn-lg btn-outline-secondary waves-effect waves-light add-button" onclick="this.form.action='/mbomAddSection'">Add Section</button>
-                                            </div>
-                                            <div class="col-sm-2">
-                                                <label for="" class="col-form-label"></label>
-                                                <input id="resetSectionBtn" type="button" value="Clear All" class="btn-block btn-lg btn-outline-danger waves-effect waves-light" data-toggle="modal" data-target="#resetModal"/>
+                                            <div class="col-sm-4 d-flex align-items-end">
+                                                <div class="form-group mb-0 mr-2" style="min-width:80px;">
+                                                    <label for="addCount" class="col-form-label small mb-1">Qty</label>
+                                                    <input id="addCount" name="addCount" type="number" min="1" max="50" step="1" value="1" class="form-control form-control-sm" style="width:72px;" oninput="if(this.value==='')return; if(parseInt(this.value,10)>50) this.value=50; if(parseInt(this.value,10)<1) this.value=1;" />
+                                                </div>
+                                                <div class="form-group mb-0 mr-2">
+                                                    <button id="addSectionBtn" type="submit" class="btn btn-success btn-lg" onclick="this.form.action='/mbomAddSection'">Add Section</button>
+                                                </div>
+                                                <div class="form-group mb-0">
+                                                    <button id="clearAllBtn" type="button" class="btn btn-danger btn-lg" data-toggle="modal" data-target="#resetModal">Clear All</button>
+                                                </div>
 
                                                 <!-- Modal -->
                                                 <div class="modal fade" id="resetModal" tabindex="-1" role="dialog" aria-labelledby="resetModalTitle" aria-hidden="true">
@@ -231,8 +236,14 @@
                                                                 Are you sure you want to clear all sections?
                                                             </div>
                                                             <div class="modal-footer justify-content-center">
-                                                                <input id="resetSectionBtn" type="submit" value="Yes" class="btn-block btn-lg btn-secondary col-sm-5" style="border: 0" onclick="this.form.action='/mbomResetSection'" />
-                                                                <button type="button" class="btn-block btn-lg btn-danger col-sm-5" data-dismiss="modal" style="margin-top: 0">No</button>
+                                                                <div id="confirmResetForm" class="w-100 d-flex justify-content-center">
+                                                                    <% if(mbomData) { %>
+                                                                        <input type="hidden" id="confirm_jobNum" value="<%= mbomData.jobNum %>" />
+                                                                        <input type="hidden" id="confirm_releaseNum" value="<%= mbomData.releaseNum %>" />
+                                                                        <button id="confirmResetBtn" type="button" class="btn btn-secondary" style="border: 0; min-width:120px; margin-right:12px" onclick="(function(){var f=document.getElementById('mbomAddSection'); if(!f) return; f.action='/mbomResetSection'; f.submit();})();">Yes</button>
+                                                                    <% } %>
+                                                                    <button type="button" class="btn btn-danger" data-dismiss="modal" style="min-width:120px">No</button>
+                                                                </div>
                                                             </div>
                                                         </div>
                                                     </div>
@@ -408,12 +419,16 @@
                                                     <% for (let i=0; i < mbomData.numSections; i++) { %>
                                                         <div class="col-sm-3">
                                                             <%if( i < 9){%>
+                                                            <% let headerSecID = null; for (let sIdx = 0; sIdx < (mbomSecData || []).length; sIdx++) { if (mbomSecData[sIdx].sectionNum == i+1) { headerSecID = mbomSecData[sIdx].secID; break; } } %>
+                                                            <% let deleteQuery = headerSecID ? ('secID=' + headerSecID) : ('selectedSec=' + (i+1)); %>
                                                             <h6>Section 10<%=i+1%>
-                                                                <input id="deleteSectionBtn" type="submit" value="&times;" class="close" style="margin: -2px 25px auto 25px; border: white; background: white" onclick="this.form.action='../mbomDeleteSection/?selectedSec=<%= i+1 %>&numSections=<%= mbomData.numSections%>'" />
+                                                                <input id="deleteSectionBtn" type="submit" value="&times;" class="close" style="margin: -2px 25px auto 25px; border: white; background: white" onclick="this.form.action='../mbomDeleteSection/?<%= deleteQuery %>&numSections=<%= mbomData.numSections%>'" />
                                                             </h6>
                                                             <% } else{ %>
+                                                            <% let headerSecID = null; for (let sIdx = 0; sIdx < (mbomSecData || []).length; sIdx++) { if (mbomSecData[sIdx].sectionNum == i+1) { headerSecID = mbomSecData[sIdx].secID; break; } } %>
+                                                            <% let deleteQuery = headerSecID ? ('secID=' + headerSecID) : ('selectedSec=' + (i+1)); %>
                                                             <h6>Section 1<%=i+1%>
-                                                                <input id="deleteSectionBtn" type="submit" value="&times;" class="close" style="margin: -2px 25px auto 25px; border: white; background: white" onclick="this.form.action='../mbomDeleteSection/?selectedSec=<%= i+1 %>&numSections=<%= mbomData.numSections%>'" />
+                                                                <input id="deleteSectionBtn" type="submit" value="&times;" class="close" style="margin: -2px 25px auto 25px; border: white; background: white" onclick="this.form.action='../mbomDeleteSection/?<%= deleteQuery %>&numSections=<%= mbomData.numSections%>'" />
                                                             </h6>
                                                             <% } %>
                                                             <ol data-draggable="target" id="section<%=i+1%>" style="width: 100%;">
@@ -1160,40 +1175,7 @@
 </script>
 
 
-<!-- Plugins js -->
-<script src="/public/plugins/morris/morris.min.js"></script>
-<script src="/public/plugins/raphael/raphael-min.js"></script>
-<script src="/public/plugins/bootstrap-colorpicker/js/bootstrap-colorpicker.min.js"></script>
-<script src="/public/plugins/bootstrap-datepicker/js/bootstrap-datepicker.js"></script>
-<script src="/public/plugins/select2/js/select2.min.js"></script>
-<script src="/public/plugins/bootstrap-maxlength/bootstrap-maxlength.min.js"></script>
-<script src="/public/plugins/bootstrap-filestyle/js/bootstrap-filestyle.min.js"></script>
-<script src="/public/plugins/bootstrap-touchspin/js/jquery.bootstrap-touchspin.min.js"></script>
-<script src="/public/plugins/ion-rangeslider/ion.rangeSlider.min.js"></script>
-<script src="/public/plugins/jquery-sparkline/jquery.sparkline.min.js"></script>
-
-<!-- Assets js -->
-<script src="/public/assets/js/jquery.min.js"></script>
-<script src="/public/assets/js/bootstrap.bundle.min.js"></script>
-<script src="/public/assets/js/metisMenu.min.js"></script>
-<script src="/public/assets/js/jquery.slimscroll.js"></script>
-<script src="/public/assets/js/waves.min.js"></script>
-<script src="/public/assets/pages/dashboard.js"></script>
-<script src="/public/assets/pages/rangeslider-init.js"></script>
-<script src="/public/assets/pages/form-advanced.js"></script>
-<script src="/public/assets/js/app.js"></script>
-<script src="/public/plugins/ion-rangeslider/ion.rangeSlider.min.js"></script>
-<script src="/public/assets/js/characterLimit.js"></script>
-<script src="/public/assets/js/mbomCheckbox.js"></script>
-<script src="/public/assets/js/mbomBreakerAccessories.js"></script>
-<script src="/public/assets/js/mbomAccTooltips.js"></script>
-
-
-<!-- User developed scripts -->
-<script src="/public/assets/js/mbomFilterDropdown.js"></script>
-<script src="/public/assets/js/mbomDragDrop.js"></script>
-
-
+<%- include('../partials/scripts') %>
 
 <script>
     // Bind edit accessory modal save buttons (generated per-accessory) to call editBrkAcc(index)
@@ -1211,5 +1193,11 @@
         });
     });
 </script>
+<script src="/public/assets/js/characterLimit.js"></script>
+<script src="/public/assets/js/mbomCheckbox.js"></script>
+<script src="/public/assets/js/mbomBreakerAccessories.js"></script>
+<script src="/public/assets/js/mbomAccTooltips.js"></script>
+<script src="/public/assets/js/mbomFilterDropdown.js"></script>
+<script src="/public/assets/js/mbomDragDrop.js"></script>
 </body>
 </html>

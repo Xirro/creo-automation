@@ -28,7 +28,7 @@
     <link href="https://cdn.datatables.net/1.10.20/css/dataTables.bootstrap.min.css" rel="stylesheet" type="text/css">
     <link href="https://cdn.datatables.net/1.10.20/css/jquery.dataTables.min.css" rel="stylesheet" type="text/css">
 
-    <script src="/public/assets/js/jquery.min.js"></script>
+    <!-- jQuery provided by header -->
     <script src="https://cdn.datatables.net/1.10.20/js/jquery.dataTables.min.js"></script>
     <script>
         $(document).ready(function() {
@@ -324,7 +324,7 @@
                                                                     <td><%=layoutData[i].jobName%></td>
                                                                     <td><%=layoutData[i].customer%></td>
                                                                     <td><%=layoutData[i].layoutName%></td>
-                                                                    <td><a href="./searchLayout/?layoutID=<%=layoutData[i].jobNum%><%=layoutData[i].releaseNum%>_<%=layoutData[i].layoutID%>"><button id="openBtn" class="btn-block btn btn-outline-secondary waves-effect waves-light">Open</button></a></td>
+                                                                    <td><a href="./searchLayout/?layoutID=<%=layoutData[i].jobNum%><%=layoutData[i].releaseNum%>_<%=layoutData[i].layoutID%>" class="btn btn-block btn-outline-secondary waves-effect waves-light">Open</a></td>
                                                                 </tr>
                                                                 <% } %>
                                                             <% } %>
@@ -351,33 +351,7 @@
 
     <%- include('../partials/footer') %>
 </div> <!-- wrapper -->
-
-
-<!-- Plugins js -->
-<script src="/public/plugins/morris/morris.min.js"></script>
-<script src="/public/plugins/raphael/raphael-min.js"></script>
-<script src="/public/plugins/bootstrap-colorpicker/js/bootstrap-colorpicker.min.js"></script>
-<script src="/public/plugins/bootstrap-datepicker/js/bootstrap-datepicker.js"></script>
-<script src="/public/plugins/select2/js/select2.min.js"></script>
-<script src="/public/plugins/bootstrap-maxlength/bootstrap-maxlength.min.js"></script>
-<script src="/public/plugins/bootstrap-filestyle/js/bootstrap-filestyle.min.js"></script>
-<script src="/public/plugins/bootstrap-touchspin/js/jquery.bootstrap-touchspin.min.js"></script>
-<script src="/public/plugins/ion-rangeslider/ion.rangeSlider.min.js"></script>
-<script src="/public/plugins/jquery-sparkline/jquery.sparkline.min.js"></script>
-
-<!-- Assets js -->
-<script src="/public/assets/js/jquery.min.js"></script>
-<script src="/public/assets/js/bootstrap.bundle.min.js"></script>
-<script src="/public/assets/js/metisMenu.min.js"></script>
-<script src="/public/assets/js/jquery.slimscroll.js"></script>
-<script src="/public/assets/js/waves.min.js"></script>
-<script src="/public/assets/pages/dashboard.js"></script>
-<script src="/public/assets/pages/rangeslider-init.js"></script>
-<script src="/public/assets/pages/form-advanced.js"></script>
-<script src="/public/assets/js/breakerDragDrop.js"></script>
-<script src="/public/assets/js/app.js"></script>
-<script src="/public/assets/js/pdfDxfBinBomCheck.js"></script>
-
+<%- include('../partials/scripts') %>
 
 </body>
 </html>

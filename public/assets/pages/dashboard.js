@@ -10,8 +10,11 @@
 
     var Dashboard = function() {};
     
-    //creates area chart
+    //creates area chart (guards if element is missing)
     Dashboard.prototype.createAreaChart = function (element, pointSize, lineWidth, data, xkey, ykeys, labels, lineColors) {
+        if(!(document.getElementById && document.getElementById(element)) && !(window.jQuery && window.jQuery('#' + element).length)) {
+            return;
+        }
         Morris.Area({
             element: element,
             pointSize: 0,
@@ -29,8 +32,11 @@
         });
     },
 
-    //creates Donut chart
+    //creates Donut chart (guard element exists)
     Dashboard.prototype.createDonutChart = function (element, data, colors) {
+        if(!(document.getElementById && document.getElementById(element)) && !(window.jQuery && window.jQuery('#' + element).length)) {
+            return;
+        }
         Morris.Donut({
             element: element,
             data: data,
@@ -39,8 +45,11 @@
         });
     },
 
-    //creates Stacked chart
+    //creates Stacked chart (guard element exists)
     Dashboard.prototype.createStackedChart  = function(element, data, xkey, ykeys, labels, lineColors) {
+        if(!(document.getElementById && document.getElementById(element)) && !(window.jQuery && window.jQuery('#' + element).length)) {
+            return;
+        }
         Morris.Bar({
             element: element,
             data: data,
@@ -55,13 +64,13 @@
         });
     },
 
-    $('#sparkline').sparkline([8, 6, 4, 7, 10, 12, 7, 4, 9, 12, 13, 11, 12], {
-        type: 'bar',
-        height: '134',
-        barWidth: '10',
-        barSpacing: '7',
-        barColor: '#7A6FBE'
-    });
+    (window.jQuery && window.jQuery('#sparkline').length) && $('#sparkline').sparkline([8, 6, 4, 7, 10, 12, 7, 4, 9, 12, 13, 11, 12], {
+            type: 'bar',
+            height: '134',
+            barWidth: '10',
+            barSpacing: '7',
+            barColor: '#7A6FBE'
+        });
   
     
     Dashboard.prototype.init = function() {

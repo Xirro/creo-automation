@@ -57,7 +57,7 @@ exports.MBOM = function(req, res) {
         })
         .then(() => {
             //render the MBOM page with mbomData, comItemData, and message
-            res.locals = {title: 'Mechanical BOMs'};
+            res.locals.title = 'Mechanical BOMs';
             res.render('MBOM/MBOM', {
                 mbomData: mbomData,
                 comItemData: comItemData,
@@ -106,7 +106,7 @@ exports.createMBOM = function(req, res) {
                         //create a flag warning the user that this mbom already exists
                         message = 'Job and Release Number already exist';
                         //render the MBOM page with mbomData and message
-                        res.locals = {title: 'Create MBOM'};
+                        res.locals.title = 'Create MBOM';
                         res.render('MBOM/MBOM', {
                             mbomData: rows,
                             message: message
@@ -130,7 +130,7 @@ exports.createMBOM = function(req, res) {
         .then(rows => {
             //write mbomID to a variable and redirect to the searchMBOM page with the required unique identifier mbomID
             mbomID = rows[0].mbomID;
-            res.locals = {title: 'Create MBOM'};
+            res.locals.title = 'Create MBOM';
             res.redirect('searchMBOM/?bomID=' + data.jobNum + data.releaseNum + "_" + mbomID);
             return null;
         })
@@ -421,7 +421,7 @@ exports.copyMBOM = function(req, res) {
         )
         .then(() => {
             //redirect to the searchMBOM page
-            res.locals = {title: 'Search MBOM'};
+            res.locals.title = 'Search MBOM';
             res.redirect('./searchMBOM/?bomID=' + newMbomData.jobNum + newMbomData.releaseNum + "_" + newMbomID);
             return null;
         })
@@ -466,7 +466,7 @@ exports.editMBOM = function(req, res) {
         "boardDesignation = ?, noSectionMBOM = ? WHERE mbomID = ?", [data.jobName, data.customer, data.boardDesignation, data.noSectionMBOM, qs.mbomID])
         .then(() => {
             //redirect to the searchMBOM page
-            res.locals = {title: 'Search MBOM'};
+            res.locals.title = 'Search MBOM';
             res.redirect('../searchMBOM/?bomID=' + data.jobNum + data.releaseNum + "_" + qs.mbomID);
         })
         .catch(err => {
@@ -730,7 +730,7 @@ exports.addBrkAccFromEdit = function(req, res) {
         })
         .then(() => {
             //render the editBreaker page with mbomBrkData, brkAccData, mbomData, and brkData
-            res.locals = {title: 'Add Breaker Accessory'};
+            res.locals.title = 'Add Breaker Accessory';
             res.render('MBOM/editBreaker', {
                 mbomBrkData: breakerData,
                 brkAccData: accData,
@@ -810,7 +810,7 @@ exports.editBrkAccFromEdit = function(req, res) {
         })
         .then(() => {
             //render the editBreaker page with mbomBrkData, brkAccData, mbomData, and brkData
-            res.locals = {title: 'Edit Breaker Accessory'};
+            res.locals.title = 'Edit Breaker Accessory';
             res.render('MBOM/editBreaker', {
                 mbomBrkData: breakerData,
                 brkAccData: accData,
@@ -896,7 +896,7 @@ exports.deleteBrkAccFromEdit = function(req, res) {
                         class: req.body.class || (breakerData[0] && breakerData[0].class)
                     };
 
-                    res.locals = { title: 'Delete Breaker Accessory' };
+                    res.locals.title = 'Delete Breaker Accessory';
                     res.render('MBOM/editBreaker', {
                         mbomBrkData: breakerData,
                         brkAccData: accData,
@@ -1001,7 +1001,7 @@ exports.searchMBOMGet = function(req, res) {
         .then(() => {
             //render the searchMBOM page with mbomID, mbomData, mbomBrkData, mbomSecData, mbomItemData,
             //comItemData, userItemData, catCodeData, classCodeData, bekAccData, brkData, and mbomBrkAcc
-            res.locals = {title: 'Search MBOM'};
+            res.locals.title = 'Search MBOM';
             res.render('MBOM/searchMBOM', {
                 mbomID: mbomID,
                 mbomData: mbomData,
@@ -1074,7 +1074,7 @@ exports.createComItemTableGET = function(req, res) {
         })
         .then(() => {
             //render createComItemTable page with comItemData, catCodeData, and classCodeData
-            res.locals = {title: 'Create Com Item'};
+            res.locals.title = 'Create Com Item';
             res.render('MBOM/createComItemTable', {
                 comItemData: comItemData,
                 catCodeData: catCodeData,
@@ -1135,7 +1135,7 @@ exports.createComItemTablePOST = function(req, res) {
             return null;
         })
         .then(() => {
-            res.locals = {title: 'Create Com Item'};
+            res.locals.title = 'Create Com Item';
             res.redirect('./MBOM');
         })
         .catch(err => {
@@ -1214,7 +1214,7 @@ exports.editComItemTableGET = function(req, res) {
         })
         .then(() => {
             //render editComItem page with editComItemData, comItemData, catCodeData, and classCodeData
-            res.locals = {title: 'Edit Item'};
+            res.locals.title = 'Edit Item';
             res.render('MBOM/editComItem', {
                 editComItemData: editComItemData,
                 comItemData: comItemData,
@@ -1272,7 +1272,7 @@ exports.editComItemTablePOST = function(req, res) {
         updateData.itemDesc, updateData.itemPN, updateData.unitOfIssue, updateData.catCode, updateData.class, qs.comItemID])
         .then(() => {
             //redirect to the main mbom page
-            res.locals = {title: 'Edit Common Item'};
+            res.locals.title = 'Edit Common Item';
             res.redirect('../MBOM');
         })
         .catch(err => {
@@ -1340,7 +1340,7 @@ exports.addComItem = function(req, res) {
         })
         .then(() => {
             //redirect to searchMBOM page
-            res.locals = {title: 'Add Com Item'};
+            res.locals.title = 'Add Com Item';
             res.redirect('searchMBOM/?bomID=' + mbomData.jobNum + mbomData.releaseNum + "_" + mbomData.mbomID);
         })
         .catch(err => {
@@ -1413,7 +1413,7 @@ exports.editComItem = function(req, res) {
         })
         //render MBOMeditComItem page with mbomItemData, mbomData, comItemData, and editData
         .then(() => {
-            res.locals = {title: 'Edit Item'};
+            res.locals.title = 'Edit Item';
             res.render('MBOM/MBOMeditComItem', {
                 mbomItemData: data,
                 mbomData: mbomData,
@@ -1478,7 +1478,7 @@ exports.editComItemSave = function(req, res) {
         })
         .then(() => {
             //redirect to searchMBOM page
-            res.locals = {title: 'Edit Common Item'};
+            res.locals.title = 'Edit Common Item';
             res.redirect('../searchMBOM/?bomID=' + mbomData.jobNum + mbomData.releaseNum + "_" + mbomData.mbomID);
         })
         .catch(err => {
@@ -1598,7 +1598,7 @@ exports.createUserItem = function(req, res) {
         })
         .then(() => {
             //redirect to searchMBOM page
-            res.locals = {title: 'Create User Item'};
+            res.locals.title = 'Create User Item';
             res.redirect('searchMBOM/?bomID=' + mbomData.jobNum + mbomData.releaseNum + "_" + mbomData.mbomID);
         })
         .catch(err => {
@@ -1689,7 +1689,7 @@ exports.editUserItem = function(req, res) {
         })
         .then(() => {
             //render the editUserItem page with mbomItemData, mbomData, comItemData, userItemData, catCodeData, and classCodeData
-            res.locals = {title: 'Edit User Item'};
+            res.locals.title = 'Edit User Item';
             res.render('MBOM/editUserItem', {
                 mbomItemData: data,
                 mbomData: mbomData,
@@ -1812,7 +1812,7 @@ exports.editUserItemSave = function(req, res) {
         })
         .then(() => {
             //redirect to searchMBOM page
-            res.locals = {title: 'Edit User Item'};
+            res.locals.title = 'Edit User Item';
             res.redirect('../searchMBOM/?bomID=' + mbomData.jobNum + mbomData.releaseNum + "_" + mbomData.mbomID);
         })
         .catch(err => {
@@ -1862,7 +1862,7 @@ exports.copyItem = function(req, res) {
         })
         .then(() => {
             //redirect to searchMBOM page
-            res.locals = {title: 'Copy Item'};
+            res.locals.title = 'Copy Item';
             res.redirect('../searchMBOM/?bomID=' + mbomData.jobNum + mbomData.releaseNum + "_" + mbomData.mbomID);
         })
         .catch(err => {
@@ -1921,7 +1921,7 @@ exports.deleteItem = function(req, res) {
         })
         .then(() => {
             //redirect to the searchMBOM page
-            res.locals = {title: 'Delete Item'};
+            res.locals.title = 'Delete Item';
             res.redirect('../searchMBOM/?bomID=' + mbomData.jobNum + mbomData.releaseNum + "_" + mbomData.mbomID);
         })
         .catch(err => {
@@ -2034,7 +2034,7 @@ exports.addBrk = function(req, res) {
         )
         .then(() => {
             //redirect to searchMBOM
-            res.locals = {title: 'Add Breaker'};
+            res.locals.title = 'Add Breaker';
             res.redirect('searchMBOM/?bomID=' + data1.jobNum + data1.releaseNum + "_" + data1.mbomID);
             return null;
         })
@@ -2127,7 +2127,7 @@ exports.copyBreaker = function(req, res) {
         })
         .then(() => {
             //redirect to searchMBOM page
-            res.locals = {title: 'Copy Breaker'};
+            res.locals.title = 'Copy Breaker';
             res.redirect('../searchMBOM/?bomID=' + mbomData.jobNum + mbomData.releaseNum + "_" + mbomData.mbomID);
         })
         .catch(err => {
@@ -2184,7 +2184,7 @@ exports.editBreaker = function(req, res) {
         })
         .then(() => {
             //render editBreaker with mbomBrkData, brkAccData, mbomData, and brkData
-            res.locals = {title: 'Edit Breaker'};
+            res.locals.title = 'Edit Breaker';
             res.render('MBOM/editBreaker', {
                 mbomBrkData: breakerData,
                 brkAccData: accData,
@@ -2233,7 +2233,7 @@ exports.editBreakerSave = function(req, res) {
         updateData.devMfg, updateData.idDev])
         .then(() => {
             //redirect to searchMBOM page
-            res.locals = {title: 'Copy Breaker'};
+            res.locals.title = 'Copy Breaker';
             res.redirect('../searchMBOM/?bomID=' + mbomData.jobNum + mbomData.releaseNum + "_" + updateData.mbomID);
         })
         .catch(err => {
@@ -2277,7 +2277,7 @@ exports.deleteBreaker = function(req, res) {
     deleteBreakerAndAcc()
         .then(() => {
             //redirect to searchMBOM page
-            res.locals = {title: 'Delete Breaker'};
+            res.locals.title = 'Delete Breaker';
             res.redirect('../searchMBOM/?bomID=' + mbomData.jobNum + mbomData.releaseNum + "_" + mbomData.mbomID);
         })
         .catch(err => {
@@ -2297,37 +2297,74 @@ exports.deleteBreaker = function(req, res) {
  SECTION CONFIGURE IN MBOM
  ***********************************************/
 //mbomAddSection function
-exports.mbomAddSection = function(req, res) {
-    req.setTimeout(0); //no timeout (this is needed to prevent error due to page taking a long time to load)
-    //Initialize variables
-    let data = {
+exports.mbomAddSection = async function(req, res) {
+    req.setTimeout(0);
+    // Initialize variables
+    const data = {
         jobNum: req.body.jobNum,
         releaseNum: req.body.releaseNum,
     };
-    let numSections, mbomID;
+    // normalize possible array inputs from duplicate form fields (take first value)
+    let jobNum = data.jobNum;
+    let releaseNum = data.releaseNum;
+    if (Array.isArray(jobNum)) jobNum = jobNum[0];
+    if (Array.isArray(releaseNum)) releaseNum = releaseNum[0];
+    // ensure strings
+    jobNum = (typeof jobNum === 'undefined' || jobNum === null) ? '' : String(jobNum);
+    releaseNum = (typeof releaseNum === 'undefined' || releaseNum === null) ? '' : String(releaseNum);
+    try {
+        // Use a dedicated connection and transaction to avoid race conditions
+        const conn = await DB.getSqlConnection();
+        try {
+            await conn.beginTransaction();
 
-    //Initial db query - lookup mbomSum in the row referenced by jobNum and releaseNum
-    querySql("SELECT * FROM " + database + " . " + dbConfig.MBOM_summary_table + " WHERE jobNum = ? AND releaseNum = ?", [data.jobNum, data.releaseNum])
-        .then(rows => {
-            //write the numSections and mbomID
-            numSections = rows[0].numSections + 1;
-            mbomID = rows[0].mbomID;
+            // lock the summary row for this job/release
+            const selectForUpdate = "SELECT * FROM " + database + "." + dbConfig.MBOM_summary_table + " WHERE jobNum = ? AND releaseNum = ? FOR UPDATE";
+            const [rows] = await conn.query(selectForUpdate, [jobNum, releaseNum]);
+            if (!rows || rows.length === 0) {
+                await conn.rollback();
+                conn.release();
+                return res.redirect('searchMBOM/?bomID=' + jobNum + releaseNum + "_");
+            }
 
-            //update mbomSum with the new numSections in the row referenced by jobNum and releaseNum
-            querySql("UPDATE " + database + "." + dbConfig.MBOM_summary_table + " SET numSections = ? WHERE jobNum = ? AND releaseNum = ?", [numSections, data.jobNum, data.releaseNum]);
-            //insert new row into mbomNewSectionSum with numSections and mbomID
-            querySql("INSERT INTO " + database + "." + dbConfig.MBOM_new_section_sum + " SET sectionNum = ?, mbomID = ?", [numSections, mbomID]);
-            return null;
-        })
-        .then(() => {
-            //redirect to searchMBOM page
-            res.locals = {title: 'Add Section'};
-            res.redirect('searchMBOM/?bomID=' + data.jobNum + data.releaseNum + "_" + mbomID);
-        })
-        .catch(err => {
-            //if error occurs at anytime at any point in the code above, log it to the console
-            console.log('there was an error:' + err);
-        });
+            const currentNumSections = parseInt(rows[0].numSections || 0, 10);
+            const mbomID = rows[0].mbomID;
+
+            // allow adding multiple sections in one request via `addCount` form field
+            let addCount = 1;
+            if (req.body && (req.body.addCount || req.body.numToAdd)) {
+                addCount = parseInt(req.body.addCount || req.body.numToAdd, 10) || 1;
+            }
+            // sanity bounds
+            if (addCount < 1) addCount = 1;
+            if (addCount > 50) addCount = 50;
+
+            const newTotal = currentNumSections + addCount;
+
+            // insert new sections with the locked connection
+            for (let s = currentNumSections + 1; s <= newTotal; s++) {
+                await conn.query("INSERT INTO " + database + "." + dbConfig.MBOM_new_section_sum + " (sectionNum, mbomID) VALUES (?, ?)", [s, mbomID]);
+            }
+
+            // update the summary numSections
+            const updateQuery = "UPDATE " + database + "." + dbConfig.MBOM_summary_table + " SET numSections = ? WHERE jobNum = ? AND releaseNum = ?";
+            await conn.query(updateQuery, [newTotal, jobNum, releaseNum]);
+
+            await conn.commit();
+            conn.release();
+
+            // redirect to searchMBOM page
+            res.locals.title = 'Add Section';
+            return res.redirect('searchMBOM/?bomID=' + jobNum + releaseNum + "_" + mbomID);
+        } catch (e) {
+            try { await conn.rollback(); } catch (er) { /* ignore */ }
+            try { conn.release(); } catch (er) { /* ignore */ }
+            throw e;
+        }
+    } catch (err) {
+        console.log('there was an error:' + err);
+        return res.status(500).send('Error adding section');
+    }
 };
 
 
@@ -2337,42 +2374,70 @@ exports.mbomAddSection = function(req, res) {
 
 
 //mbomResetSection function
-exports.mbomResetSection = function(req, res) {
+exports.mbomResetSection = async function(req, res) {
     req.setTimeout(0); //no timeout (this is needed to prevent error due to page taking a long time to load)
-    //Initialize variables
+    // Initialize variables
     let data = {
         jobNum: req.body.jobNum,
         releaseNum: req.body.releaseNum,
     };
-    let numSections = 0;
-    let mbomID;
 
-    //lookup mbomSum row referenced by jobNum and releaseNum
-    querySql("SELECT * FROM " + database + " . " + dbConfig.MBOM_summary_table + " WHERE jobNum = ? AND releaseNum = ?", [data.jobNum, data.releaseNum])
-        .then(rows => {
-            //write the mbomID
-            mbomID = rows[0].mbomID;
+    // normalize possible array inputs (take first value)
+    let jobNum = data.jobNum;
+    let releaseNum = data.releaseNum;
+    if (Array.isArray(jobNum)) jobNum = jobNum[0];
+    if (Array.isArray(releaseNum)) releaseNum = releaseNum[0];
+    jobNum = (typeof jobNum === 'undefined' || jobNum === null) ? '' : String(jobNum);
+    releaseNum = (typeof releaseNum === 'undefined' || releaseNum === null) ? '' : String(releaseNum);
 
-            //update mbomSum with numSections in the row referenced by jobNum and releaseNum
-            querySql("UPDATE " + database + "." + dbConfig.MBOM_summary_table + " SET numSections = ? WHERE jobNum = ? AND releaseNum = ?", [numSections, data.jobNum, data.releaseNum]);
-            //delete row from mbomNewSectionSum referenced by mbomID
-            querySql("DELETE FROM " + database + "." + dbConfig.MBOM_new_section_sum + " WHERE mbomID = ?", mbomID);
-            //update mbomItemSum with null secID in the row referenced by mbomID
-            querySql("UPDATE " + database + "." + dbConfig.MBOM_item_table + " SET secID = ? WHERE mbomID = ?", [null, mbomID]);
-            //update mbomBrkSum with null secID in the row referenced by mbomID
-            querySql("UPDATE " + database + "." + dbConfig.MBOM_breaker_table + " SET secID = ? WHERE mbomID = ?", [null, mbomID]);
+    try {
+        const conn = await DB.getSqlConnection();
+        try {
+            await conn.beginTransaction();
 
-            return null;
-        })
-        .then(() => {
-            //redirect to searchMBOM
-            res.locals = {title: 'Reset Section'};
-            res.redirect('searchMBOM/?bomID=' + data.jobNum + data.releaseNum + "_" + mbomID);
-        })
-        .catch(err => {
-            //if error occurs at anytime at any point in the code above, log it to the console
-            console.log('there was an error:' + err);
-        });
+            // Lock the summary row for this job to prevent concurrent changes
+            const selectQuery = "SELECT * FROM " + database + "." + dbConfig.MBOM_summary_table + " WHERE jobNum = ? AND releaseNum = ? FOR UPDATE";
+            const [rows] = await conn.query(selectQuery, [jobNum, releaseNum]);
+            if (!rows || rows.length === 0) {
+                await conn.rollback();
+                conn.release();
+                console.log('mbomResetSection - summary row not found for', jobNum, releaseNum);
+                res.locals.title = 'Reset Section - Not Found';
+                return res.redirect('searchMBOM/?bomID=' + jobNum + releaseNum + "_");
+            }
+
+            const mbomID = rows[0].mbomID;
+
+            // set numSections to 0 in summary
+            const updateSummary = "UPDATE " + database + "." + dbConfig.MBOM_summary_table + " SET numSections = ? WHERE jobNum = ? AND releaseNum = ?";
+            await conn.query(updateSummary, [0, jobNum, releaseNum]);
+
+            // delete sections for this mbomID
+            const deleteSections = "DELETE FROM " + database + "." + dbConfig.MBOM_new_section_sum + " WHERE mbomID = ?";
+            await conn.query(deleteSections, [mbomID]);
+
+            // null out secID on items and breakers for this mbomID
+            const updateItems = "UPDATE " + database + "." + dbConfig.MBOM_item_table + " SET secID = NULL WHERE mbomID = ?";
+            await conn.query(updateItems, [mbomID]);
+
+            const updateBrks = "UPDATE " + database + "." + dbConfig.MBOM_breaker_table + " SET secID = NULL WHERE mbomID = ?";
+            await conn.query(updateBrks, [mbomID]);
+
+            await conn.commit();
+            conn.release();
+
+            // redirect to searchMBOM after commit so UI sees consistent DB state
+            res.locals.title = 'Reset Section';
+            return res.redirect('searchMBOM/?bomID=' + jobNum + releaseNum + "_" + mbomID);
+        } catch (e) {
+            try { await conn.rollback(); } catch (er) { /* ignore */ }
+            try { conn.release(); } catch (er) { /* ignore */ }
+            throw e;
+        }
+    } catch (err) {
+        console.log('mbomResetSection - error:', err);
+        return res.status(500).send('Error resetting sections');
+    }
 };
 
 
@@ -2383,86 +2448,106 @@ exports.mbomResetSection = function(req, res) {
 
 
 //mbomDeleteSection function
-exports.mbomDeleteSection = function(req, res) {
-    req.setTimeout(0); //no timeout (this is needed to prevent error due to page taking a long time to load)
-    //Initialize variables
-    let urlObj = url.parse(req.originalUrl);
+exports.mbomDeleteSection = async function(req, res) {
+    req.setTimeout(0);
+    // Initialize variables
+    const urlObj = url.parse(req.originalUrl);
     urlObj.protocol = req.protocol;
     urlObj.host = req.get('host');
-    let qs = queryString.parse(urlObj.search);
-    let selectedSec = qs.selectedSec;
-    let numSections = qs.numSections;
-    let data = {
-        mbomID: req.body.mbomID[0],
-        jobNum: req.body.jobNum[0],
-        releaseNum: req.body.releaseNum[0]
+    const qs = queryString.parse(urlObj.search || '');
+    const selectedSec = qs.selectedSec;
+    const secIDParam = qs.secID;
+    const numSections = qs.numSections;
+    const data = {
+        mbomID: req.body.mbomID,
+        jobNum: req.body.jobNum,
+        releaseNum: req.body.releaseNum
     };
-    let brkIDs = [];
-    let itemIDs = [];
+    // normalize possible array inputs (take first value)
+    let mbomID = data.mbomID;
+    let jobNum = data.jobNum;
+    let releaseNum = data.releaseNum;
+    if (Array.isArray(mbomID)) mbomID = mbomID[0];
+    if (Array.isArray(jobNum)) jobNum = jobNum[0];
+    if (Array.isArray(releaseNum)) releaseNum = releaseNum[0];
+    mbomID = (typeof mbomID === 'undefined' || mbomID === null) ? '' : String(mbomID);
+    jobNum = (typeof jobNum === 'undefined' || jobNum === null) ? '' : String(jobNum);
+    releaseNum = (typeof releaseNum === 'undefined' || releaseNum === null) ? '' : String(releaseNum);
 
-    //Initial db query - lookup mbomNewSectionSum row referenced by mbomID and sectionNum
-    querySql("SELECT * FROM " + database + " . " + dbConfig.MBOM_new_section_sum + " WHERE mbomID = ? AND sectionNum = ?", [data.mbomID, selectedSec])
-        .then(
-            async function(rows){
-                //lookup mbomBrkSum row referenced by secID
-                const brk = await querySql("SELECT * FROM " + dbConfig.MBOM_breaker_table + " WHERE secID = ?", rows[0].secID);
-                //lookup mbomItemSum row referenced by secID
-                const item = await querySql("SELECT * FROM " + dbConfig.MBOM_item_table + " WHERE secID = ?", rows[0].secID);
-                return {brk, item};
-            })
-        .then(({brk, item}) => {
-            //for each brk
-            for(let row of brk){
-                //push id to brkIDs
-                brkIDs.push(row.idDev);
+    try {
+        const conn = await DB.getSqlConnection();
+        try {
+            await conn.beginTransaction();
+
+            // lock the target section row. Prefer secID when provided to avoid ambiguity.
+            let selectSectionQuery;
+            let selectParams;
+            if (secIDParam) {
+                selectSectionQuery = "SELECT * FROM " + database + "." + dbConfig.MBOM_new_section_sum + " WHERE secID = ? FOR UPDATE";
+                selectParams = [secIDParam];
+            } else {
+                selectSectionQuery = "SELECT * FROM " + database + "." + dbConfig.MBOM_new_section_sum + " WHERE mbomID = ? AND sectionNum = ? FOR UPDATE";
+                selectParams = [mbomID, selectedSec];
             }
-            //for each item
-            for(let row of item){
-                //push id to itemIDs
-                itemIDs.push(row.itemSumID);
+            // locked target section row
+            const [rows] = await conn.query(selectSectionQuery, selectParams);
+            console.log('mbomDeleteSection - select returned rows count:', (rows && rows.length) || 0);
+            if (!rows || rows.length === 0) {
+                await conn.rollback();
+                conn.release();
+                console.log('mbomDeleteSection - section not found, redirecting back. params:', {mbomID, selectedSec, numSections, jobNum, releaseNum});
+                res.locals.title = 'Delete Section - Not Found';
+                return res.redirect('../searchMBOM/?bomID=' + jobNum + releaseNum + "_" + mbomID);
             }
 
-            //delete row from mbomNewSectionSum referenced by mbomID and sectionNum
-            querySql("DELETE FROM " + database + " . " + dbConfig.MBOM_new_section_sum + " WHERE mbomID = ? AND sectionNum = ?", [data.mbomID[0], selectedSec]);
+            const secID = rows[0].secID;
+            // prefer the authoritative sectionNum from the locked row (use for renumbering)
+            const deletedSectionNum = rows[0].sectionNum;
 
-            return null;
-        })
-        .then(
-            async function(){
-                //for each breaker id
-                for(let row of brkIDs){
-                    //update the mbomBrkSum secID in the row referenced by idDev
-                    await querySql("UPDATE " + database + "." + dbConfig.MBOM_breaker_table + " SET secID = ? WHERE idDev = ?", [null, row]);
-                }
-                for(let row of itemIDs){
-                    //update the mbomItemSum secID in the row referenced by itemSumID
-                    await querySql("UPDATE " + database + " . " + dbConfig.MBOM_item_table + " SET secID = ? WHERE itemSumID = ?", [null, row]);
-                }
+            // delete the section row. If we locked by secID, delete by secID; otherwise delete by mbomID+sectionNum
+            let deleteQuery, deleteParams;
+            if (secID) {
+                deleteQuery = "DELETE FROM " + database + "." + dbConfig.MBOM_new_section_sum + " WHERE secID = ?";
+                deleteParams = [secID];
+            } else {
+                deleteQuery = "DELETE FROM " + database + "." + dbConfig.MBOM_new_section_sum + " WHERE mbomID = ? AND sectionNum = ?";
+                deleteParams = [mbomID, selectedSec];
+            }
+            // executing delete
+            const [deleteResult] = await conn.query(deleteQuery, deleteParams);
+            console.log('mbomDeleteSection - delete affectedRows:', deleteResult && deleteResult.affectedRows);
 
-                return null;
+            // null out secID on affected breakers and items (only meaningful if secID exists)
+            if (secID) {
+                const clearBrk = "UPDATE " + database + "." + dbConfig.MBOM_breaker_table + " SET secID = NULL WHERE mbomID = ? AND secID = ?";
+                await conn.query(clearBrk, [mbomID, secID]);
+                const clearItem = "UPDATE " + database + "." + dbConfig.MBOM_item_table + " SET secID = NULL WHERE mbomID = ? AND secID = ?";
+                await conn.query(clearItem, [mbomID, secID]);
             }
-        )
-        .then(() => {
-            for(let i = parseInt(selectedSec) + 1; i <= numSections; i++){
-                //update the mbomNewSectionSum sectionNum in the row referenced by mbomID and sectionNum
-                querySql("UPDATE " + database + " . " + dbConfig.MBOM_new_section_sum + " SET sectionNum = ? WHERE mbomID = ? AND sectionNum = ?", [i - 1, data.mbomID[0], i]);
-            }
-            return null;
-        })
-        .then(() => {
-            //update the mbomSum numSections in the row referenced by mbomID
-            querySql("UPDATE " + database + "." + dbConfig.MBOM_summary_table + " SET numSections = ? WHERE mbomID = ?", [(numSections - 1), data.mbomID]);
-            return null;
-        })
-        .then(() => {
-            //redirect to searchMBOM
-            res.locals = {title: 'Delete Section'};
-            res.redirect('../searchMBOM/?bomID=' + data.jobNum + data.releaseNum + "_" + data.mbomID);
-        })
-        .catch(err => {
-            //if error occurs at anytime at any point in the code above, log it to the console
-            console.log('there was an error:' + err);
-        });
+
+            // renumber sections following the deleted one in a single statement. Use the locked row's sectionNum.
+            const renumberQuery = "UPDATE " + database + "." + dbConfig.MBOM_new_section_sum + " SET sectionNum = sectionNum - 1 WHERE mbomID = ? AND sectionNum > ?";
+            await conn.query(renumberQuery, [mbomID, deletedSectionNum]);
+
+            // update summary numSections
+            const updateSummaryQuery = "UPDATE " + database + "." + dbConfig.MBOM_summary_table + " SET numSections = numSections - 1 WHERE mbomID = ?";
+            await conn.query(updateSummaryQuery, [mbomID]);
+
+            await conn.commit();
+            conn.release();
+
+            // redirect to searchMBOM
+            res.locals.title = 'Delete Section';
+            return res.redirect('../searchMBOM/?bomID=' + jobNum + releaseNum + "_" + mbomID);
+        } catch (e) {
+            try { await conn.rollback(); } catch (er) { /* ignore */ }
+            try { conn.release(); } catch (er) { /* ignore */ }
+            throw e;
+        }
+    } catch (err) {
+        console.log('there was an error:' + err);
+        return res.status(500).send('Error deleting section');
+    }
 };
 
 
@@ -2546,7 +2631,7 @@ exports.sectionConfigure = function(req, res) {
         })
         .then(() => {
             //redirect to searchMBOM
-            res.locals = {title: 'Section Configure'};
+            res.locals.title = 'Section Configure';
             res.redirect('searchMBOM/?bomID=' + jobNum + releaseNum + "_" + data[0].mbomID)
         })
         .catch(err => {

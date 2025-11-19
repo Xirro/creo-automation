@@ -28,28 +28,108 @@
 
     <link href="https://cdn.datatables.net/1.10.20/css/dataTables.bootstrap.min.css" rel="stylesheet" type="text/css">
     <link href="https://cdn.datatables.net/1.10.20/css/jquery.dataTables.min.css" rel="stylesheet" type="text/css">
+    <style>
+        /* Make table more compact */
+        .table-sm td, .table-sm th { padding: .45rem .5rem; }
+        .mbom-search { width: 220px; }
+        .page-title-box .card { height: 100%; }
 
-    <script src="/public/assets/js/jquery.min.js"></script>
-    <script src="https://cdn.datatables.net/1.10.20/js/jquery.dataTables.min.js"></script>
-    <script>
-        $(document).ready(function() {
-            $('#mbomSumTable').DataTable({
-                "scrollCollapse": true,
-                "paging": true,
-                "pagingType": "simple"
-            });
-        });
-    </script>
+        /* Prevent header text from wrapping */
+        #mbomSumTable thead th, #mbomComItemTable thead th {
+            white-space: nowrap;
+            position: relative;
+            background: transparent !important;
+            background-image: none !important;
+            padding-right: 28px; /* room for arrows */
+        }
 
-    <script>
-        $(document).ready(function() {
-            $('#mbomComItemTable').DataTable({
-                "scrollCollapse": true,
-                "paging": true,
-                "pagingType": "simple"
-            });
-        });
-    </script>
+        /* Make Job # column a bit wider to avoid wrapping (mbomID is hidden first column) */
+        #mbomSumTable thead th:nth-child(2),
+        #mbomSumTable tbody td:nth-child(2) {
+            min-width: 40px;
+            width: 70px;
+        }
+
+        /* Remove DataTables' boxed arrow background and render simple arrows only */
+        #mbomSumTable thead th::after, #mbomComItemTable thead th::after {
+            content: "\25B2\00a0\25BC"; /* up + space + down */
+            font-size: 10px;
+            color: #c3c7cc;
+            position: absolute;
+            right: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            line-height: 1;
+            pointer-events: none;
+        }
+
+        /* Highlight arrows when column is sorted */
+        #mbomSumTable thead th.sorting_asc::after, #mbomComItemTable thead th.sorting_asc::after {
+            color: #495057;
+        }
+        #mbomSumTable thead th.sorting_desc::after, #mbomComItemTable thead th.sorting_desc::after {
+            color: #495057;
+        }
+
+        /* Remove alternate row coloring (we'll keep hover only) */
+        .table tbody tr:nth-of-type(odd) { background-color: transparent; }
+
+        /* Keep hover effect distinct */
+        .table-hover tbody tr:hover { background-color: #f7f7f9; }
+
+        /* Slightly reduce pagination button padding */
+        .dataTables_wrapper .dataTables_paginate .paginate_button { padding: 0 6px; }
+
+        /* Space between the top row (create/lookup) and the Commonly Used Items card */
+        .mbom-common-card { margin-top: 1.5rem; }
+
+        /* Fixed card size for Create Job and Lookup Job; only Create Job will scroll */
+        .fixed-card {
+            height: 420px;
+            min-height: 300px;
+            max-height: 520px;
+            display: flex;
+            flex-direction: column;
+        }
+        /* By default do NOT make the card-body scroll; we'll add scrolling only where wanted */
+        .fixed-card .card-body {
+            overflow: visible;
+        }
+        /* Apply to the Create Job card only so its body scrolls when needed */
+        .fixed-scroll .card-body {
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        /* lookup-card styles removed so Lookup table behaves like Commonly Used Items */
+        /* Remove table outline (outer border) for a cleaner look */
+        #mbomSumTable, #mbomComItemTable { border: none !important; }
+        .table-responsive { border: none !important; box-shadow: none !important; }
+        /* Keep light separators between rows (top borders) */
+        #mbomSumTable th, #mbomSumTable td, #mbomComItemTable th, #mbomComItemTable td {
+            border-top: 1px solid #ebeef0 !important;
+        }
+        @media (max-width: 991px) {
+            /* On smaller screens, let cards be natural height */
+            .fixed-card { height: auto; max-height: none; }
+            .fixed-card .card-body { overflow: visible; }
+        }
+
+          /* No-section checkbox group: keep label on one line and align checkbox left
+              Add small left margin and vertical centering so it lines up with other inputs */
+        /* increased left margin so checkbox lines up with other form controls */
+        .no-section-group { display: flex; align-items: center; gap: .5rem; margin-left: 1.25rem; padding-top: .25rem; }
+                    .no-section-group .form-check-input { vertical-align: middle; margin-top: 0; }
+                    .no-section-label { white-space: nowrap; line-height: 1.4; }
+
+                /* Truncate long table cell content with ellipsis to keep rows compact */
+                #mbomSumTable td, #mbomComItemTable td {
+                        max-width: 220px;
+                        white-space: nowrap;
+                        overflow: hidden;
+                        text-overflow: ellipsis;
+                }
+    </style>
 </head>
 
 <body>
@@ -70,9 +150,9 @@
             <div class="col-sm-12">
                 <div class="page-title-box">
                     <h4 class="page-title">Mechanical Engineering - BOM's</h4>
-                    <div class="row justify-content-center">
-                        <div class="col-sm-5">
-                            <div class="card m-b-20" style="height:94%;">
+                    <div class="row justify-content-center align-items-stretch">
+                        <div class="col-sm-4">
+                            <div class="card m-b-20 fixed-card fixed-scroll">
                                 <div class="card-body">
                                     <h4 class="mt-0 header-title">Create Job</h4>
                                     <h6 style="color:red;"><%= message %></h6>
@@ -81,111 +161,118 @@
                                             <div class="row">
                                                 <div class="col-sm-8">
                                                     <label for="example-text-input" class="col-form-label">Job #</label>
-                                                    <input type="text" name="jobNum" class="form-control" value="" placeholder="Type Number Here" id="example-text-input" autocomplete="off" required>
+                                                    <input type="text" name="jobNum" class="form-control" value="" placeholder="Job #" id="example-text-input" autocomplete="off" required>
                                                 </div>
                                                 <div class="col-sm-4">
                                                     <label for="example-text-input" class="col-form-label">Release</label>
-                                                    <input type="text" name="releaseNum" class="form-control" value="" placeholder="Type Release Here" id="example-text-input" autocomplete="off" required>
+                                                    <input type="text" name="releaseNum" class="form-control" value="" placeholder="Release #" id="example-text-input" autocomplete="off" required>
                                                 </div>
                                             </div>
                                             <div class="row">
                                                 <div class="col-sm-12">
                                                     <label for="example-text-input" class="col-form-label">Job Name</label>
-                                                    <input type="text" name="jobName" class="form-control" value="" placeholder="Type Name Here" id="example-text-input" autocomplete="off" required>
+                                                    <input type="text" name="jobName" class="form-control" value="" placeholder="Name" id="example-text-input" autocomplete="off" required>
                                                 </div>
                                             </div>
                                             <div class="row">
                                                 <div class="col-sm-12">
                                                     <label for="example-text-input" class="col-form-label">Customer</label>
-                                                    <input type="text" name="customer" class="form-control" value="" placeholder="Type Customer Here" id="example-text-input" autocomplete="off" required>
+                                                    <input type="text" name="customer" class="form-control" value="" placeholder="Customer" id="example-text-input" autocomplete="off" required>
                                                 </div>
                                             </div>
                                             <div class="row">
                                                 <div class="col-sm-12">
                                                     <label for="example-text-input" class="col-form-label">Board Designation</label>
-                                                    <input type="text" name="boardDesignation" class="form-control" value="" placeholder="Type Designation Here" id="example-text-input" autocomplete="off" required>
+                                                    <input type="text" name="boardDesignation" class="form-control" value="" placeholder="Designation" id="example-text-input" autocomplete="off" required>
                                                 </div>
                                             </div>
-                                            <div class="row justify-content-center">
-                                                <div class="col-sm-3" style="margin-top:1%;">
-                                                    <input class="form-check-input" type="checkbox" value="true" name="noSectionMBOM" id="noSectionMBOM">
-                                                    <label for="noSectionMBOM" class="form-check-label">No Section MBOM</label>
+                                            <div class="row">
+                                                <div class="col-sm-8">
+                                                    <div class="no-section-group" style="margin-top:.75rem;">
+                                                        <input class="form-check-input" type="checkbox" value="true" name="noSectionMBOM" id="noSectionMBOM">
+                                                        <label for="noSectionMBOM" class="form-check-label no-section-label mb-0">No Section MBOM</label>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
                                         <div class="form-group">
                                             <div class="row justify-content-center">
-                                            <div class="col-6">
-                                                <input id="createBtn" type="submit" value="Create New" class="btn-block btn-lg btn-outline-success waves-effect waves-light" onclick="this.form.action='/createMBOM'" />
-                                            </div>
-                                            <div class="col-6">
-                                                <input id="copyBtn" type="button" value="Copy From Existing" class="btn-block btn-lg btn-outline-secondary waves-effect waves-light" data-toggle="modal" data-target="#copyMBOMModal"/>
-                                                <!-- Modal -->
-                                                <div class="modal fade" id="copyMBOMModal" tabindex="-1" role="dialog" aria-labelledby="copyMBOMModalTitle" aria-hidden="true">
-                                                    <div class="modal-dialog modal-dialog-centered" role="document">
-                                                        <div class="modal-content">
-                                                            <div class="modal-header">
-                                                                <h5 class="modal-title" id="exampleModalLongTitle">MBOM Search</h5>
-                                                                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                                                                    <span aria-hidden="true">&times;</span>
-                                                                </button>
-                                                            </div>
-                                                            <div class="modal-body">
-                                                                <form id="copyMBOMForm" class="copyMBOMForm" action="" method="POST">
-                                                                    <div class="form-group">
-                                                                        <p class="mb-0" style="font-size: medium">
-                                                                            Please fill out the following and click "Copy" afterwards
-                                                                        </p>
-                                                                        <p class="text-muted m-b-5"></p>
-                                                                        <div class="row">
-                                                                            <div class="col-sm-12">
-                                                                                <label for="example-text-input" class="col-form-label" style="font-size: small">Job Number</label>
-                                                                                <input type="text" name="copyJobNum" class="form-control" value="" placeholder="Type Number Here" id="example-text-input" autocomplete="off">
+                                                <div class="col-8">
+                                                    <input id="createBtn" type="submit" value="Create New" class="btn-block btn-lg btn-outline-success waves-effect waves-light" onclick="this.form.action='/createMBOM'" />
+                                                </div>
+                                                <div class="col-8 mt-2 text-center">
+                                                    <input id="copyBtn" type="button" value="Copy From Existing" class="btn-block btn-lg btn-outline-secondary waves-effect waves-light" data-toggle="modal" data-target="#copyMBOMModal"/>
+                                                    <!-- Modal -->
+                                                    <div class="modal fade" id="copyMBOMModal" tabindex="-1" role="dialog" aria-labelledby="copyMBOMModalTitle" aria-hidden="true">
+                                                        <div class="modal-dialog modal-dialog-centered" role="document">
+                                                            <div class="modal-content">
+                                                                <div class="modal-header">
+                                                                    <h5 class="modal-title" id="exampleModalLongTitle">MBOM Search</h5>
+                                                                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                                                        <span aria-hidden="true">&times;</span>
+                                                                    </button>
+                                                                </div>
+                                                                <div class="modal-body">
+                                                                    <form id="copyMBOMForm" class="copyMBOMForm" action="" method="POST">
+                                                                        <div class="form-group">
+                                                                            <p class="mb-0" style="font-size: medium">
+                                                                                Please fill out the following and click "Copy" afterwards
+                                                                            </p>
+                                                                            <p class="text-muted m-b-5"></p>
+                                                                            <div class="row">
+                                                                                <div class="col-sm-12">
+                                                                                    <label for="example-text-input" class="col-form-label" style="font-size: small">Job Number</label>
+                                                                                    <input type="text" name="copyJobNum" class="form-control" value="" placeholder="Type Number Here" id="example-text-input" autocomplete="off">
+                                                                                </div>
+                                                                            </div>
+                                                                            <p class="text-muted m-b-10"></p>
+                                                                            <div class="row">
+                                                                                <div class="col-sm-12">
+                                                                                    <label for="example-text-input" class="col-form-label" style="font-size: small">Release</label>
+                                                                                    <input type="text" name="copyReleaseNum" class="form-control" value="" placeholder="Type Release Here" id="example-text-input" autocomplete="off">
+                                                                                </div>
                                                                             </div>
                                                                         </div>
-                                                                        <p class="text-muted m-b-10"></p>
-                                                                        <div class="row">
-                                                                            <div class="col-sm-12">
-                                                                                <label for="example-text-input" class="col-form-label" style="font-size: small">Release</label>
-                                                                                <input type="text" name="copyReleaseNum" class="form-control" value="" placeholder="Type Release Here" id="example-text-input" autocomplete="off">
-                                                                            </div>
-                                                                        </div>
+                                                                    </form>
+                                                                </div>
+                                                                <div class="modal-footer justify-content-center">
+                                                                    <div class="w-50">
+                                                                        <input id="copyModalBtn" type="submit" value="Copy" class="btn-block btn-lg btn-info" onclick="this.form.action='/copyMBOM'" />
                                                                     </div>
-                                                                </form>
-                                                            </div>
-                                                            <div class="modal-footer justify-content-center">
-                                                                <div class="w-50">
-                                                                    <input id="copyModalBtn" type="submit" value="Copy" class="btn-block btn-lg btn-info" onclick="this.form.action='/copyMBOM'" />
                                                                 </div>
                                                             </div>
                                                         </div>
                                                     </div>
+                                                    <!-- END MODAL -->
                                                 </div>
-                                                <!-- END MODAL -->
                                             </div>
-                                        </div>
                                         </div>
                                     </form>
                                 </div>
                             </div>
                         </div>
-                        <div class="col-sm-7">
+                        <div class="col-sm-8">
                             <div class="card m-b-20">
                                 <div class="card-body">
-                                    <h4 class="mt-0 header-title">Lookup Job</h4>
-                                        <p></p>
-                                        <div class="row">
-                                            <div class="col-sm-12">
-                                                <table id="mbomSumTable" class="table table-bordered dt-responsive nowrap" style="border-collapse: collapse; border-spacing: 0; width: 100%; display: block; overflow: auto;">
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <h4 class="mt-0 header-title">Lookup Job</h4>
+                                        <div class="form-inline">
+                                            <input id="mbomSearch" type="search" class="form-control form-control-sm mbom-search" placeholder="Search jobs..." aria-label="Search jobs">
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-sm-12">
+                                                    <div class="table-responsive">
+                                                    <table id="mbomSumTable" class="table table-hover table-sm" style="border-collapse: collapse; border-spacing: 0; width: 100%;">
                                                     <thead>
                                                         <tr class="header">
                                                             <th style="display:none;">mbomID</th>
-                                                            <th style="width:8%;">Job #</th>
-                                                            <th style="width:5%;">Release</th>
-                                                            <th style="width:22%;">Job Name</th>
-                                                            <th style="width:18%;">Customer</th>
-                                                            <th style="width:25%;">Board Designation</th>
-                                                            <th style="width:10%;"></th>
+                                                            <th>Job #</th>
+                                                            <th>Release</th>
+                                                            <th>Job Name</th>
+                                                            <th>Customer</th>
+                                                            <th>Board Designation</th>
+                                                            <th></th>
                                                         </tr>
                                                     </thead>
                                                     <tbody>
@@ -200,13 +287,14 @@
                                                                 <td><%=mbomData[i].jobName%></td>
                                                                 <td><%=mbomData[i].customer%></td>
                                                                 <td><%=mbomData[i].boardDesignation%></td>
-                                                                <td><a href="./searchMBOM/?bomID=<%=mbomData[i].jobNum%><%=mbomData[i].releaseNum%>_<%=mbomData[i].mbomID%>"><button id="openBtn" class="btn-block btn btn-outline-secondary waves-effect waves-light">Open</button></a></td>
+                                                                <td><a href="./searchMBOM/?bomID=<%=mbomData[i].jobNum%><%=mbomData[i].releaseNum%>_<%=mbomData[i].mbomID%>" class="btn btn-block btn-outline-secondary waves-effect waves-light">Open</a></td>
                                                             </tr>
                                                             <% } %>
                                                         <% } %>
                                                     <% } %>
                                                     </tbody>
                                                 </table>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
@@ -214,22 +302,22 @@
                             </div>
                         </div>
 
-                        <div class="card m-b-20" style="height:94%;">
+                                <div class="card m-b-20 mbom-common-card" style="height:94%;">
                             <div class="card-body">
                                 <h4 class="mt-0 header-title">Commonly Used Items</h4>
                                 <div class="row justify-content-center">
                                     <div class="col-sm-12">
-                                        <table id="mbomComItemTable" class="table table-bordered dt-responsive nowrap" style="border-collapse: collapse; border-spacing: 0; width: 100%;">
+                                        <table id="mbomComItemTable" class="table table-hover table-sm" style="border-collapse: collapse; border-spacing: 0; width: 100%;">
                                             <thead>
                                             <tr class="header">
                                                 <th style="display:none;">ID</th>
-                                                <th style="width:10%;">Item Type</th>
-                                                <th style="width:10%;">Manufacturer</th>
-                                                <th style="width:25%;">Description</th>
-                                                <th style="width:20%;">P/N</th>
-                                                <th style="width:10%;">Cat. Code</th>
-                                                <th style="width:15%;">Status</th>
-                                                <th style="width:10%;"></th>
+                                                <th>Item Type</th>
+                                                <th>Manufacturer</th>
+                                                <th>Description</th>
+                                                <th>P/N</th>
+                                                <th>Cat. Code</th>
+                                                <th>Status</th>
+                                                <th></th>
                                             </tr>
                                             </thead>
                                             <tbody>
@@ -272,44 +360,58 @@
 </div> <!-- content-page -->
     <%- include('../partials/footer') %>
 </div> <!-- wrapper -->
+<%- include('../partials/scripts') %>
 
-
-<!-- Responsive-table-->
-<script src="/public/plugins/RWD-Table-Patterns/dist/js/rwd-table.min.js"></script>
+<!-- Responsive-table (page-specific settings) -->
 <script>
     $(function() {
         $('.table-responsive').responsiveTable({
-            addDisplayAllBtn: 'btn btn-secondary'
+            addDisplayAllBtn: 'btn btn-secondary',
+            addFocusBtn: false
         });
     });
 </script>
 
-<!-- Plugins js -->
-<script src="/public/plugins/morris/morris.min.js"></script>
-<script src="/public/plugins/raphael/raphael-min.js"></script>
-<script src="/public/plugins/bootstrap-colorpicker/js/bootstrap-colorpicker.min.js"></script>
-<script src="/public/plugins/bootstrap-datepicker/js/bootstrap-datepicker.js"></script>
-<script src="/public/plugins/select2/js/select2.min.js"></script>
-<script src="/public/plugins/bootstrap-maxlength/bootstrap-maxlength.min.js"></script>
-<script src="/public/plugins/bootstrap-filestyle/js/bootstrap-filestyle.min.js"></script>
-<script src="/public/plugins/bootstrap-touchspin/js/jquery.bootstrap-touchspin.min.js"></script>
-<script src="/public/plugins/ion-rangeslider/ion.rangeSlider.min.js"></script>
-<script src="/public/plugins/jquery-sparkline/jquery.sparkline.min.js"></script>
+<!-- DataTables JS (load after jQuery which is included in header.ejs) -->
+<script src="https://cdn.datatables.net/1.10.20/js/jquery.dataTables.min.js"></script>
+<script>
+    $(document).ready(function() {
+        var mbomTable = $('#mbomSumTable').DataTable({
+            "scrollCollapse": true,
+            "paging": true,
+            "pagingType": "simple",
+            "responsive": true,
+            "scrollX": true,
+            "pageLength": 7,
+            "lengthChange": false,
+            "dom": 'lrtip' // remove built-in filter input (we use the inline header search)
+        });
 
-<!-- Assets js -->
-<script src="/public/assets/js/bootstrap.bundle.min.js"></script>
-<script src="/public/assets/js/metisMenu.min.js"></script>
-<script src="/public/assets/js/jquery.slimscroll.js"></script>
-<script src="/public/assets/js/waves.min.js"></script>
-<script src="/public/assets/pages/dashboard.js"></script>
-<script src="/public/assets/pages/rangeslider-init.js"></script>
-<script src="/public/assets/pages/form-advanced.js"></script>
-<script src="/public/assets/js/breakerDragDrop.js"></script>
-<script src="/public/assets/js/app.js"></script>
-<script src="/public/assets/js/pdfDxfBinBomCheck.js"></script>
+        // Wire the inline header search to DataTables (external filter)
+        // Use debounced `input` events and avoid `change` (which fires on blur).
+        // If `change` triggers a redraw while the user is clicking an Open link,
+        // the redraw can replace the clicked DOM node and cancel navigation —
+        // causing the need to click twice. Debouncing prevents that.
+        (function(){
+            var searchTimer = null;
+            $('#mbomSearch').on('input', function() {
+                var val = this.value;
+                if (searchTimer) clearTimeout(searchTimer);
+                searchTimer = setTimeout(function(){
+                    mbomTable.search(val).draw();
+                }, 180);
+            });
+        })();
 
-
-
+        // Initialize common items table
+        $('#mbomComItemTable').DataTable({
+            "scrollCollapse": true,
+            "paging": true,
+            "pagingType": "simple",
+            "pageLength": 10
+        });
+    });
+</script>
 
 </body>
 </html>

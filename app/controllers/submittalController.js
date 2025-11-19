@@ -587,7 +587,7 @@ async function searchSubmittalRoutine(subID, res, message) {
         })
         .then(() => {
             //render the searchSubmittal page with all required data
-            res.locals = {title: 'Submittal'};
+            res.locals.title = 'Submittal';
             res.render('Submittal/searchSubmittal', {
                 message: message,
                 subData: subData,
@@ -655,7 +655,7 @@ exports.submittal = function(req, res) {
         })
         .then(() => {
             //render the submittal page with message, newSubData, and submittalData
-            res.locals = {title: 'Submittal'};
+            res.locals.title = 'Submittal';
             res.render('Submittal/submittal', {
                 message: null,
                 newSubData: null,
@@ -728,7 +728,7 @@ exports.createSubmittal = function(req, res) {
             }
             //if existsingSubID exists
             if (existingSubID != null) {
-                res.locals = {title: 'Submittal'};
+                res.locals.title = 'Submittal';
                 res.render('Submittal/submittal', {
                     //render the submittal page with a message warning the user that this already exists
                     message: "Submittal already exists for "+newSubData.jobNum+newSubData.releaseNum,
@@ -754,7 +754,7 @@ exports.createSubmittal = function(req, res) {
                 //execute createRev function feeding it newRevData
                 await createRev(newRevData);
                 //redirect to the searchSubmittal page
-                res.locals = {title: 'Submittal'};
+                res.locals.title = 'Submittal';
                 res.redirect('../searchSubmittal/?subID='+newSubData.jobNum+newSubData.releaseNum+"_"+subID);
             }
         })
@@ -879,7 +879,7 @@ exports.searchSubmittal = function(req, res) {
         })
         .then(() => {
             //render the searchSubmittal page with all required data
-            res.locals = {title: 'Submittal'};
+                res.locals.title = 'Submittal';
             res.render('Submittal/searchSubmittal', {
                 message: null,
                 subData: subData,
@@ -1094,7 +1094,7 @@ exports.layoutAddSection = function(req, res){
         })
         .then(() => {
             //redirect to searchSubmittal page
-            res.locals = {title: 'Add Section'};
+            res.locals.title = 'Add Section';
             res.redirect('../searchSubmittal/?subID='+jobRelease+"_"+subID);
             return null
         })
@@ -1160,7 +1160,7 @@ exports.layoutDeleteSection = function(req, res) {
         })
         .then(() => {
             //redirect to searchSubmittal page
-            res.locals = {title: 'Add Section'};
+            res.locals.title = 'Add Section';
             res.redirect('../searchSubmittal/?subID='+jobRelease+"_"+subID);
             return null
         })
@@ -1456,7 +1456,7 @@ exports.layoutSectionProperties = function(req, res) {
         })
         .then(() => {
             //redirect to searchSubmittal page
-            res.locals = {title: 'Add Section'};
+            res.locals.title = 'Add Section';
             res.redirect('../searchSubmittal/?subID='+jobRelease+"_"+subID);
             return null
         })
@@ -1675,7 +1675,7 @@ exports.addBrk = function(req, res) {
         })
         .then(() => {
             //redirect to searchSubmittal page
-            res.locals = {title: 'Submittal'};
+            res.locals.title = 'Submittal';
             res.redirect('../searchSubmittal/?subID='+jobNum+releaseNum+"_"+subID);
             return null;
         })
@@ -1783,7 +1783,7 @@ exports.copyBrk = function(req, res) {
         })
         .then(() => {
             //redirect to searchSubmittal page
-            res.locals = {title: 'Submittal'};
+            res.locals.title = 'Submittal';
             res.redirect('../searchSubmittal/?subID='+jobRelease+"_"+subID);
             return null;
         })
@@ -1961,7 +1961,7 @@ exports.editBrk = function(req, res) {
         })
         .then(() => {
             //redirect to seaerchSubmittal page
-            res.locals = {title: 'Submittal'};
+            res.locals.title = 'Submittal';
             res.redirect('../searchSubmittal/?subID='+jobRelease+"_"+subID);
             return null;
         })
@@ -1993,7 +1993,7 @@ exports.deleteBrk = function(req, res) {
     querySql("DELETE FROM "+database+"."+dbConfig.submittal_breaker_table+" WHERE devID = ?", devID)
         .then(() => {
             //redirect to searchSubmittal page
-            res.locals = {title: 'Submittal'};
+            res.locals.title = 'Submittal';
             res.redirect('../searchSubmittal/?subID='+jobRelease+"_"+subID);
             return null;
         })
@@ -2058,7 +2058,7 @@ exports.setWD = function(req, res) {
     cdAndCreateOutputDir()
         .then(() => {
             //redirect to searchSubmittal page
-            res.locals = {title: 'Submittal'};
+                    res.locals.title = 'Submittal';
             res.redirect('../searchSubmittal/?subID='+jobRelease+"_"+subID);
             return null;
         })
@@ -6817,7 +6817,7 @@ exports.generateSubmittal = function(req, res) {
                         return null
                     })
                     .then(() => {
-                        res.locals = {title: 'Submittal'};
+                        res.locals.title = 'Submittal';
                         res.redirect('../searchSubmittal/?subID=' + jobRelease + "_" + subID);
                         return null
                     })
@@ -6961,7 +6961,7 @@ exports.verifySubmittal = function(req, res) {
             return null
         })
         .then(() => {
-            res.locals = {title: 'Submittal'};
+            res.locals.title = 'Submittal';
             res.redirect('../searchSubmittal/?subID='+jobRelease+"_"+subID);
             return null
         })

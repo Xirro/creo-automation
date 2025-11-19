@@ -50,7 +50,7 @@ app.use((req, res, next) => {
 
 //directs app to use/initialize the session
 // session secret should come from environment in production. Provide a safe dev fallback.
-const sessionSecret = process.env.SESSION_SECRET || 'dev-local-session-secret-change-me';
+const sessionSecret = process.env.SESSION_SECRET || 'some_session_secret_for_development_only';
 app.use(session({ secret: sessionSecret, resave: true, saveUninitialized: true }));
 
 //database dependencies
@@ -366,7 +366,7 @@ app.post('/login', async function(req, res) {
                     req.session.loggedIn = true;
                     req.session.devBypass = true;
                     req.session.dbConn = { host: 'local-bypass', database: '', user: user };
-                    try { console.info('session after regenerate (developer bypass):', req.sessionID, JSON.stringify(req.session)); } catch (e) {}
+                    try { /* session after regenerate (developer bypass) logging removed */ } catch (e) {}
                     return req.session.save(function(err2) { if (err2) console.warn('session.save error (developer bypass):', err2); return res.redirect('/home'); });
                 });
             }
@@ -380,7 +380,7 @@ app.post('/login', async function(req, res) {
         const isSpecialDbUser = (user === 'doadmin' || user === cfg.production.username);
 
         // Helper to initialize DB pool and middleware after successful authentication
-        const finalizeLogin = (connInfoToUse, sessionUser, isAdminFlag) => {
+        const finalizeLogin = (connInfoToUse, sessionUser, isAdminFlag, sessionUserId, sessionRole) => {
             try {
                 db.init(connInfoToUse);
                 attachDbMiddleware(connInfoToUse);
@@ -390,9 +390,12 @@ app.post('/login', async function(req, res) {
             req.session.loggedIn = true;
             req.session.username = sessionUser;
             req.session.isAdmin = !!isAdminFlag;
+            // Cache user id and role for faster access in view middleware and controllers
+            req.session.userId = (typeof sessionUserId !== 'undefined') ? sessionUserId : (req.session && req.session.userId ? req.session.userId : null);
+            req.session.role = (typeof sessionRole !== 'undefined') ? sessionRole : (req.session && req.session.role ? req.session.role : null);
             req.session.dbConn = { host: connInfoToUse.host, port: connInfoToUse.port, database: connInfoToUse.database, user: connInfoToUse.user };
             try {
-                console.info('finalizeLogin: session set for', sessionUser, 'isAdmin=', !!isAdminFlag);
+                // finalizeLogin informational logging removed
             } catch (e) { /* ignore logging errors */ }
         };
 
@@ -413,7 +416,8 @@ app.post('/login', async function(req, res) {
             })();
 
             // If test connection succeeded, initialize app DB helpers and middleware
-            finalizeLogin(connInfo, user, (user === 'doadmin'));
+            // For special DB users we don't have an app users.row id; cache role as 'admin' when applicable
+            finalizeLogin(connInfo, user, (user === 'doadmin'), null, (user === 'doadmin') ? 'admin' : null);
             // Regenerate the session to ensure a clean, persisted session state then save
             if (req.session && typeof req.session.regenerate === 'function') {
                 return req.session.regenerate(function(err) {
@@ -422,7 +426,7 @@ app.post('/login', async function(req, res) {
                     req.session.username = user;
                     req.session.isAdmin = (user === 'doadmin');
                     req.session.dbConn = { host: connInfo.host, port: connInfo.port, database: connInfo.database, user: connInfo.user };
-                    try { console.info('session after regenerate (special DB user):', req.sessionID, JSON.stringify(req.session)); } catch (e) {}
+                    try { /* session after regenerate (special DB user) logging removed */ } catch (e) {}
                     return req.session.save(function(err2) { if (err2) console.warn('session.save error (special DB user):', err2); return res.redirect('/home'); });
                 });
             }
@@ -486,7 +490,7 @@ app.post('/login', async function(req, res) {
                 // column). Start with an empty role and then attempt to re-read the authoritative
                 // role using a short-lived sai_user connection if available.
                 let roleLower = '';
-                console.info('User authenticated via users table (guest read):', userRow.username || user, 'role(from guest)=<omitted>');
+                // User authenticated informational logging removed
 
                 // Try to re-query the role under a short-lived sai_user connection so role-based pool
                 // initialization/upgrades use the value obtained by the sai_user service account.
@@ -502,7 +506,7 @@ app.post('/login', async function(req, res) {
                             console.warn('sai_user role read query failed:', qerr && qerr.message ? qerr.message : qerr);
                         }
                     });
-                    console.info('Role re-read via sai_user (if configured):', roleLower);
+                    // Role re-read informational logging removed
                 } catch (e) {
                     // If withRoleConn fails (e.g., env not configured), continue using the guest-provided role
                     console.warn('Failed to re-read role using sai_user short-lived connection; continuing with guest role:', e && e.message ? e.message : e);
@@ -538,6 +542,9 @@ app.post('/login', async function(req, res) {
                         req.session.loggedIn = true;
                         req.session.username = userRow.username || user;
                         req.session.isAdmin = (roleLower === 'admin' || roleLower === 'administrator');
+                        // Cache user id and role for faster access in view middleware
+                        req.session.userId = userRow.id || null;
+                        req.session.role = roleLower || null;
 
                         try {
                             // Initialize pool with sai_user if available
@@ -547,7 +554,7 @@ app.post('/login', async function(req, res) {
                                     db.init(connInfo);
                                     attachDbMiddleware(connInfo);
                                     req.session.dbConn = { host: connInfo.host, port: connInfo.port, database: connInfo.database, user: connInfo.user };
-                                    console.info('Initialized pool with sai_user for basic reads');
+                                    // Initialized pool with sai_user logging removed
                                 } catch (e) {
                                     console.warn('Failed to init pool with sai_user credentials:', e && e.message ? e.message : e);
                                 }
@@ -560,7 +567,7 @@ app.post('/login', async function(req, res) {
                                     db.init(connInfo);
                                     attachDbMiddleware(connInfo);
                                     req.session.dbConn = { host: connInfo.host, port: connInfo.port, database: connInfo.database, user: connInfo.user };
-                                    console.info('Upgraded pool to sai_eng for engineer role');
+                                    // Upgraded pool to sai_eng logging removed
                                 } catch (e) {
                                     console.warn('Failed to upgrade pool to sai_eng:', e && e.message ? e.message : e);
                                 }
@@ -570,7 +577,7 @@ app.post('/login', async function(req, res) {
                                     db.init(connInfo);
                                     attachDbMiddleware(connInfo);
                                     req.session.dbConn = { host: connInfo.host, port: connInfo.port, database: connInfo.database, user: connInfo.user };
-                                    console.info('Upgraded pool to sai_admin for admin role');
+                                    // Upgraded pool to sai_admin logging removed
                                 } catch (e) {
                                     console.warn('Failed to upgrade pool to sai_admin:', e && e.message ? e.message : e);
                                 }
@@ -594,7 +601,7 @@ app.post('/login', async function(req, res) {
                         }
 
                         // Persist session and redirect
-                        try { console.info('session after regenerate (users-table):', req.sessionID, JSON.stringify(req.session)); } catch (e) {}
+                        try { /* session after regenerate (users-table) logging removed */ } catch (e) {}
                         return req.session.save(function(err2) {
                             if (err2) console.warn('session.save error (users-table final):', err2);
                             return res.redirect('/home');
@@ -607,6 +614,9 @@ app.post('/login', async function(req, res) {
                 req.session.loggedIn = true;
                 req.session.username = userRow.username || user;
                 req.session.isAdmin = (roleLower === 'admin' || roleLower === 'administrator');
+                // Cache user id and role
+                req.session.userId = userRow.id || null;
+                req.session.role = roleLower || null;
                 try {
                     if (saiUserEnvUser && saiUserEnvPass) {
                         const connInfo = makeConnInfo(saiUserEnvUser, saiUserEnvPass);
@@ -644,7 +654,7 @@ app.post('/login', async function(req, res) {
                 }
 
                 // Final save/redirect
-                try { console.info('session before save (users-table fallback):', req.sessionID, JSON.stringify(req.session)); } catch (e) {}
+                try { /* session before save (users-table fallback) logging removed */ } catch (e) {}
                 if (req.session && typeof req.session.save === 'function') {
                     return req.session.save(function(err) { if (err) console.warn('session.save error (users-table fallback):', err); return res.redirect('/home'); });
                 }
@@ -689,7 +699,8 @@ app.post('/login', async function(req, res) {
         })();
 
         // If test connection succeeded, initialize app DB helpers and middleware
-        finalizeLogin(connInfo, user, (user === 'doadmin'));
+        // For DB-authenticated users we don't have an app users.row id here; cache role for doadmin
+        finalizeLogin(connInfo, user, (user === 'doadmin'), null, (user === 'doadmin') ? 'admin' : null);
         // Regenerate session and persist auth fields so the store contains loggedIn=true
         if (req.session && typeof req.session.regenerate === 'function') {
             return req.session.regenerate(function(err) {
@@ -698,13 +709,13 @@ app.post('/login', async function(req, res) {
                 req.session.username = user;
                 req.session.isAdmin = (user === 'doadmin');
                 req.session.dbConn = { host: connInfo.host, port: connInfo.port, database: connInfo.database, user: connInfo.user };
-                try { console.info('session after regenerate (finalizeLogin fallback):', req.sessionID, JSON.stringify(req.session)); } catch (e) {}
+                try { /* session after regenerate (finalizeLogin fallback) logging removed */ } catch (e) {}
                 return req.session.save(function(err2) { if (err2) console.warn('session.save error (finalizeLogin fallback):', err2); return res.redirect('/home'); });
             });
         }
         if (req.session && typeof req.session.save === 'function') {
-            try { console.info('session before save (finalizeLogin fallback):', req.sessionID, JSON.stringify(req.session)); } catch (e) {}
-            return req.session.save(function(err) { try { console.info('session after save (finalizeLogin fallback):', req.sessionID, JSON.stringify(req.session)); } catch (e) {} return res.redirect('/home'); });
+            try { /* session before save (finalizeLogin fallback) logging removed */ } catch (e) {}
+            return req.session.save(function(err) { try { /* session after save (finalizeLogin fallback) logging removed */ } catch (e) {} return res.redirect('/home'); });
         }
         return res.redirect('/home');
     } catch (e) {
@@ -757,13 +768,13 @@ function requireLogin(req, res, next) {
         // Debug logging: show when a request is rejected due to missing session
         try {
             const s = req.session || {};
-            console.info('requireLogin: blocking request for', req.path, 'sessionExists=', !!req.session, 'sessionID=', req.sessionID, 'loggedIn=', !!s.loggedIn, 'username=', s.username || null, 'cookie=', req.headers && req.headers.cookie ? req.headers.cookie : '(none)');
+            // requireLogin informational logging removed
             // Also attempt to read the session directly from the session store for the given sessionID
             try {
                 if (req.sessionID && req.sessionStore && typeof req.sessionStore.get === 'function') {
                     req.sessionStore.get(req.sessionID, function(storeErr, storeData) {
                         if (storeErr) console.warn('requireLogin: sessionStore.get error:', storeErr);
-                        console.info('requireLogin: sessionStore.get for', req.sessionID, '=>', storeData);
+                        // requireLogin sessionStore.get informational logging removed
                     });
                 }
             } catch (se) { /* ignore */ }
@@ -776,13 +787,36 @@ app.use(requireLogin);
 
 // Expose session info to views (so EJS can show/hide admin links)
 app.use(async function(req, res, next) {
+    res.locals.loggedIn = req.session && req.session.loggedIn ? true : false;
     res.locals.currentUser = req.session && req.session.username ? req.session.username : null;
     res.locals.isAdmin = false;
+    res.locals.DEBUG_HEADER = process && process.env && process.env.DEBUG_HEADER === 'true';
+
+    // Expose a concise user object to views for convenience
+    res.locals.user = {
+        id: (req.session && typeof req.session.userId !== 'undefined') ? req.session.userId : null,
+        username: res.locals.currentUser,
+        role: (req.session && typeof req.session.role !== 'undefined') ? req.session.role : null
+    };
 
     try {
+
         // Fast path: session-level isAdmin (set at login for doadmin)
         if (req.session && req.session.isAdmin) {
             res.locals.isAdmin = true;
+            // ensure view user role reflects admin flag if explicit role not cached
+            if (!res.locals.user.role) res.locals.user.role = 'admin';
+            return next();
+        }
+
+        // If role cached in session, use it (avoids per-request DB lookup)
+        if (req.session && req.session.role) {
+            const roleLowerCached = String(req.session.role || '').toLowerCase();
+            if (roleLowerCached === 'admin' || roleLowerCached === 'administrator') {
+                res.locals.isAdmin = true;
+            }
+            // reflect cached role in res.locals.user
+            res.locals.user.role = roleLowerCached || res.locals.user.role;
             return next();
         }
 
@@ -838,11 +872,19 @@ app.use(async function(req, res, next) {
         const rows = await queryRole();
         if (rows && rows.length > 0) {
             const role = rows[0].role || '';
+            // update locals with authoritative role
+            res.locals.user.role = role || res.locals.user.role;
             if (role === 'admin') res.locals.isAdmin = true;
         }
     } catch (ex) {
         // Non-fatal: if role check fails, don't break page render — just keep isAdmin false
         console.warn('Failed to determine admin role for user in view middleware:', ex && ex.message ? ex.message : ex);
+    }
+
+    if (process && process.env && process.env.DEBUG_HEADER === 'true') {
+        try {
+            // view-middleware session logging removed
+        } catch (e) { /* ignore logging errors */ }
     }
 
     return next();

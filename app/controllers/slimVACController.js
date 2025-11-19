@@ -433,7 +433,7 @@ exports.slimVAC = function(req, res) {
             return null
         })
         .then(() => {
-            res.locals = {title: 'SlimVAC'};
+            res.locals.title = 'SlimVAC';
             res.render('SlimVAC/slimVAC', {
                 message: null,
                 newLayoutData: null,
@@ -488,7 +488,7 @@ exports.createLayout = function(req, res) {
                 }
             }
             if (existingLayoutID != null) {
-                res.locals = {title: 'SlimVAC'};
+                res.locals.title = 'SlimVAC';
                 res.render('SlimVAC/slimVAC', {
                     message: "Layout already exists for "+newLayoutData.jobNum+newLayoutData.releaseNum,
                     newLayoutData: newLayoutData,
@@ -505,7 +505,7 @@ exports.createLayout = function(req, res) {
                     revNote: req.body.revNote
                 };
                 await createRev(newRevData);*/
-                res.locals = {title: 'SlimVAC'};
+                res.locals.title = 'SlimVAC';
                 res.redirect('../searchLayout/?layoutID='+newLayoutData.jobNum+newLayoutData.releaseNum+"_"+layoutID);
             }
         })
@@ -555,7 +555,7 @@ exports.setWD = function(req, res) {
 
     cdAndCreateOutputDir()
         .then(() => {
-            res.locals = {title: 'SlimVAC'};
+            res.locals.title = 'SlimVAC';
             res.redirect('../searchLayout/?layoutID='+jobRelease+"_"+layoutID);
             return null;
         })
@@ -587,7 +587,7 @@ exports.searchLayout = function(req, res) {
             return null
         })
         .then(() => {
-            res.locals = {title: 'SlimVAC'};
+            res.locals.title = 'SlimVAC';
             res.render('SlimVAC/searchLayout', {
                 message: null,
                 layoutData: layoutData,
@@ -670,7 +670,7 @@ exports.reverseEngineerLayoutDetail = function(req, res) {
             return null
         })
         .then(() => {
-            res.locals = {title: 'SlimVAC'};
+            res.locals.title = 'SlimVAC';
             res.render('SlimVAC/searchLayout', {
                 message: null,
                 layoutData: layoutData,
@@ -731,7 +731,7 @@ exports.addLayoutDetail = function(req, res) {
             return null
         })
         .then(() => {
-            res.locals = {title: 'SlimVAC'};
+            res.locals.title = 'SlimVAC';
             res.redirect('../searchLayout/?layoutID='+jobNumReleaseNum+"_"+layoutID);
         })
         .catch((err) => {
@@ -777,7 +777,7 @@ exports.editLayoutDetail = function(req, res) {
             return null
         })
         .then(() => {
-            res.locals = {title: 'SlimVAC'};
+            res.locals.title = 'SlimVAC';
             res.redirect('../searchLayout/?layoutID='+jobNumReleaseNum+"_"+layoutID);
         })
         .catch((err) => {
@@ -817,7 +817,7 @@ exports.reverseEngineerSectionDetail = function(req, res) {
             return null
         })
         .then(() => {
-            res.locals = {title: 'SlimVAC'};
+            res.locals.title = 'SlimVAC';
             res.render('SlimVAC/searchLayout', {
                 message: null,
                 layoutData: layoutData,
@@ -895,7 +895,7 @@ exports.addSectionDetail = function(req, res) {
             return null
         })
         .then(() => {
-            res.locals = {title: 'SlimVAC'};
+            res.locals.title = 'SlimVAC';
             res.redirect('../searchLayout/?layoutID='+jobNumReleaseNum+"_"+layoutID);
         })
         .catch((err) => {
@@ -937,7 +937,7 @@ exports.editSectionDetail = function(req, res) {
             return null
         })
         .then(() => {
-            res.locals = {title: 'Submittal'};
+            res.locals.title = 'Submittal';
             res.render('SlimVAC/searchLayout', {
                 message: null,
                 layoutData: layoutData,
@@ -1000,7 +1000,7 @@ exports.saveSectionDetail = function(req, res) {
             return null
         })
         .then(() => {
-            res.locals = {title: 'SlimVAC'};
+            res.locals.title = 'SlimVAC';
             res.redirect('../searchLayout/?layoutID='+jobNumReleaseNum+"_"+layoutID);
         })
         .catch((err) => {
@@ -1049,7 +1049,7 @@ exports.deleteSectionDetail = function(req, res) {
             return null
         })
         .then(() => {
-            res.locals = {title: 'SlimVAC'};
+            res.locals.title = 'SlimVAC';
             res.redirect('../searchLayout/?layoutID='+jobNumReleaseNum+"_"+layoutID);
         })
         .catch((err) => {
@@ -1220,7 +1220,7 @@ exports.generateLayout = function(req, res) {
             return null
         })*/
         .then(() => {
-            res.locals = {title: 'SlimVAC'};
+            res.locals.title = 'SlimVAC';
             res.redirect('../searchLayout/?layoutID='+jobRelease+"_"+layoutID);
         })
         .catch((err) => {

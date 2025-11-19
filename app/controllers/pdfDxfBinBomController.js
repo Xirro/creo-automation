@@ -60,7 +60,7 @@ exports.pdfDxfBinBom = function(req, res) {
     //initialize variables
     let workingDir;
     let outputDir;
-    res.locals = {title: 'PDF-DXF-BIN BOM'};
+    res.locals.title = 'PDF-DXF-BIN BOM';
     //render the pdfDxfBinBom page with message, asmList, workingDir, outputDir, and sortedCheckedDwgs
     res.render('MechEng/pdfDxfBinBom', {
         message: null,
@@ -290,7 +290,7 @@ exports.setWD = function(req, res) {
         .then(() => {
             if (message == null) {
                 //if message is null, render pdfDxfBinBom with message, workingDir, outputDir, asmList, and sortedCheckedDwgs
-                res.locals = {title: 'PDF-DXF-BIN BOM'};
+                res.locals.title = 'PDF-DXF-BIN BOM';
                 res.render('MechEng/pdfDxfBinBom', {
                     message: null,
                     workingDir: workingDir,
@@ -300,7 +300,7 @@ exports.setWD = function(req, res) {
                 });
             } else {
                 //if message exists, render pdfDxfBinBom with message, workingDir, outputDir, asmList, and sortedCheckedDwgs
-                res.locals = {title: 'PDF-DXF-BIN BOM'};
+                res.locals.title = 'PDF-DXF-BIN BOM';
                 res.render('MechEng/pdfDxfBinBom', {
                     message: message,
                     workingDir: workingDir,
@@ -1819,7 +1819,7 @@ exports.loadDesign = function(req, res) {
                 return intA - intB
             });
             //render the loadDesign page with the workingDir, outputDir, drawingList, asmList, partsList, sortedCheckedDwgs, existingDwgs, binBoms, and layoutBoms
-            res.locals = {title: 'PDF-DXF-BIN BOM'};
+            res.locals.title = 'PDF-DXF-BIN BOM';
             res.render('MechEng/loadDesign', {
                 workingDir: workingDir,
                 outputDir: outputDir,
@@ -4064,7 +4064,7 @@ exports.generateAll = function(req, res) {
     openAndExport_PDF_DXF(sessionId, drawings)
         .then(() => {
             //redirect to the the main PDF-DXF-BIN BOM page (not using render since we dont need to send any data here)
-            res.locals = {title: 'PDF-DXF-BIN BOM'};
+            res.locals.title = 'PDF-DXF-BIN BOM';
             res.redirect('/PDF-DXF-BIN_BOM');
         })
         .catch(err => {

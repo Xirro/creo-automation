@@ -326,7 +326,7 @@ exports.searchSubmittal = function(req, res) {
             brkDropdownOpts_Tmax = breakerDropdownOptions.filter(e => e.platform == 'ABB TMAX');
         })
         .then(() => {
-            res.locals = {title: 'Submittal'};
+            res.locals.title = 'Submittal';
             res.render('Submittal/searchSubmittal', {
                 message: null,
                 subData: subData,

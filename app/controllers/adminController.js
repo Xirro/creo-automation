@@ -49,6 +49,7 @@ exports.listPending = async function(req, res) {
                 throw selErr;
             }
         }
+    res.locals.title = 'Admin - Requests';
     return res.render('Admin/adminRequests', { requests: rows });
     } catch (err) {
         console.error('Admin: DB connection error listing pending requests:', err);
@@ -65,6 +66,7 @@ exports.listAudit = async function(req, res) {
         conn = await getConn(req);
         // Limit to recent 500 rows; adjust as needed
         const rows = await conn.queryAsync('SELECT id, admin_user, action, target_email, target_user_id, target_request_id, details, created_at FROM admin_actions ORDER BY created_at DESC LIMIT 500');
+    res.locals.title = 'Admin - Audit';
     return res.render('Admin/adminAudit', { audits: rows });
     } catch (err) {
         console.error('Admin audit: DB connection error listing audit rows:', err);
@@ -268,6 +270,7 @@ exports.listUsers = async function(req, res) {
     const listParams = params.concat([pageSize, offset]);
     const rows = await conn.queryAsync(listSql, listParams);
 
+    res.locals.title = 'Admin - Users';
     return res.render('Admin/adminUsers', { users: rows, q: q, page: page, pageSize: pageSize, totalCount: totalCount, totalPages: totalPages, sort: sort, dir: dir });
     } catch (err) {
         console.error('Admin list users: DB connection error listing users:', err);

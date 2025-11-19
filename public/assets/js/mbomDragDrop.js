@@ -12,24 +12,66 @@
     )
     { return; }
 
-    //get the collection of draggable targets and add their draggable attribute
-    for(var
-            targets = document.querySelectorAll('[data-draggable="target"]'),
-            len = targets.length,
-            i = 0; i < len; i ++)
+    //collections; will be populated by refreshLists()
+    var targets = [], items = [];
+    var isRefreshing = false;
+
+    var _initLogged = false;
+    //refresh targets/items and ensure attributes are initialized
+    function refreshLists()
     {
-        targets[i].setAttribute('aria-dropeffect', 'none');
+        isRefreshing = true;
+        targets = document.querySelectorAll('[data-draggable="target"]');
+        for(var ti = 0; ti < targets.length; ti++)
+        {
+            if(targets[ti].getAttribute('aria-dropeffect') == null)
+            {
+                targets[ti].setAttribute('aria-dropeffect', 'none');
+            }
+        }
+
+        items = document.querySelectorAll('[data-draggable="item"]');
+        for(var ii = 0; ii < items.length; ii++)
+        {
+            items[ii].setAttribute('draggable', 'true');
+            items[ii].setAttribute('aria-grabbed', 'false');
+            items[ii].setAttribute('tabindex', '0');
+        }
+        if(!_initLogged) {
+            _initLogged = true;
+        }
+        isRefreshing = false;
     }
 
-    //get the collection of draggable items and add their draggable attributes
-    for(var
-            items = document.querySelectorAll('[data-draggable="item"]'),
-            len = items.length,
-            i = 0; i < len; i ++)
-    {
-        items[i].setAttribute('draggable', 'true');
-        items[i].setAttribute('aria-grabbed', 'false');
-        items[i].setAttribute('tabindex', '0');
+    //initial population
+    refreshLists();
+
+    //observe DOM changes to re-initialize new draggable elements
+    try {
+        var refreshTimeout = null;
+        var observer = new MutationObserver(function(mutations){
+            if(isRefreshing) return;
+
+            // schedule a debounced refresh instead of immediate refresh to avoid heavy loops
+            clearTimeout(refreshTimeout);
+            refreshTimeout = setTimeout(function(){
+                if(isRefreshing) return;
+                var needsRefresh = false;
+                for(var m = 0; m < mutations.length; m++){
+                    var mutation = mutations[m];
+                    if(mutation.addedNodes && mutation.addedNodes.length) { needsRefresh = true; break; }
+                    if(mutation.type === 'attributes' && mutation.attributeName === 'data-draggable') { needsRefresh = true; break; }
+                }
+                if(needsRefresh) refreshLists();
+            }, 200);
+        });
+
+        // Observe a limited container if present to reduce noise
+        var observeRoot = document.getElementById('mbomAddSection') || document.getElementById('wrapper') || document.body;
+        var observeOptions = { childList: true, subtree: true, attributes: true, attributeFilter: ['data-draggable'] };
+        observer.observe(observeRoot, observeOptions);
+    } catch (ex) {
+        //MutationObserver not supported; fall back to no-op
     }
 
 
@@ -44,6 +86,8 @@
             owner      : null,
             droptarget : null
         };
+
+    // (internal) selections stored below
 
     //function for selecting an item
     function addSelection(item)
@@ -131,6 +175,8 @@
             }
         }
 
+        // addDropeffects applied
+
         //remove aria-grabbed and tabindex from all items inside those containers
         for(var len = items.length, i = 0; i < len; i ++)
         {
@@ -162,6 +208,8 @@
                     targets[i].removeAttribute('tabindex');
                 }
             }
+
+            // clearDropeffects applied
 
             //restore aria-grabbed and tabindex to all selectable items
             //without changing the grabbed value of any existing selected items
@@ -195,13 +243,30 @@
         return null;
     }
 
+    //shortcut function for finding the nearest draggable item ancestor
+    function getDraggable(element)
+    {
+        do
+        {
+            if(element.nodeType == 1 && element.getAttribute && element.getAttribute('draggable'))
+            {
+                return element;
+            }
+        }
+        while(element = element.parentNode);
+
+        return null;
+    }
+
 
 
     //mousedown event to implement single selection
     document.addEventListener('mousedown', function(e)
     {
-        //if the element is a draggable item
-        if(e.target.getAttribute('draggable'))
+        var dragEl = getDraggable(e.target);
+
+        //if the element (or an ancestor) is a draggable item
+        if(dragEl)
         {
             //clear dropeffect from the target containers
             clearDropeffects();
@@ -212,14 +277,15 @@
             (
                 !hasModifier(e)
                 &&
-                e.target.getAttribute('aria-grabbed') == 'false'
+                dragEl.getAttribute('aria-grabbed') == 'false'
             )
             {
                 //clear all existing selections
                 clearSelections();
 
                 //then add this new selection
-                addSelection(e.target);
+                addSelection(dragEl);
+                // mousedown added selection
             }
         }
 
@@ -246,15 +312,17 @@
     //mouseup event to implement multiple selection
     document.addEventListener('mouseup', function(e)
     {
-        //if the element is a draggable item
+        var dragEl = getDraggable(e.target);
+
+        //if the element (or ancestor) is a draggable item
         //and the multipler selection modifier is pressed
-        if(e.target.getAttribute('draggable') && hasModifier(e))
+        if(dragEl && hasModifier(e))
         {
             //if the item's grabbed state is currently true
-            if(e.target.getAttribute('aria-grabbed') == 'true')
+            if(dragEl.getAttribute('aria-grabbed') == 'true')
             {
                 //unselect this item
-                removeSelection(e.target);
+                removeSelection(dragEl);
 
                 //if that was the only selected item
                 //then reset the owner container reference
@@ -268,7 +336,7 @@
             else
             {
                 //add this additional selection
-                addSelection(e.target);
+                addSelection(dragEl);
             }
         }
 
@@ -277,8 +345,21 @@
     //dragstart event to initiate mouse dragging
     document.addEventListener('dragstart', function(e)
     {
+        var dragEl = getDraggable(e.target);
+        // if nothing is selected, auto-select the dragged element to ensure drag flow
+        if(dragEl && selections.items.length === 0)
+        {
+            addSelection(dragEl);
+        }
+
+        if(!dragEl)
+        {
+            e.preventDefault();
+            return;
+        }
+
         //if the element's parent is not the owner, then block this event
-        if(selections.owner != e.target.parentNode)
+        if(selections.owner != dragEl.parentNode)
         {
             e.preventDefault();
             return;
@@ -290,11 +371,11 @@
         (
             hasModifier(e)
             &&
-            e.target.getAttribute('aria-grabbed') == 'false'
+            dragEl.getAttribute('aria-grabbed') == 'false'
         )
         {
             //add this additional selection
-            addSelection(e.target);
+            addSelection(dragEl);
         }
 
         //we don't need the transfer data, but we have to define something
@@ -313,8 +394,9 @@
     //keydown event to implement selection and abort
     document.addEventListener('keydown', function(e)
     {
-        //if the element is a grabbable item
-        if(e.target.getAttribute('aria-grabbed'))
+        //if the element (or its ancestor) is a grabbable item
+        var keyDrag = getDraggable(e.target);
+        if(keyDrag && keyDrag.getAttribute('aria-grabbed'))
         {
             //Space is the selection or unselection keystroke
             if(e.keyCode == 32)
@@ -323,7 +405,7 @@
                 if(hasModifier(e))
                 {
                     //if the item's grabbed state is currently true
-                    if(e.target.getAttribute('aria-grabbed') == 'true')
+                    if(keyDrag.getAttribute('aria-grabbed') == 'true')
                     {
                         //if this is the only selected item, clear dropeffect
                         //from the target containers, which we must do first
@@ -334,7 +416,7 @@
                         }
 
                         //unselect this item
-                        removeSelection(e.target);
+                        removeSelection(keyDrag);
 
                         //if we have any selections
                         //apply dropeffect to the target containers,
@@ -356,7 +438,7 @@
                     else
                     {
                         //add this additional selection
-                        addSelection(e.target);
+                        addSelection(keyDrag);
 
                         //apply dropeffect to the target containers
                         addDropeffects();
@@ -365,7 +447,7 @@
 
                 //else [if the multiple selection modifier is not pressed]
                 //and the item's grabbed state is currently false
-                else if(e.target.getAttribute('aria-grabbed') == 'false')
+                else if(keyDrag.getAttribute('aria-grabbed') == 'false')
                 {
                     //clear dropeffect from the target containers
                     clearDropeffects();
@@ -374,7 +456,7 @@
                     clearSelections();
 
                     //add this new selection
-                    addSelection(e.target);
+                    addSelection(keyDrag);
 
                     //apply dropeffect to the target containers
                     addDropeffects();
@@ -458,6 +540,7 @@
     document.addEventListener('dragenter', function(e)
     {
         related = e.target;
+        // dragenter
 
     }, false);
 
@@ -499,6 +582,7 @@
     //dragover event to allow the drag by preventing its default
     document.addEventListener('dragover', function(e)
     {
+        // dragover
         //if we have any selected items, allow them to be dragged
         if(selections.items.length)
         {
@@ -513,6 +597,7 @@
     //or invalidly dropped elsewhere, and to clean-up the interface either way
     document.addEventListener('dragend', function(e)
     {
+        // dragend
         //if we have a valid drop target reference
         //(which implies that we have some selected items)
         if(selections.droptarget)

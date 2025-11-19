@@ -62,7 +62,7 @@
 
     </style>
 
-    <script src="/public/assets/js/jquery.min.js"></script>
+    <!-- jQuery included by header -->
     <script src="https://cdn.datatables.net/1.10.20/js/jquery.dataTables.min.js"></script>
     <script>
         $(document).ready(function() {
@@ -94,8 +94,7 @@
             };
         </script>
     <% } %>
-    <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.5.0/jquery.min.js"></script>
-    <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.8.9/jquery-ui.min.js"></script>
+    <!-- Legacy CDN jQuery removed; header provides jQuery -->
 
 
     <!--<script type="text/javascript">
@@ -3181,10 +3180,8 @@
 </div> <!-- content-page -->
     <%- include('../partials/footer') %>
 </div> <!-- wrapper -->
+<%- include('../partials/scripts') %>
 
-
-<!-- Responsive-table-->
-<script src="/public/plugins/RWD-Table-Patterns/dist/js/rwd-table.min.js"></script>
 <script>
     $(function() {
         $('.table-responsive').responsiveTable({
@@ -3193,34 +3190,10 @@
     });
 </script>
 
-<!-- Plugins js -->
-<script src="/public/plugins/morris/morris.min.js"></script>
-<script src="/public/plugins/raphael/raphael-min.js"></script>
-<script src="/public/plugins/bootstrap-colorpicker/js/bootstrap-colorpicker.min.js"></script>
-<script src="/public/plugins/bootstrap-datepicker/js/bootstrap-datepicker.js"></script>
-<script src="/public/plugins/select2/js/select2.min.js"></script>
-<script src="/public/plugins/bootstrap-maxlength/bootstrap-maxlength.min.js"></script>
-<script src="/public/plugins/bootstrap-filestyle/js/bootstrap-filestyle.min.js"></script>
-<script src="/public/plugins/bootstrap-touchspin/js/jquery.bootstrap-touchspin.min.js"></script>
-<script src="/public/plugins/ion-rangeslider/ion.rangeSlider.min.js"></script>
-<script src="/public/plugins/jquery-sparkline/jquery.sparkline.min.js"></script>
-
-<!-- Assets js -->
-<script src="/public/assets/js/jquery.min.js"></script>
-<script src="/public/assets/js/bootstrap.bundle.min.js"></script>
-<script src="/public/assets/js/metisMenu.min.js"></script>
-<script src="/public/assets/js/jquery.slimscroll.js"></script>
-<script src="/public/assets/js/waves.min.js"></script>
-<script src="/public/assets/pages/dashboard.js"></script>
-<script src="/public/assets/pages/rangeslider-init.js"></script>
-<script src="/public/assets/pages/form-advanced.js"></script>
-<script src="/public/assets/js/app.js"></script>
-<script src="/public/assets/js/pdfDxfBinBomCheck.js"></script>
 <script src="/public/assets/js/quoteFilterDropdown.js"></script>
 <script src="/public/assets/js/quoteCheckbox.js"></script>
 <script src="/public/assets/js/submittalLayoutRestrictions.js"></script>
 <script src="/public/assets/js/submittalDragDrop.js"></script>
-
 
 </body>
 </html>

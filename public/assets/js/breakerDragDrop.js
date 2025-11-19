@@ -589,7 +589,9 @@
     }, false);
 
 
-    document.getElementById('saveSectionBtn').addEventListener('click', function() {
+    var _saveSectionBtn = document.getElementById('saveSectionBtn');
+    if(_saveSectionBtn) {
+        _saveSectionBtn.addEventListener('click', function() {
         var secMap = new Map();
         var secNum = targets.length;
         for(var j = 1; j < secNum + 1; j++){
@@ -669,5 +671,6 @@
             form.submit();
         }
         sectionFormSubmit(secMap);
-    });
+        });
+    }
 })();

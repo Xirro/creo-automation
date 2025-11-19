@@ -58,7 +58,7 @@ module.exports = exports;
 //brings user to the rendered rename page
 exports.renameMain = function(req, res) {
     let workingDir;
-    res.locals = {title: 'Rename Script'};
+    res.locals.title = 'Rename Script';
     res.render('Rename/renameMain', {
         message: null,
         asmList: [],
@@ -153,7 +153,7 @@ exports.renameSetWD = function(req, res) {
         .then(() => {
             if (message == null) {
                 //if no warning message then render renameMain with workingDir and asmList
-                res.locals = {title: 'Rename Script'};
+                res.locals.title = 'Rename Script';
                 res.render('Rename/renameMain', {
                     message: null,
                     workingDir: workingDir,
@@ -161,7 +161,7 @@ exports.renameSetWD = function(req, res) {
                 });
             } else {
                 //if warning message, then render renameMain with message, workingDir and an empty array as asmList
-                res.locals = {title: 'Rename Script'};
+                res.locals.title = 'Rename Script';
                 res.render('Rename/renameMain', {
                     message: message,
                     workingDir: workingDir,
@@ -739,7 +739,7 @@ exports.loadParts = function(req, res) {
         })
         .then(() => {
             //render loadParts page with message, workingDir, asmList, partData, and asmData
-            res.locals = {title: 'Rename Script'};
+            res.locals.title = 'Rename Script';
             res.render('Rename/loadParts', {
                 message: null,
                 workingDir: workingDir,
@@ -1594,7 +1594,7 @@ exports.rename = function(req, res) {
         })
         .then(() => {
             //render loadParts page with message, workingDir, asmList, partData, and asmData
-            res.locals = {title: 'Rename Script'};
+            res.locals.title = 'Rename Script';
             res.render('Rename/loadParts', {
                 message: null,
                 workingDir: workingDir,

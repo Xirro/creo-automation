@@ -13,30 +13,31 @@
 	</div>
 
 	<nav class="navbar-custom">
-		<ul class="navbar-right d-flex list-inline float-right mb-0">
-			<li class="dropdown notification-list d-none d-sm-block">
-				<form role="search" class="app-search">
-					<div class="form-group mb-0">
-						<input type="text" class="form-control" placeholder="Search..">
-						<button type="submit"><i class="fa fa-search"></i></button>
-					</div>
-				</form>
-			</li>
-			<li class="dropdown notification-list">
-				<a href="/logout" class="nav-link waves-effect" title="Logout">
-					<i class="mdi mdi-logout"></i> Logout
+		<!-- Ensure jQuery is available early for plugins that load at the page bottom -->
+		<script src="/public/assets/js/jquery.min.js"></script>
+			<ul class="navbar-right d-flex list-inline float-right mb-0">
+				<li class="dropdown notification-list">
+				<a class="nav-link dropdown-toggle waves-effect nav-user" data-toggle="dropdown" href="#" role="button" aria-haspopup="false" aria-expanded="false">
+					<i class="mdi mdi-account"></i>
+					<% if (typeof currentUser !== 'undefined' && currentUser) { %>
+						<%= currentUser %>
+					<% } else { %>
+						Profile
+					<% } %>
+					<i class="mdi mdi-chevron-down"></i>
 				</a>
+				<div class="dropdown-menu dropdown-menu-right profile-dropdown">
+					<a href="/profile" class="dropdown-item">Profile</a>
+					<a href="/profile/change-password" class="dropdown-item">Change Password</a>
+					<% if (typeof isAdmin !== 'undefined' && isAdmin) { %>
+						<div class="dropdown-divider"></div>
+						<a href="/admin" class="dropdown-item">Admin Tools</a>
+					<% } %>
+					<div class="dropdown-divider"></div>
+					<a href="/logout" class="dropdown-item">Logout</a>
+				</div>
 			</li>
 		</ul>
-
-		<ul class="list-inline menu-left mb-0">
-			<li class="float-left">
-				<button class="button-menu-mobile open-left waves-effect">
-					<i class="mdi mdi-menu"></i>
-				</button>
-			</li>
-		</ul>
-
 	</nav>
 
 </div>

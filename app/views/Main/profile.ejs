@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=0, minimal-ui">
+    <title>Profile - Creo Automation</title>
+    <link rel="shortcut icon" href="/public/assets/images/SAI-Logo.JPG">
+    <link rel="stylesheet" href="/public/plugins/morris/morris.css">
+
+    <link href="/public/plugins/RWD-Table-Patterns/dist/css/rwd-table.min.css" rel="stylesheet" type="text/css" media="screen" />
+    <link href="/public/plugins/bootstrap-colorpicker/css/bootstrap-colorpicker.min.css" rel="stylesheet" />
+    <link href="/public/plugins/bootstrap-datepicker/dist/css/bootstrap-datepicker.min.css" rel="stylesheet" />
+    <link href="/public/plugins/select2/css/select2.min.css" rel="stylesheet" type="text/css" />
+    <link href="/public/plugins/bootstrap-touchspin/css/jquery.bootstrap-touchspin.min.css" rel="stylesheet" />
+
+    <link href="/public/assets/css/breakerDragDrop.css" rel="stylesheet" type="text/css" />
+    <link href="/public/plugins/ion-rangeslider/ion.rangeSlider.css" rel="stylesheet" type="text/css"/>
+    <link href="/public/plugins/ion-rangeslider/ion.rangeSlider.skinModern.css" rel="stylesheet" type="text/css"/>
+
+    <link href="/public/assets/css/bootstrap.min.css" rel="stylesheet" type="text/css">
+    <link href="/public/assets/css/metismenu.min.css" rel="stylesheet" type="text/css">
+    <link href="/public/assets/css/icons.css" rel="stylesheet" type="text/css">
+    <link href="/public/assets/css/style.css" rel="stylesheet" type="text/css">
+    <style>
+      .profile-container { padding: 24px 16px; max-width: 960px; margin: 0 auto; }
+      .profile-card { display: flex; gap: 24px; align-items: center; }
+      .profile-avatar { width: 110px; height: 110px; border-radius: 8px; background:#f2f3f7; display:flex; align-items:center; justify-content:center; font-size:32px; color:#7a6fbe; }
+      .profile-details h2 { margin:0 0 6px 0; }
+      .profile-actions { margin-top:12px; }
+    </style>
+</head>
+<body>
+<div id="wrapper">    
+  <!-- Top Bar Start -->
+  <%- include('../partials/header') %>
+  <!-- Top Bar End -->
+
+  <!-- ========== Left Sidebar Start ========== -->
+  <%- include('../partials/sidebar') %>
+  <!-- Left Sidebar End -->
+
+  <div class="content-page">
+    <div class="content">
+      <div class="container-fluid">
+        <div class="profile-container">
+      <div class="mb-4">
+        <h1 class="m-0">My Profile</h1>
+        <% if (error) { %>
+          <div class="alert alert-danger mt-3"><%= error %></div>
+        <% } %>
+        <% if (message) { %>
+          <div class="alert alert-success mt-3"><%= message %></div>
+        <% } %>
+      </div>
+
+      <div class="card mb-4">
+        <div class="card-body profile-card">
+          <div class="profile-avatar" aria-hidden="true">
+            <%= (user && user.username) ? user.username.charAt(0).toUpperCase() : 'U' %>
+          </div>
+          <div class="profile-details flex-fill">
+            <h2><%= user.username %></h2>
+            <p class="text-muted mb-1"><strong>Email:</strong> <%= user.email || '—' %></p>
+            <p class="text-muted mb-1"><strong>Role:</strong> <%= user.role || 'user' %></p>
+            <p class="text-muted mb-0"><strong>Created:</strong> <%= user.createdAt || '—' %></p>
+            <div class="profile-actions">
+              <a href="/profile/change-password" class="btn btn-outline-secondary btn-sm mr-2">Change password</a>
+              <a href="/profile" class="btn btn-outline-primary btn-sm">Refresh</a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-body">
+          <h5 class="card-title">Change Username</h5>
+          <form id="usernameForm" method="post" action="/profile/username" class="mb-0">
+            <div class="form-row align-items-center">
+              <div class="col-auto" style="min-width:240px;">
+                <input id="newUsername" name="username" class="form-control" value="<%= user.username %>" placeholder="New username" required />
+                <input type="hidden" id="origUsername" value="<%= user && user.username ? user.username : '' %>" />
+              </div>
+              <div class="col-auto">
+                <button class="btn btn-primary" type="submit">Update Username</button>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+
+        </div>
+      </div> <!-- container-fluid -->
+    </div> <!-- content -->
+  </div>
+</div>
+
+<script>
+  (function(){
+    var form = document.getElementById('usernameForm');
+    if(!form) return;
+    var input = document.getElementById('newUsername');
+    var origField = document.getElementById('origUsername');
+    var orig = (origField && origField.value) ? origField.value : '';
+    form.addEventListener('submit', function(e){
+      var v = (input && input.value) ? input.value.trim() : '';
+      if (!/^[A-Za-z0-9_.-]{3,64}$/.test(v)) {
+        e.preventDefault();
+        alert('Invalid username. Use 3-64 chars: letters, numbers, dot, underscore or dash.');
+        return;
+      }
+      if (v !== orig) {
+        if(!confirm('Change username from "' + orig + '" to "' + v + '"? This will update your account username.')) {
+          e.preventDefault();
+          return;
+        }
+      } else {
+        e.preventDefault();
+        alert('The new username is the same as your current username.');
+        return;
+      }
+    });
+  })();
+</script>
+
+<%- include('../partials/scripts') %>
+
+</body>
+</html>

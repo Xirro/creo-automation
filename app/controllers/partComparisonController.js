@@ -69,7 +69,7 @@ exports.partComparison = function(req, res) {
     let comparePartInstance;
     let comparePartGeneric;
     let compareToDir1, compareToDir2, compareToDir3, compareToDir4, compareToDir5, compareToDir6, compareToDir7, compareToDir8, compareToDir9, compareToDir10;
-        res.locals = {title: 'Part Comparison'};
+        res.locals.title = 'Part Comparison';
     res.render('partComparison/partComparison', {
         message: null,
         asmList: [],
@@ -216,7 +216,7 @@ exports.setWD = function(req, res) {
         })
         .then(() => {
             if (message == null) {
-                res.locals = {title: 'Part Comparison'};
+                res.locals.title = 'Part Comparison';
                 res.render('partComparison/partComparison', {
                     message: null,
                     workingDir: workingDir,
@@ -228,7 +228,7 @@ exports.setWD = function(req, res) {
                     partsList: []
                 });
             } else {
-                res.locals = {title: 'Part Comparison'};
+                res.locals.title = 'Part Comparison';
                 res.render('partComparison/partComparison', {
                     message: message,
                     workingDir: workingDir,
@@ -343,7 +343,7 @@ exports.setPart = function(req, res) {
     cdAndCreateOutputDir()
         .then(() => {
             if (message == null) {
-                res.locals = {title: 'Part Comparison'};
+                res.locals.title = 'Part Comparison';
                 res.render('partComparison/partComparison', {
                     message: null,
                     workingDir: workingDir,
@@ -355,7 +355,7 @@ exports.setPart = function(req, res) {
                     partsList: []
                 });
             } else {
-                res.locals = {title: 'Part Comparison'};
+                res.locals.title = 'Part Comparison';
                 res.render('partComparison/partComparison', {
                     message: message,
                     workingDir: workingDir,
@@ -1171,7 +1171,7 @@ exports.compareParts = function(req, res) {
             });
         })
         .then(() => {
-            res.locals = {title: 'Part Comparison'};
+            res.locals.title = 'Part Comparison';
             res.render('partComparison/partComparison', {
                 message: message,
                 workingDir: workingDir,
@@ -1968,7 +1968,7 @@ exports.compareSinglePart = function(req, res) {
             });
         })
         .then(() => {
-            res.locals = {title: 'Part Comparison'};
+            res.locals.title = 'Part Comparison';
             res.render('partComparison/partComparison', {
                 message: message,
                 workingDir: workingDir,
