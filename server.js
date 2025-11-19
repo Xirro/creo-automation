@@ -227,6 +227,45 @@ const isPackaging = !!(
     lifecycle.includes('dist') || lifecycle.includes('pack') || lifecycle.includes('electron') || lifecycle.includes('build')
 );
 
+// Fallback: load a local env file (if present) placed next to the EXE or next to server.js.
+// This allows installers to drop a `creo-automation.env` file into the application folder
+// so end-users can supply the required environment variables without embedding them
+// into the binary. File format is simple KEY=VALUE per line, '#' starts a comment.
+try {
+    const fs = require('fs');
+    const envFileName = 'creo-automation.env';
+    const candidates = [];
+    try {
+        if (process && process.execPath) candidates.push(path.join(path.dirname(process.execPath), envFileName));
+    } catch (e) { /* ignore */ }
+    // Also accept a file next to the server.js (useful for dev or unpacked layouts)
+    candidates.push(path.join(__dirname, envFileName));
+
+    for (const p of candidates) {
+        try {
+            if (fs.existsSync(p)) {
+                const data = fs.readFileSync(p, 'utf8');
+                data.split(/\r?\n/).forEach(line => {
+                    let l = (line || '').trim();
+                    if (!l || l.startsWith('#')) return;
+                    const idx = l.indexOf('=');
+                    if (idx === -1) return;
+                    const key = l.substring(0, idx).trim();
+                    let val = l.substring(idx + 1).trim();
+                    if ((val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'"))) {
+                        val = val.substring(1, val.length - 1);
+                    }
+                    if (key && (typeof process.env[key] === 'undefined' || process.env[key] === '')) {
+                        process.env[key] = val;
+                    }
+                });
+                console.log('Loaded local env file:', p);
+                break;
+            }
+        } catch (e) { /* ignore per-file errors */ }
+    }
+} catch (e) { /* ignore loading errors */ }
+
 // In development (non-production) or during packaging require explicit DB env vars to be set
 // so developers and CI builds don't rely on hidden defaults.
 if ((process.env.NODE_ENV || 'development') !== 'production' || isPackaging) {
