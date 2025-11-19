@@ -17,9 +17,22 @@ jobs:
       - name: Build Electron
         env:
           LAUNCHER_SECRET: ${{ secrets.LAUNCHER_SECRET }}
+          DB_HOST: ${{ secrets.DB_HOST }}
+          DB_PORT: ${{ secrets.DB_PORT }}
+          DB_NAME: ${{ secrets.DB_NAME }}
+          DB_GUEST_PASSWORD: ${{ secrets.DB_GUEST_PASSWORD }}
+          SAI_ADMIN_DB_USER: ${{ secrets.SAI_ADMIN_DB_USER }}
+          SAI_ADMIN_DB_PASS: ${{ secrets.SAI_ADMIN_DB_PASS }}
+          SAI_ENG_DB_USER: ${{ secrets.SAI_ENG_DB_USER }}
+          SAI_ENG_DB_PASS: ${{ secrets.SAI_ENG_DB_PASS }}
+          SAI_USER_DB_USER: ${{ secrets.SAI_USER_DB_USER }}
+          SAI_USER_DB_PASS: ${{ secrets.SAI_USER_DB_PASS }}
+          SESSION_SECRET: ${{ secrets.SESSION_SECRET }}
+          DB_SSL: 'true'
+          NODE_ENV: production
         run: node ./scripts/build-with-secret.js
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: CreoAutomation_0.1.1
+          name: CreoAutomation_0.2.0
           path: dist/**
