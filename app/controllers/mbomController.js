@@ -19,6 +19,12 @@ const DB = require('../config/db.js');
 const querySql = DB.querySql;
 const Promise = require('bluebird');
 
+// Debug mode controlled by environment variable DEBUG_MODE.
+// Accept values: 'true' (both), 'server', 'client', 'both', otherwise 'false'.
+const DEBUG_MODE = (process.env.DEBUG_MODE || 'false');
+const DEBUG_SERVER = (DEBUG_MODE === 'true' || DEBUG_MODE === 'server' || DEBUG_MODE === 'both');
+const DEBUG_CLIENT = (DEBUG_MODE === 'true' || DEBUG_MODE === 'client' || DEBUG_MODE === 'both');
+
 //Excel Connection
 const Excel = require('exceljs');
 
@@ -1014,7 +1020,8 @@ exports.searchMBOMGet = function(req, res) {
                 classCodeData: classCodeData,
                 brkAccData: brkAccData,
                 brkData: brkData,
-                mbomBrkAcc: mbomBrkAcc
+                mbomBrkAcc: mbomBrkAcc,
+                debug: DEBUG_CLIENT
             });
 
             return null;
@@ -2561,32 +2568,52 @@ exports.mbomDeleteSection = async function(req, res) {
 //sectionConfigure function
 exports.sectionConfigure = function(req, res) {
     req.setTimeout(0); //no timeout (this is needed to prevent error due to page taking a long time to load)
-    //Initialize variables
+    // Initialize variables (handle single value, array, or missing fields)
     let data = [];
-    if(req.body.sectionNum == 0){
-        data[0] = {
-            sectionNum: req.body.sectionNum,
-            mbomID: req.body.mbomID
-        }
-    } else if (req.body.sectionNum.length == 1) {
-        data[0] = {
-            sectionNum: req.body.sectionNum,
-            ID: req.body.ID,
-            mbomID: req.body.mbomID
+    const sectionNumField = req.body && req.body.sectionNum;
+    const idField = req.body && req.body.ID;
+    const mbomIDField = req.body && req.body.mbomID;
+
+    // Debug incoming request body
+    try { if (DEBUG_SERVER) console.log('DEBUG sectionConfigure REQ.BODY:', req.body); } catch (e) {}
+
+    if (Array.isArray(sectionNumField)) {
+        // sectionNum is an array
+        if (sectionNumField.length === 0) {
+            data[0] = { sectionNum: 0, mbomID: mbomIDField };
+        } else if (sectionNumField.length === 1) {
+            data[0] = {
+                sectionNum: sectionNumField[0],
+                ID: Array.isArray(idField) ? idField[0] : idField,
+                mbomID: Array.isArray(mbomIDField) ? mbomIDField[0] : mbomIDField
+            };
+        } else {
+            const total = sectionNumField.length;
+            for (let i = 0; i < total; i++) {
+                data[i] = {
+                    sectionNum: sectionNumField[i],
+                    ID: Array.isArray(idField) ? idField[i] : idField,
+                    mbomID: Array.isArray(mbomIDField) ? mbomIDField[i] : mbomIDField
+                };
+            }
         }
     } else {
-        for (let i = 0; i < req.body.totalSection; i++) {
-            data[i] = {
-                sectionNum: (req.body.sectionNum)[i],
-                ID: (req.body.ID)[i],
-                mbomID: (req.body.mbomID)[i]
-            };
+        // sectionNum is a single value or undefined
+        if (sectionNumField == null || sectionNumField == 0 || sectionNumField === '0') {
+            // Preserve ID when present so queue moves (section 0) can be processed
+            data[0] = { sectionNum: 0, ID: idField, mbomID: mbomIDField };
+        } else {
+            data[0] = { sectionNum: sectionNumField, ID: idField, mbomID: mbomIDField };
         }
     }
     let jobNum, releaseNum;
 
     //Initial db query - lookup mbomSum row referenced by mbomID
-    querySql("SELECT jobNum, releaseNum FROM " + database + "." + dbConfig.MBOM_summary_table + " WHERE mbomID = ?", data[0].mbomID)
+    // Ensure mbomID is passed as an array to the DB helper so '?' placeholders are bound
+    if (!data[0].mbomID) {
+        if (DEBUG_SERVER) console.log('DEBUG sectionConfigure: missing mbomID in data[0]', data[0]);
+    }
+    querySql("SELECT jobNum, releaseNum FROM " + database + "." + dbConfig.MBOM_summary_table + " WHERE mbomID = ?", [data[0].mbomID])
         .then(rows => {
             //write jobNum and releaseNum from result
             jobNum = rows[0].jobNum;
@@ -2595,37 +2622,63 @@ exports.sectionConfigure = function(req, res) {
             return null;
         })
         .then(() => {
-            //if more then 0 sections
-            if(data[0].sectionNum != 0) {
-                //for each section
-                for (let j = 0; j < data.length; j++) {
-                    //write to secData
-                    let secData = data[j];
-                    //lookup mbomNewSectionSum row referenced by sectionNum and mbomID
-                    querySql("SELECT * FROM " + database + " . " + dbConfig.MBOM_new_section_sum + " WHERE sectionNum = ? AND mbomID = ?", [secData.sectionNum, secData.mbomID])
-                        .then(rows => {
-                            //if sections exist
-                            if(rows.length != 0){
-                                //if the ID has an I (short for Item)
-                                if((secData.ID).includes('I')) {
-                                    //write the number portion to tempID
-                                    let tempID = (secData.ID).substring(1);
-                                    //update the mbomItemSum secID column in the row referenced by itemSumID
-                                    querySql("UPDATE " + database + " . " + dbConfig.MBOM_item_table + " SET secID = ? WHERE itemSumID = ?", [rows[0].secID, tempID]);
-                                } else {
-                                    //write the number portion to tempID
-                                    let tempID = (secData.ID).substring(1);
-                                    //update the mbomBrkSum secID column in the row referenced by idDev
-                                    querySql("UPDATE " + database + " . " + dbConfig.MBOM_breaker_table + " SET secID = ? WHERE idDev = ?", [rows[0].secID, tempID]);
-                                }
-                                return null
-                            }
-                        })
-                        .catch(err => {
-                            //if error occurs at anytime at any point in the code above, log it to the console
-                            console.log('there was an error:' + err);
-                        });
+            // Process each entry in data. If sectionNum == 0, clear secID (set NULL). Otherwise lookup section and set secID accordingly.
+            for (let j = 0; j < data.length; j++) {
+                let secData = data[j];
+
+                // If this entry was placed back into the queue (section 0), clear secID
+                if (secData.sectionNum == 0 || secData.sectionNum === '0') {
+                    if (secData.ID && (secData.ID).includes('I')) {
+                        let tempID = (secData.ID).substring(1);
+                        const clearItemSql = "UPDATE " + database + "." + dbConfig.MBOM_item_table + " SET secID = NULL WHERE itemSumID = ?";
+                        if (DEBUG_SERVER) console.log('DEBUG sectionConfigure CLEAR ITEM SECID:', clearItemSql, [tempID]);
+                        querySql(clearItemSql, [tempID]);
+                    } else if (secData.ID) {
+                        let tempID = (secData.ID).substring(1);
+                        const clearBrkSql = "UPDATE " + database + "." + dbConfig.MBOM_breaker_table + " SET secID = NULL WHERE idDev = ?";
+                        if (DEBUG_SERVER) console.log('DEBUG sectionConfigure CLEAR BRK SECID:', clearBrkSql, [tempID]);
+                        querySql(clearBrkSql, [tempID]);
+                    }
+                    continue;
                 }
+
+                // For non-zero sections, lookup the new section mapping and set secID; if mapping not found, clear secID.
+                querySql("SELECT * FROM " + database + "." + dbConfig.MBOM_new_section_sum + " WHERE sectionNum = ? AND mbomID = ?", [secData.sectionNum, secData.mbomID])
+                    .then(rows => {
+                        if (rows.length != 0) {
+                            let targetSecID = rows[0].secID;
+                            if (secData.ID && (secData.ID).includes('I')) {
+                                let tempID = (secData.ID).substring(1);
+                                const updateItemSql = "UPDATE " + database + "." + dbConfig.MBOM_item_table + " SET secID = ? WHERE itemSumID = ?";
+                                const updateItemParams = [targetSecID, tempID];
+                                if (DEBUG_SERVER) console.log('DEBUG sectionConfigure UPDATE ITEM:', updateItemSql, updateItemParams);
+                                querySql(updateItemSql, updateItemParams);
+                            } else if (secData.ID) {
+                                let tempID = (secData.ID).substring(1);
+                                const updateBrkSql = "UPDATE " + database + "." + dbConfig.MBOM_breaker_table + " SET secID = ? WHERE idDev = ?";
+                                const updateBrkParams = [targetSecID, tempID];
+                                if (DEBUG_SERVER) console.log('DEBUG sectionConfigure UPDATE BRK:', updateBrkSql, updateBrkParams);
+                                querySql(updateBrkSql, updateBrkParams);
+                            }
+                        } else {
+                            // No matching section mapping found - treat as cleared (NULL)
+                            if (secData.ID && (secData.ID).includes('I')) {
+                                let tempID = (secData.ID).substring(1);
+                                const clearItemSql = "UPDATE " + database + "." + dbConfig.MBOM_item_table + " SET secID = NULL WHERE itemSumID = ?";
+                                if (DEBUG_SERVER) console.log('DEBUG sectionConfigure CLEAR ITEM (no map) SECID:', clearItemSql, [tempID]);
+                                querySql(clearItemSql, [tempID]);
+                            } else if (secData.ID) {
+                                let tempID = (secData.ID).substring(1);
+                                const clearBrkSql = "UPDATE " + database + "." + dbConfig.MBOM_breaker_table + " SET secID = NULL WHERE idDev = ?";
+                                if (DEBUG_SERVER) console.log('DEBUG sectionConfigure CLEAR BRK (no map) SECID:', clearBrkSql, [tempID]);
+                                querySql(clearBrkSql, [tempID]);
+                            }
+                        }
+                        return null
+                    })
+                    .catch(err => {
+                        console.log('there was an error:' + err);
+                    });
             }
             return null
         })

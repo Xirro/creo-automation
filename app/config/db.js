@@ -45,12 +45,21 @@ async function getSqlConnection() {
 // querySql returns only the rows to preserve existing call-sites
 async function querySql(query, params) {
     if (!pool) throw new Error('Database not initialized');
-    if (typeof params !== 'undefined') {
-        const [rows] = await pool.query(query, params);
-        return rows;
-    } else {
-        const [rows] = await pool.query(query);
-        return rows;
+    // Log the query and params for debugging when DEBUG_MODE is enabled
+    const debugEnabled = (process.env.DEBUG_MODE === 'true');
+    try {
+        if (typeof params !== 'undefined') {
+            if (debugEnabled) console.log('DEBUG DB QUERY:', query, params);
+            const [rows] = await pool.query(query, params);
+            return rows;
+        } else {
+            if (debugEnabled) console.log('DEBUG DB QUERY:', query, 'NO_PARAMS');
+            const [rows] = await pool.query(query);
+            return rows;
+        }
+    } catch (err) {
+        if (debugEnabled) console.error('DEBUG DB QUERY ERROR:', err && err.message ? err.message : err);
+        throw err;
     }
 }
 

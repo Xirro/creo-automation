@@ -702,6 +702,28 @@
             }
         }
 
+        // Also include any items left in the Item Queue (sectionNum = 0) so server will clear secID
+        const itemQueue = document.getElementById('itemQueue');
+        if (itemQueue && itemQueue.children.length) {
+            for (let el of itemQueue.children) {
+                secArr.push({ secNum: 0, ID: el.id });
+            }
+        }
+
+        // Include breaker queues as well (if breakers are moved back to queue they should be cleared)
+        const mcBrkQueue = document.getElementById('mcBrkQueue');
+        if (mcBrkQueue && mcBrkQueue.children.length) {
+            for (let el of mcBrkQueue.children) {
+                secArr.push({ secNum: 0, ID: el.id });
+            }
+        }
+        const icBrkQueue = document.getElementById('icBrkQueue');
+        if (icBrkQueue && icBrkQueue.children.length) {
+            for (let el of icBrkQueue.children) {
+                secArr.push({ secNum: 0, ID: el.id });
+            }
+        }
+
         function sectionFormSubmit(secArr) {
             let mbomID = document.getElementById('mbomID').value;
             let form = document.createElement('form');
@@ -723,6 +745,14 @@
                 element3.value = mbomID;
                 element3.name = "mbomID";
                 form.appendChild(element3);
+            }
+            // If there are no sections (secArr empty), still include a single mbomID so server receives mbom context
+            if (secArr.length === 0) {
+                let singleMbom = document.createElement('input');
+                singleMbom.type = 'hidden';
+                singleMbom.name = 'mbomID';
+                singleMbom.value = mbomID;
+                form.appendChild(singleMbom);
             }
             let element4 = document.createElement('input');
             element4.value = secArr.length;
