@@ -207,14 +207,66 @@ if (db.isInitialized()) {
 // Env vars: PENDING_DB_HOST, PENDING_DB_PORT, PENDING_DB_USER, PENDING_DB_PASS, PENDING_DB_NAME
 // For development we require explicit env vars for the public guest DB connection.
 // Do NOT silently fall back to repo defaults here; fail fast if missing in non-production.
-const guestDbOptions = {
-    host: process.env.DB_HOST || undefined,
-    user: 'app_guest',
-    password: process.env.DB_GUEST_PASSWORD || undefined,
-    port: process.env.DB_PORT ? parseInt(process.env.DB_PORT, 10) : undefined,
-    database: process.env.DB_NAME || undefined,
-    ssl: process.env.DB_SSL === 'true' || false
-};
+// `guestDbOptions` is initialized after we load `creo-automation.env` so it reflects file values.
+let guestDbOptions = {};
+
+// Track whether the minimally-privileged guest DB connection is reachable.
+let guestDbConnected = null; // null=unknown, true/false after check
+
+// Check guest DB connectivity using a short-lived connection. Non-blocking startup.
+async function checkGuestDbConnectivity() {
+    const mysql2 = require('mysql2/promise');
+    // Try the minimally-privileged guest account only (no elevated fallbacks).
+    try {
+        const conn = await mysql2.createConnection({
+            host: guestDbOptions.host,
+            port: guestDbOptions.port,
+            user: guestDbOptions.user,
+            password: guestDbOptions.password,
+            database: guestDbOptions.database,
+            connectTimeout: 5000,
+            ssl: guestDbOptions.ssl ? { rejectUnauthorized: false } : undefined
+        });
+        try { await conn.query('SELECT 1'); } finally { try { await conn.end(); } catch (e) { /* ignore */ } }
+        if (guestDbConnected !== true) console.log('DB connectivity check: OK');
+        guestDbConnected = true;
+        return;
+    } catch (guestErr) {
+        const guestMsg = guestErr && guestErr.stack ? guestErr.stack : String(guestErr);
+        console.warn('DB connectivity check failed. Error stack:');
+        console.warn(guestMsg);
+
+        // Additional diagnostic: if ssl flag was explicitly false try with SSL, and vice-versa,
+        // to help identify SSL-related misconfiguration.
+        try {
+            const altSsl = guestDbOptions.ssl ? undefined : { rejectUnauthorized: false };
+            const altConn = await mysql2.createConnection({
+                host: guestDbOptions.host || process.env.DB_HOST,
+                port: guestDbOptions.port || (process.env.DB_PORT ? parseInt(process.env.DB_PORT, 10) : undefined),
+                user: guestDbOptions.user || (process.env.DB_GUEST_USER || 'app_guest'),
+                password: guestDbOptions.password || process.env.DB_GUEST_PASSWORD,
+                database: guestDbOptions.database || process.env.DB_NAME,
+                connectTimeout: 5000,
+                ssl: altSsl
+            });
+            try { await altConn.query('SELECT 1'); } finally { try { await altConn.end(); } catch (e) { /* ignore */ } }
+            console.log('DB connectivity check: OK with alternative SSL setting');
+            guestDbConnected = true;
+            return;
+        } catch (altErr) {
+            const altMsg = altErr && altErr.stack ? altErr.stack : String(altErr);
+            console.warn('DB connectivity check alternative SSL attempt failed. Error stack:');
+            console.warn(altMsg);
+        }
+
+        guestDbConnected = false;
+    }
+}
+
+// Perform an initial check at startup and continue to poll periodically so the login page reflects current state.
+// The check is intentionally non-blocking so the server can start even if DB is temporarily unavailable.
+// NOTE: the actual invocation is delayed until after the local env file is loaded so the
+// `guestDbOptions` structure picks up values from `creo-automation.env`.
 
 // Determine if we're running a packaging/build step for Electron. Packaging tools often set
 // lifecycle env vars (npm_lifecycle_event) or electron-builder specific env vars. If we're
@@ -245,6 +297,7 @@ try {
         try {
             if (fs.existsSync(p)) {
                 const data = fs.readFileSync(p, 'utf8');
+                const loadedKeys = [];
                 data.split(/\r?\n/).forEach(line => {
                     let l = (line || '').trim();
                     if (!l || l.startsWith('#')) return;
@@ -255,16 +308,47 @@ try {
                     if ((val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'"))) {
                         val = val.substring(1, val.length - 1);
                     }
-                    if (key && (typeof process.env[key] === 'undefined' || process.env[key] === '')) {
-                        process.env[key] = val;
+                    if (key) {
+                        const existed = (typeof process.env[key] !== 'undefined' && process.env[key] !== '');
+                        process.env[key] = val; // overwrite existing vars as requested
+                        loadedKeys.push({ key, value: val, overwritten: existed });
                     }
                 });
                 console.log('Loaded local env file:', p);
+                try {
+                    if (loadedKeys.length > 0) {
+                        const mask = (s) => {
+                            if (!s) return "''";
+                            const visible = 4;
+                            if (s.length <= visible) return `'***'`;
+                            return `'***${String(s).slice(-visible)}'`;
+                        };
+                    } else {
+                        console.log('No new env vars set from file (existing environment variables preserved)');
+                    }
+                } catch (e) {
+                    // do not let logging errors block startup
+                }
+                // Initialize guestDbOptions now that env vars (if any) have been loaded.
+                try {
+                    guestDbOptions = {
+                        host: process.env.DB_HOST || undefined,
+                        user: process.env.DB_GUEST_USER || 'app_guest',
+                        password: process.env.DB_GUEST_PASSWORD || undefined,
+                        port: process.env.DB_PORT ? parseInt(process.env.DB_PORT, 10) : undefined,
+                        database: process.env.DB_NAME || undefined,
+                        ssl: process.env.DB_SSL === 'true' || false
+                    };
+                } catch (e) { /* ignore */ }
                 break;
             }
         } catch (e) { /* ignore per-file errors */ }
     }
 } catch (e) { /* ignore loading errors */ }
+
+// Now that env vars have been loaded and guestDbOptions initialized, start the guest DB checks.
+checkGuestDbConnectivity().catch(() => {});
+setInterval(() => { checkGuestDbConnectivity().catch(() => {}); }, 30000); // re-check every 30s
 
 // In development (non-production) or during packaging require explicit DB env vars to be set
 // so developers and CI builds don't rely on hidden defaults.
@@ -323,7 +407,8 @@ app.get('/login', function(req, res) {
     // If a login error was stored in session (from a previous POST), render it once then clear it.
     const err = req.session && req.session.loginError ? req.session.loginError : null;
     if (req.session) delete req.session.loginError;
-    res.render('Main/login', { error: err });
+    // Pass guest DB connectivity status to the login view so it can display a warning if unreachable
+    res.render('Main/login', { error: err, dbConnected: guestDbConnected });
 });
 
 // Handle login POST; expects host, port, database, user, password from form

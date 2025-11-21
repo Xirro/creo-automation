@@ -15,6 +15,11 @@
     <% if (error) { %>
       <div class="alert alert-danger" role="alert" aria-live="polite"><%= error %></div>
     <% } %>
+    <% if (typeof dbConnected !== 'undefined' && dbConnected === false) { %>
+      <div class="alert alert-warning" role="alert" aria-live="polite">
+        Warning: The application cannot reach the database. Some features may be unavailable until connectivity is restored.
+      </div>
+    <% } %>
     <form id="loginForm" method="post" action="/login">
       <div class="form-group">
         <label>Username</label>
