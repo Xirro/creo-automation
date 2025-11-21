@@ -1098,12 +1098,23 @@
                                     </div>
                                     <% if(mbomItemData.length != 0){ %>
                                         <p class="text-muted m-b-30"></p>
+                                        <hr>
                                         <div class="row mb-2">
                                             <div class="col-sm-4">
                                                 <input type="text" id="itemFilter" class="form-control" placeholder="Filter items (any column)..." />
                                             </div>
                                             <div class="col-sm-2">
-                                                <button id="itemClearFilter" type="button" class="btn btn-sm btn-outline-secondary">Clear Filter</button>
+                                                <select id="itemGroupSelect" class="form-control">
+                                                    <option value="none">No Grouping</option>
+                                                    <option value="itemType">Item Type</option>
+                                                    <option value="itemMfg">Item Mfg.</option>
+                                                    <option value="itemPN">Item P/N</option>
+                                                    <option value="section">Section</option>
+                                                    <option value="shipLoose">Ship Loose?</option>
+                                                </select>
+                                            </div>
+                                            <div class="col-sm-2">
+                                                <button id="itemClearFilter" type="button" class="btn btn-outline-danger" style="height:38px; padding: .375rem .75rem;">Clear Filter</button>
                                             </div>
                                         </div>
                                         <table id="itemsTable" class="table table-bordered dt-responsive nowrap groupable-table" data-group-col="2" style="border-collapse: collapse; border-spacing: 0; width: 100%;">
@@ -1244,9 +1255,9 @@
                 tableId: 'itemsTable',
                 filterId: 'itemFilter',
                 clearFilterId: 'itemClearFilter',
-                groupSelectId: null,
-                defaultGroup: '2',
-                groupMap: null
+                groupSelectId: 'itemGroupSelect',
+                defaultGroup: 'none',
+                groupMap: { itemType: 4, itemMfg: 5, itemPN: 7, section: 8, shipLoose: 9 }
             }
         ];
         if(window.mbomInit) mbomInit(configs);
