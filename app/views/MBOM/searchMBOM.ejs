@@ -220,7 +220,7 @@
                                                     <input id="addCount" name="addCount" type="number" min="1" max="50" step="1" value="1" class="form-control form-control-sm" style="width:72px;" oninput="if(this.value==='')return; if(parseInt(this.value,10)>50) this.value=50; if(parseInt(this.value,10)<1) this.value=1;" />
                                                 </div>
                                                 <div class="form-group mb-0 mr-2">
-                                                    <button id="addSectionBtn" type="submit" class="btn btn-success btn-lg" onclick="this.form.action='/mbomAddSection'">Add Section</button>
+                                                    <button id="addSectionBtn" type="submit" class="btn btn-success btn-lg" formaction="/mbomAddSection">Add Section</button>
                                                 </div>
                                                 <div class="form-group mb-0">
                                                     <button id="clearAllBtn" type="button" class="btn btn-danger btn-lg" data-toggle="modal" data-target="#resetModal">Clear All</button>
@@ -423,13 +423,13 @@
                                                             <% let headerSecID = null; for (let sIdx = 0; sIdx < (mbomSecData || []).length; sIdx++) { if (mbomSecData[sIdx].sectionNum == i+1) { headerSecID = mbomSecData[sIdx].secID; break; } } %>
                                                             <% let deleteQuery = headerSecID ? ('secID=' + headerSecID) : ('selectedSec=' + (i+1)); %>
                                                             <h6>Section 10<%=i+1%>
-                                                                <input id="deleteSectionBtn" type="submit" value="&times;" class="close" style="margin: -2px 25px auto 25px; border: white; background: white" onclick="this.form.action='../mbomDeleteSection/?<%= deleteQuery %>&numSections=<%= mbomData.numSections%>'" />
+                                                                <input id="deleteSectionBtn" type="submit" value="&times;" class="close" style="margin: -2px 25px auto 25px; border: white; background: white" formaction="../mbomDeleteSection/?<%= deleteQuery %>&numSections=<%= mbomData.numSections%>" />
                                                             </h6>
                                                             <% } else{ %>
                                                             <% let headerSecID = null; for (let sIdx = 0; sIdx < (mbomSecData || []).length; sIdx++) { if (mbomSecData[sIdx].sectionNum == i+1) { headerSecID = mbomSecData[sIdx].secID; break; } } %>
                                                             <% let deleteQuery = headerSecID ? ('secID=' + headerSecID) : ('selectedSec=' + (i+1)); %>
                                                             <h6>Section 1<%=i+1%>
-                                                                <input id="deleteSectionBtn" type="submit" value="&times;" class="close" style="margin: -2px 25px auto 25px; border: white; background: white" onclick="this.form.action='../mbomDeleteSection/?<%= deleteQuery %>&numSections=<%= mbomData.numSections%>'" />
+                                                                <input id="deleteSectionBtn" type="submit" value="&times;" class="close" style="margin: -2px 25px auto 25px; border: white; background: white" formaction="../mbomDeleteSection/?<%= deleteQuery %>&numSections=<%= mbomData.numSections%>" />
                                                             </h6>
                                                             <% } %>
                                                             <ol data-draggable="target" id="section<%=i+1%>" style="width: 100%;">
@@ -529,7 +529,7 @@
                                                     <input type="text" name="mbomID" class="form-control" value="<%= mbomData.mbomID %>" placeholder="Type Designation Here" id="" readonly="readonly" hidden="hidden">
 
                                                     <label for="" class="col-form-label"></label>
-                                                    <button id="generateMBOMBtn" type="submit" class="btn-block btn-lg btn-outline-secondary waves-effect waves-light add-button" onclick="this.form.action='/generateMBOM'">Generate MBOM</button>
+                                                    <button id="generateMBOMBtn" type="submit" class="btn-block btn-lg btn-outline-secondary waves-effect waves-light add-button" formaction="/generateMBOM">Generate MBOM</button>
                                                 <% } %>
                                             </form>
                                         </div>
@@ -773,6 +773,17 @@
                                             </div>
                                         </div>
                                         <p class="text-muted m-b-30"></p>
+                                        <form id="brkForm" class="brkForm" action="" method="POST">
+                                        <% if(mbomData) { %>
+                                            <input type="text" name="jobNum" class="form-control" value="<%= mbomData.jobNum %>" id="jobNum" hidden="hidden">
+                                            <input type="text" name="releaseNum" class="form-control" value="<%= mbomData.releaseNum %>" id="releaseNum" hidden="hidden">
+                                            <input type="text" name="mbomID" class="form-control" value="<%= mbomData.mbomID %>" id="mbomID" hidden="hidden">
+                                            <input type="text" name="jobName" class="form-control" value="<%= mbomData.jobName %>" id="jobName" hidden="hidden">
+                                            <input type="text" name="customer" class="form-control" value="<%= mbomData.customer %>" id="customer" hidden="hidden">
+                                            <input type="text" name="boardDesignation" class="form-control" value="<%= mbomData.boardDesignation %>" id="boardDesignation" hidden="hidden">
+                                            <input type="text" name="numSections" class="form-control" value="<%= mbomData.numSections %>" id="numSections" hidden="hidden">
+                                            <input type="text" name="noSectionMBOM" class="form-control" value="<%= mbomData.noSectionMBOM%>" id="noSectionMBOM" hidden="hidden">
+                                        <% } %>
                                         <table id="breakersTable" class="table table-condensed table-bordered dt-responsive nowrap groupable-table" data-group-col="none">
                                             <thead>
                                             <tr>
@@ -787,17 +798,9 @@
                                             </thead>
                                             <tbody>
                                             <% if (mbomBrkData) { %>
-                                                <form id="brkForm" class="brkForm" action="" method="POST">
                                                     <% if(mbomData) { %>
                                                         <div class="col-sm-12">
-                                                            <input type="text" name="jobNum" class="form-control" value="<%= mbomData.jobNum %>" id="jobNum" hidden="hidden">
-                                                            <input type="text" name="releaseNum" class="form-control" value="<%= mbomData.releaseNum %>" id="releaseNum" hidden="hidden">
-                                                            <input type="text" name="mbomID" class="form-control" value="<%= mbomData.mbomID %>" id="mbomID" hidden="hidden">
-                                                            <input type="text" name="jobName" class="form-control" value="<%= mbomData.jobName %>" id="jobName" hidden="hidden">
-                                                            <input type="text" name="customer" class="form-control" value="<%= mbomData.customer %>" id="customer" hidden="hidden">
-                                                            <input type="text" name="boardDesignation" class="form-control" value="<%= mbomData.boardDesignation %>" id="boardDesignation" hidden="hidden">
-                                                            <input type="text" name="numSections" class="form-control" value="<%= mbomData.numSections %>" id="numSections" hidden="hidden">
-                                                            <input type="text" name="noSectionMBOM" class="form-control" value="<%= mbomData.noSectionMBOM%>" id="noSectionMBOM" hidden="hidden">
+                                                            <!-- hidden fields moved to top-level brkForm -->
                                                         </div>
                                                     <% } %>
                                                     <%
@@ -842,9 +845,9 @@
                                                             <td><%= mbomBrkData[i].cradlePN %></td>
                                                             <td><%= secLabel %></td>
                                                             <td>
-                                                                <input id="copyButton" type="submit" value="Copy" class="btn btn-md btn-outline-secondary waves-effect waves-light" onclick="this.form.action='../copyBreaker/?idDev=<%= mbomBrkData[i].idDev%>'"/>
-                                                                <input id="editBrkButton" type="submit" value="Edit" class="btn btn-md btn-outline-warning waves-effect waves-light" onclick="this.form.action='../editBreaker/?idDev=<%= mbomBrkData[i].idDev%>'"/>
-                                                                <input id="deleteButton" type="submit" value="Delete" class="btn btn-md btn-outline-danger waves-effect waves-light" onclick="this.form.action='../deleteBreaker/?idDev=<%= mbomBrkData[i].idDev%>'"/>
+                                                                <input id="copyButton" type="submit" value="Copy" class="btn btn-md btn-outline-secondary waves-effect waves-light" formaction="../copyBreaker/?idDev=<%= mbomBrkData[i].idDev%>"/>
+                                                                <input id="editBrkButton" type="submit" value="Edit" class="btn btn-md btn-outline-warning waves-effect waves-light" formaction="../editBreaker/?idDev=<%= mbomBrkData[i].idDev%>"/>
+                                                                <input id="deleteButton" type="submit" value="Delete" class="btn btn-md btn-outline-danger waves-effect waves-light" formaction="../deleteBreaker/?idDev=<%= mbomBrkData[i].idDev%>"/>
                                                             </td>
                                                         </tr>
                                                         <% if(idDevs.has(currentBrk)){ %>
@@ -881,11 +884,11 @@
                                                         </tr>
                                                         <% } %>
                                                     <% } %>
-                                                </form>
+                                                <% } %>
                                             <% } %>
                                             </tbody>
                                         </table>
-                                    <% } %>
+                                        </form>
                                 </div>
                             </div>
                         </div>
@@ -969,7 +972,7 @@
                                                 <div class="row justify-content-center">
                                                     <div class="col-sm-2">
                                                         <label for="uploadBtn"></label>
-                                                        <input id="uploadBtn" type="submit" value="Add" onclick="this.form.action='/addComItem'" class="btn-block btn-lg btn-outline-secondary waves-effect waves-light" />
+                                                        <input id="uploadBtn" type="submit" value="Add" formaction="/addComItem" class="btn-block btn-lg btn-outline-secondary waves-effect waves-light" />
                                                     </div>
                                                 </div>
                                             </div>
@@ -1090,7 +1093,7 @@
                                                 <div class="row justify-content-center">
                                                     <div class="col-sm-2">
                                                         <label for="uploadBtn"></label>
-                                                        <input id="uploadBtn" type="submit" value="Add" class="btn-block btn-lg btn-outline-secondary waves-effect waves-light" onclick="this.form.action='/createUserItem'"/>
+                                                        <input id="uploadBtn" type="submit" value="Add" class="btn-block btn-lg btn-outline-secondary waves-effect waves-light" formaction="/createUserItem"/>
                                                     </div>
                                                 </div>
                                             </div>
@@ -1117,6 +1120,16 @@
                                                 <button id="itemClearFilter" type="button" class="btn btn-outline-danger" style="height:38px; padding: .375rem .75rem;">Clear Filter</button>
                                             </div>
                                         </div>
+                                        <form id="itemForm" class="itemForm" action="" method="POST">
+                                        <% if(mbomData) { %>
+                                            <input type="text" name="jobNum" class="form-control" value="<%= mbomData.jobNum %>" id="jobNum" hidden="hidden">
+                                            <input type="text" name="releaseNum" class="form-control" value="<%= mbomData.releaseNum %>" id="releaseNum" hidden="hidden">
+                                            <input type="text" name="mbomID" class="form-control" value="<%= mbomData.mbomID %>" id="mbomID" hidden="hidden">
+                                            <input type="text" name="jobName" class="form-control" value="<%= mbomData.jobName %>" id="jobName" hidden="hidden">
+                                            <input type="text" name="customer" class="form-control" value="<%= mbomData.customer %>" id="customer" hidden="hidden">
+                                            <input type="text" name="boardDesignation" class="form-control" value="<%= mbomData.boardDesignation %>" id="boardDesignation" hidden="hidden">
+                                            <input type="text" name="numSections" class="form-control" value="<%= mbomData.numSections %>" id="numSections" hidden="hidden">
+                                        <% } %>
                                         <table id="itemsTable" class="table table-bordered dt-responsive nowrap groupable-table" data-group-col="2" style="border-collapse: collapse; border-spacing: 0; width: 100%;">
                                             <thead>
                                             <tr>
@@ -1136,34 +1149,22 @@
                                             <tbody>
                                                 <% if (mbomItemData) { %>
                                                 <% for (let i =0; i < mbomItemData.length; i++) { %>
-                                                    <form id="itemForm" class="itemForm" action="" method="POST">
-                                                        <% 
-                                                            let secLabel = 'Unassigned';
-                                                            if (mbomItemData[i] && mbomItemData[i].secID != null) {
-                                                                for (let s = 0; s < (mbomSecData || []).length; s++) {
-                                                                    if (mbomSecData[s].secID == mbomItemData[i].secID) {
-                                                                        const sn = parseInt(mbomSecData[s].sectionNum, 10);
-                                                                        if (!isNaN(sn) && sn < 10) {
-                                                                            secLabel = 'Section 10' + sn;
-                                                                        } else {
-                                                                            secLabel = 'Section 1' + (isNaN(sn) ? mbomSecData[s].sectionNum : sn);
-                                                                        }
-                                                                        break;
+                                                    <% 
+                                                        let secLabel = 'Unassigned';
+                                                        if (mbomItemData[i] && mbomItemData[i].secID != null) {
+                                                            for (let s = 0; s < (mbomSecData || []).length; s++) {
+                                                                if (mbomSecData[s].secID == mbomItemData[i].secID) {
+                                                                    const sn = parseInt(mbomSecData[s].sectionNum, 10);
+                                                                    if (!isNaN(sn) && sn < 10) {
+                                                                        secLabel = 'Section 10' + sn;
+                                                                    } else {
+                                                                        secLabel = 'Section 1' + (isNaN(sn) ? mbomSecData[s].sectionNum : sn);
                                                                     }
+                                                                    break;
                                                                 }
                                                             }
-                                                        %>
-                                                        <div class="row">
-                                                            <% if(mbomData) { %>
-                                                                <input type="text" name="jobNum" class="form-control" value="<%= mbomData.jobNum %>" id="jobNum" hidden="hidden">
-                                                                <input type="text" name="releaseNum" class="form-control" value="<%= mbomData.releaseNum %>" id="releaseNum" hidden="hidden">
-                                                                <input type="text" name="mbomID" class="form-control" value="<%= mbomData.mbomID %>" id="mbomID" hidden="hidden">
-                                                                <input type="text" name="jobName" class="form-control" value="<%= mbomData.jobName %>" id="jobName" hidden="hidden">
-                                                                <input type="text" name="customer" class="form-control" value="<%= mbomData.customer %>" id="customer" hidden="hidden">
-                                                                <input type="text" name="boardDesignation" class="form-control" value="<%= mbomData.boardDesignation %>" id="boardDesignation" hidden="hidden">
-                                                                <input type="text" name="numSections" class="form-control" value="<%= mbomData.numSections %>" id="numSections" hidden="hidden">
-                                                            <% } %>
-                                                        </div>
+                                                        }
+                                                    %>
                                                         <% if (mbomItemData[i].userItemID == null) { %>
                                                         <%for(var j = 0; j < comItemData.length; j++){ %>
                                                         <%if(mbomItemData[i].comItemID == comItemData[j].comItemID){ %>
@@ -1179,13 +1180,13 @@
                                                                 <td><%= secLabel %></td>
                                                                 <td><%= String(mbomItemData[i].shipLoose).toUpperCase() === 'Y' ? 'Yes' : 'No' %></td>
                                                                 <td>
-                                                                    <input id="copyButton" type="submit" value="Copy" class="btn btn-md btn-outline-secondary waves-effect waves-light" onclick="this.form.action='../copyItem/?itemSumID=<%= mbomItemData[i].itemSumID%>'"/>
+                                                                    <input id="copyButton" type="submit" value="Copy" class="btn btn-md btn-outline-secondary waves-effect waves-light" formaction="../copyItem/?itemSumID=<%= mbomItemData[i].itemSumID%>"/>
                                                                     <% if(mbomItemData[i].userItemID != null){%>
-                                                                        <input id="editButton" type="submit" value="Edit" class="btn btn-md btn-outline-warning waves-effect waves-light" onclick="this.form.action='../editUserItem/?itemSumID=<%= mbomItemData[i].itemSumID%>&userItemID=<%=mbomItemData[i].userItemID%>'"/>
+                                                                        <input id="editButton" type="submit" value="Edit" class="btn btn-md btn-outline-warning waves-effect waves-light" formaction="../editUserItem/?itemSumID=<%= mbomItemData[i].itemSumID%>&userItemID=<%=mbomItemData[i].userItemID%>"/>
                                                                     <% }else{ %>
-                                                                        <input id="editButton" type="submit" value="Edit" class="btn btn-md btn-outline-warning waves-effect waves-light" onclick="this.form.action='../editComItem/?itemSumID=<%= mbomItemData[i].itemSumID%>&comItemID=<%=mbomItemData[i].comItemID%>'"/>
+                                                                        <input id="editButton" type="submit" value="Edit" class="btn btn-md btn-outline-warning waves-effect waves-light" formaction="../editComItem/?itemSumID=<%= mbomItemData[i].itemSumID%>&comItemID=<%=mbomItemData[i].comItemID%>"/>
                                                                     <% } %>
-                                                                    <input id="deleteButton" type="submit" value="Delete" class="btn btn-md btn-outline-danger waves-effect waves-light" onclick="this.form.action='../deleteItem/?itemSumID=<%= mbomItemData[i].itemSumID %>'"/>
+                                                                    <input id="deleteButton" type="submit" value="Delete" class="btn btn-md btn-outline-danger waves-effect waves-light" formaction="../deleteItem/?itemSumID=<%= mbomItemData[i].itemSumID %>"/>
                                                                 </td>
                                                             </tr>
                                                         <% } %>
@@ -1205,23 +1206,23 @@
                                                                 <td><%= secLabel %></td>
                                                                 <td><%= String(mbomItemData[i].shipLoose).toUpperCase() === 'Y' ? 'Yes' : 'No' %></td>
                                                                 <td>
-                                                                    <input id="copyButton" type="submit" value="Copy" class="btn btn-md btn-outline-secondary waves-effect waves-light" onclick="this.form.action='../copyItem/?itemSumID=<%= mbomItemData[i].itemSumID%>'"/>
+                                                                    <input id="copyButton" type="submit" value="Copy" class="btn btn-md btn-outline-secondary waves-effect waves-light" formaction="../copyItem/?itemSumID=<%= mbomItemData[i].itemSumID%>"/>
                                                                     <% if(mbomItemData[i].userItemID != null){%>
-                                                                        <input id="editButton" type="submit" value="Edit" class="btn btn-md btn-outline-warning waves-effect waves-light" onclick="this.form.action='../editUserItem/?itemSumID=<%= mbomItemData[i].itemSumID%>&userItemID=<%=mbomItemData[i].userItemID%>'" />
+                                                                        <input id="editButton" type="submit" value="Edit" class="btn btn-md btn-outline-warning waves-effect waves-light" formaction="../editUserItem/?itemSumID=<%= mbomItemData[i].itemSumID%>&userItemID=<%=mbomItemData[i].userItemID%>" />
                                                                     <% }else{ %>
-                                                                        <input id="editButton" type="submit" value="Edit" class="btn btn-md btn-outline-warning waves-effect waves-light" onclick="this.form.action='../editComItem/?itemSumID=<%= mbomItemData[i].itemSumID%>&comItemID=<%=mbomItemData[i].comItemID%>'"/>
+                                                                        <input id="editButton" type="submit" value="Edit" class="btn btn-md btn-outline-warning waves-effect waves-light" formaction="../editComItem/?itemSumID=<%= mbomItemData[i].itemSumID%>&comItemID=<%=mbomItemData[i].comItemID%>"/>
                                                                     <% } %>
-                                                                    <input id="deleteButton" type="submit" value="Delete" class="btn btn-md btn-outline-danger waves-effect waves-light" onclick="this.form.action='../deleteItem/?itemSumID=<%= mbomItemData[i].itemSumID %>'"/>
+                                                                    <input id="deleteButton" type="submit" value="Delete" class="btn btn-md btn-outline-danger waves-effect waves-light" formaction="../deleteItem/?itemSumID=<%= mbomItemData[i].itemSumID %>"/>
                                                                 </td>
                                                             </tr>
                                                         <% } %>
                                                         <% } %>
                                                         <% } %>
-                                                    </form>
                                                 <% } %>
                                             <% } %>
                                             </tbody>
                                         </table>
+                                        </form>
                                     <% } %>
                                 </div>
                             </div>

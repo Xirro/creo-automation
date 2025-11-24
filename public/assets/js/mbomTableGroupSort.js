@@ -56,7 +56,9 @@ function groupTable(tableId){
             continue;
         }
         const orig = r.getAttribute('data-orig-index') || null;
-        const obj = {row: r, detail: null, orig: orig !== null ? parseInt(orig,10) : Number.MAX_SAFE_INTEGER};
+        const maybeForm = r.closest ? r.closest('form') : null;
+        const formAncestor = (maybeForm && r.parentElement === maybeForm) ? maybeForm : null;
+        const obj = {row: r, detail: null, orig: orig !== null ? parseInt(orig,10) : Number.MAX_SAFE_INTEGER, form: formAncestor};
         entriesByOrig.set(String(obj.orig), obj);
     }
 
@@ -86,13 +88,24 @@ function groupTable(tableId){
             const orig = r.getAttribute && r.getAttribute('data-orig-index');
             if(orig !== null && entriesByOrig.has(orig)){
                 const ent = entriesByOrig.get(orig);
-                frag.appendChild(ent.row);
-                if(ent.detail) frag.appendChild(ent.detail);
-                appended.add(orig);
+                // prefer appending the enclosing form if present so buttons keep form context
+                if(ent.form && !appended.has('form:' + ent.orig)){
+                    frag.appendChild(ent.form);
+                    appended.add('form:' + ent.orig);
+                } else {
+                    frag.appendChild(ent.row);
+                    if(ent.detail) frag.appendChild(ent.detail);
+                    appended.add(orig);
+                }
             } else {
-                frag.appendChild(r);
-                const next = r.nextElementSibling;
-                if(next && next.querySelector('td') && next.querySelector('td').hasAttribute('colspan')) frag.appendChild(next);
+                const formAncestor = r.closest ? r.closest('form') : null;
+                if(formAncestor){
+                    frag.appendChild(formAncestor);
+                } else {
+                    frag.appendChild(r);
+                    const next = r.nextElementSibling;
+                    if(next && next.querySelector('td') && next.querySelector('td').hasAttribute('colspan')) frag.appendChild(next);
+                }
             }
         });
         header.addEventListener('click', function(){
@@ -111,13 +124,20 @@ function groupTable(tableId){
     const remaining = Array.from(entriesByOrig.values()).sort((a,b)=>a.orig - b.orig);
     remaining.forEach(ent => {
         const key = String(ent.orig);
-        if(appended.has(key)) return;
-        frag.appendChild(ent.row);
-        if(ent.detail) frag.appendChild(ent.detail);
+        if(appended.has(key) || appended.has('form:' + ent.orig)) return;
+        if(ent.form){
+            frag.appendChild(ent.form);
+            appended.add('form:' + ent.orig);
+        } else {
+            frag.appendChild(ent.row);
+            if(ent.detail) frag.appendChild(ent.detail);
+            appended.add(key);
+        }
     });
 
     tbody.innerHTML = '';
     tbody.appendChild(frag);
+    try{ patchInlineFormActions(tableId); }catch(e){ if(window.__DEBUG) console.error('patchInlineFormActions error', e); }
 }
 
 function sortTable(tableId, colIndex, asc){
@@ -140,7 +160,9 @@ function sortTable(tableId, colIndex, asc){
         const next = r.nextElementSibling;
         let detail = null;
         if(next && next.querySelector('td') && next.querySelector('td').hasAttribute('colspan')) detail = next;
-        entries.push({key: key, row: r, detail: detail});
+        const maybeForm = r.closest ? r.closest('form') : null;
+        const formAncestor = (maybeForm && r.parentElement === maybeForm) ? maybeForm : null;
+        entries.push({key: key, row: r, detail: detail, form: formAncestor});
     }
 
     const groupColAttr = table.getAttribute('data-group-col');
@@ -160,9 +182,10 @@ function sortTable(tableId, colIndex, asc){
         entries.sort(compareFn);
         tbody.innerHTML = '';
         entries.forEach(e => {
-            tbody.appendChild(e.row);
-            if(e.detail) tbody.appendChild(e.detail);
+            if(e.form){ tbody.appendChild(e.form); }
+            else { tbody.appendChild(e.row); if(e.detail) tbody.appendChild(e.detail); }
         });
+        try{ patchInlineFormActions(tableId); }catch(e){ if(window.__DEBUG) console.error('patchInlineFormActions error', e); }
     } else {
         const groupCol = parseInt(groupColAttr,10);
         const groups = new Map();
@@ -187,10 +210,11 @@ function sortTable(tableId, colIndex, asc){
         groupKeys.forEach(k => {
             const arr = groups.get(k) || [];
             arr.forEach(e => {
-                tbody.appendChild(e.row);
-                if(e.detail) tbody.appendChild(e.detail);
+                if(e.form){ tbody.appendChild(e.form); }
+                else { tbody.appendChild(e.row); if(e.detail) tbody.appendChild(e.detail); }
             });
         });
+        try{ patchInlineFormActions(tableId); }catch(e){ if(window.__DEBUG) console.error('patchInlineFormActions error', e); }
     }
     if(groupingActive){
         try{ groupTable(tableId); }catch(e){}
@@ -216,18 +240,21 @@ function clearGroupHeaders(tableId){
                 if(entries.length) entries[entries.length-1].detail = r;
                 continue;
             }
-            const orig = r.getAttribute('data-orig-index');
-            const idx = orig !== null ? parseInt(orig,10) : Number.MAX_SAFE_INTEGER;
-            entries.push({orig: idx, row: r, detail: null});
+                const orig = r.getAttribute('data-orig-index');
+                const idx = orig !== null ? parseInt(orig,10) : Number.MAX_SAFE_INTEGER;
+                const maybeForm = r.closest ? r.closest('form') : null;
+                const formAncestor = (maybeForm && r.parentElement === maybeForm) ? maybeForm : null;
+                entries.push({orig: idx, row: r, detail: null, form: formAncestor});
         }
         const hasOrig = entries.some(e=>isFinite(e.orig) && e.orig !== Number.MAX_SAFE_INTEGER);
         if(!hasOrig) return;
         entries.sort((a,b)=> a.orig - b.orig);
         tbody.innerHTML = '';
         entries.forEach(e=>{
-            tbody.appendChild(e.row);
-            if(e.detail) tbody.appendChild(e.detail);
+            if(e.form){ tbody.appendChild(e.form); }
+            else { tbody.appendChild(e.row); if(e.detail) tbody.appendChild(e.detail); }
         });
+        try{ patchInlineFormActions(tableId); }catch(e){ if(window.__DEBUG) console.error('patchInlineFormActions error', e); }
     }catch(e){}
 }
 
@@ -273,6 +300,64 @@ function refreshSortIndicators(tableId){
             else if(as === 'descending') ind.textContent = '\u25BC';
             else ind.textContent = '';
         }
+    });
+}
+
+// Replace inline onclicks that use `this.form` with safe handlers that locate the nearest form
+function patchInlineFormActions(tableId){
+    const table = document.getElementById(tableId);
+    if(!table) return;
+    const inputs = Array.from(table.querySelectorAll('input[onclick]'));
+    inputs.forEach(inp => {
+        const raw = inp.getAttribute('onclick') || '';
+        if(raw.indexOf('this.form') === -1) return;
+        // preserve raw string for debugging
+        inp.setAttribute('data-onclick-raw', raw);
+        inp.removeAttribute('onclick');
+        // attach a safer handler that finds the nearest form and sets action
+        inp.addEventListener('click', function(ev){
+            try{
+                const s = this.getAttribute('data-onclick-raw') || '';
+                const m = s.match(/this\.form\.action\s*=\s*'([^']+)'/);
+                if(m && m[1]){
+                    const url = m[1];
+                    const f = this.closest ? this.closest('form') : null;
+                    if(f){
+                        // set action and allow normal submit to proceed
+                        f.action = url;
+                        return;
+                    }
+                    // no enclosing form: prevent default and submit a temporary POST form as fallback
+                    ev.preventDefault();
+                    try{
+                        const tmp = document.createElement('form');
+                        tmp.style.display = 'none';
+                        tmp.method = 'post';
+                        tmp.action = url;
+                        // copy page-level mbom identifiers if present so server has context
+                        const copyField = (name, id) => {
+                            const el = id ? document.getElementById(id) : document.querySelector('input[name="' + name + '"]');
+                            if(el && el.value !== undefined){
+                                const h = document.createElement('input');
+                                h.type = 'hidden';
+                                h.name = name;
+                                h.value = el.value;
+                                tmp.appendChild(h);
+                            }
+                        };
+                        copyField('mbomID','mbomID');
+                        copyField('jobNum','jobNum');
+                        copyField('releaseNum','releaseNum');
+                        document.body.appendChild(tmp);
+                        tmp.submit();
+                        // cleanup (best-effort)
+                        setTimeout(()=>{ try{ document.body.removeChild(tmp); }catch(e){} }, 1000);
+                    }catch(e){
+                        if(window.__DEBUG) console.error('form-submit fallback failed', e);
+                    }
+                }
+            }catch(e){ if(window.__DEBUG) console.error('patchInlineFormActions handler error', e); }
+        });
     });
 }
 

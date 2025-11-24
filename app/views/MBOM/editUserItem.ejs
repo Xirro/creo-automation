@@ -150,51 +150,42 @@
                                                         </div>
                                                         <div class="col-sm-2">
                                                             <label for="example-text-input" class="col-form-label">Item Mfg.</label>
-                                                            <select class="form-control select2" id="mfgSelect2" name="mfgSelect2">
-                                                                <% let userItemMfg = new Set();%>
-                                                                <% let other = new Set()%>
-                                                                <% for(let el of comItemData){
-                                                                    userItemMfg.add(el.itemType + "|" + el.itemMfg);
-                                                                } %>
-                                                                <% for(let el of comItemData){
-                                                                    other.add(el.itemType + "|" + "OTHER");
-                                                                } %>
-                                                                <% for(let el of userItemMfg){ %>
-                                                                    <% if(el == userItemData.itemMfg){ %>
-                                                                        <% var notOther = true; %>
-                                                                        <option data-parent="<%=el.split('|')[0]%>" value="<%= el%>" selected><%= el.split('|')[1]%></option>
-                                                                    <% } else { %>
-                                                                    <option data-parent="<%=el.split('|')[0]%>" value="<%= el%>"><%= el.split('|')[1]%></option>
-                                                                    <% } %>
+                                                            <% // Build a map: itemType -> Set of manufacturers to dedupe and group by type %>
+                                                            <% let mfgByType = {}; %>
+                                                            <% for (let el of comItemData) { %>
+                                                                <% if (!mfgByType[el.itemType]) mfgByType[el.itemType] = new Set(); %>
+                                                                <% // skip placeholder/OTHER entries from the common list to avoid duplicate OTHER options %>
+                                                                <% if (el.itemMfg && String(el.itemMfg).toUpperCase() !== 'OTHER') { %>
+                                                                    <% mfgByType[el.itemType].add(el.itemMfg); %>
                                                                 <% } %>
-                                                                <% for(let el of other){ %>
-                                                                    <% if(!notOther){ %>
-                                                                    <option data-parent="<%=el.split('|')[0]%>" selected><%=el.split('|')[1]%></option>
-                                                                    <% } else { %>
-                                                                    <option data-parent="<%=el.split('|')[0]%>"><%=el.split('|')[1]%></option>]
-                                                                    <% } %>
-                                                                <% } %>
-                                                            </select>
+                                                            <% } %>
                                                             <select class="form-control select2" id="mfgList" name="mfgList">
                                                                 <option value="">Select</option>
-                                                                <% let userItemMfg2 = new Set();%>
-                                                                <% for(let el of comItemData){
-                                                                    userItemMfg2.add(el.itemMfg);
-                                                                } %>
-                                                                <% for(let el of userItemMfg2){ %>
-                                                                    <% if(el == userItemData.itemMfg){ %>
-                                                                        <% var notOther = true; %>
-                                                                        <option value="<%= el%>" selected><%= el%></option>
-                                                                    <% } else {%>
-                                                                        <option value="<%= el%>"><%= el%></option>
+                                                                <% // Render options grouped by type (data-parent used for client-side filtering) %>
+                                                                <% for (let type of Object.keys(mfgByType)) { %>
+                                                                    <% for (let mfg of Array.from(mfgByType[type]).sort()) { %>
+                                                                        <% if (type == userItemData.itemType && mfg == userItemData.itemMfg) { %>
+                                                                            <option data-parent="<%= type %>" value="<%= mfg %>" selected><%= mfg %></option>
+                                                                        <% } else { %>
+                                                                            <option data-parent="<%= type %>" value="<%= mfg %>"><%= mfg %></option>
+                                                                        <% } %>
+                                                                    <% } %>
+                                                                    <% // per-type OTHER option (only add if not already present) %>
+                                                                    <% if (!Array.from(mfgByType[type]).includes('OTHER')) { %>
+                                                                        <% if (type == userItemData.itemType && (!userItemData.itemMfg || !Array.from(mfgByType[type]).includes(userItemData.itemMfg))) { %>
+                                                                            <option data-parent="<%= type %>" value="OTHER" selected>OTHER</option>
+                                                                        <% } else { %>
+                                                                            <option data-parent="<%= type %>" value="OTHER">OTHER</option>
+                                                                        <% } %>
                                                                     <% } %>
                                                                 <% } %>
-                                                                <% if(!notOther){ %>
-                                                                    <option selected="selected">OTHER</option>
-                                                                <% } else {%>
-                                                                    <option>OTHER</option>
-                                                                <% } %>
                                                             </select>
+                                                            <% // expose deduped JSON as data-attributes on a hidden element to avoid inline JS parsing issues in editors %>
+                                                            <% const mfgByTypeObj = {}; %>
+                                                            <% for (let t of Object.keys(mfgByType)) { mfgByTypeObj[t] = Array.from(mfgByType[t]).sort(); } %>
+                                                            <% const safeMfgJson = JSON.stringify(mfgByTypeObj).replace(/</g, '\\u003c').replace(/'/g, '&#39;'); %>
+                                                            <% const safeCurrentJson = JSON.stringify({ type: userItemData.itemType || '', mfg: userItemData.itemMfg || '' }).replace(/</g, '\\u003c').replace(/'/g, '&#39;'); %>
+                                                            <div id="mfg-data" style="display:none;" data-mfg='<%= safeMfgJson %>' data-current='<%= safeCurrentJson %>'></div>
                                                             <input type="text" name="otherMfgType" class="form-control" id="otherMfgType" value="<%= userItemData.itemMfg %>" placeholder="Type Mfg. Here" style="display:none;" autocomplete="off"/>
                                                         </div>
                                                         <div class="col-sm-7">
@@ -222,9 +213,9 @@
                                                                     <option value="FT">FT</option>
                                                                 <% } %>
                                                                 <% if (userItemData.unitOfIssue == 'LBS') { %>
-                                                                    <option value="LBS" selected="selected">FT</option>
+                                                                    <option value="LBS" selected="selected">LBS</option>
                                                                 <% } else { %>
-                                                                    <option value="LBS">FT</option>
+                                                                    <option value="LBS">LBS</option>
                                                                 <% } %>
                                                             </select>
                                                         </div>

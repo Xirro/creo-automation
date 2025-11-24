@@ -46,46 +46,65 @@ $('#descSelect').change(function() {
 /************************************************************
  USER DEFINED SECTION
  ************************************************************/
-$('#mfgList').hide();
+// Ensure MFG data is loaded from server-rendered hidden element if window variables are not present
+if (typeof window.MFG_BY_TYPE === 'undefined') {
+    var $mfgDataElem = $('#mfg-data');
+    if ($mfgDataElem.length) {
+        try {
+            window.MFG_BY_TYPE = JSON.parse($mfgDataElem.attr('data-mfg'));
+        } catch (e) {
+            window.MFG_BY_TYPE = {};
+        }
+        try {
+            window.CURRENT_MFG = JSON.parse($mfgDataElem.attr('data-current'));
+        } catch (e) {
+            window.CURRENT_MFG = { type: '', mfg: '' };
+        }
+    }
+}
+
+// Show single manufacturer list and filter options by selected item type
+$('#mfgList').show();
 
 $('#itemSelect2').change(function() {
-    var parent = $(this);
+    var selectedType = $(this).val();
+    // Rebuild options from window.MFG_BY_TYPE to avoid Select2 showing hidden options
+    var $mfg = $('#mfgList');
+    $mfg.empty();
+    $mfg.append($('<option>', { value: '', text: 'Select' }));
 
-    var visibleOptions1 = $('#mfgSelect2 option').hide().filter(function() {
-        return $(this).data('parent') == parent.val();
-    }).show();
+    if (selectedType && selectedType !== 'OTHER' && window.MFG_BY_TYPE && window.MFG_BY_TYPE[selectedType]) {
+        var list = window.MFG_BY_TYPE[selectedType];
+        for (var i = 0; i < list.length; i++) {
+            $mfg.append($('<option>', { 'data-parent': selectedType, value: list[i], text: list[i] }));
+        }
+        $mfg.append($('<option>', { 'data-parent': selectedType, value: 'OTHER', text: 'OTHER' }));
 
-    if(parent.val() == 'OTHER') {
-        $('#otherItemType').show();
-        $('#mfgList').show();
-        $('#otherMfgType').show();
-        $('#mfgList').change();
-        $('#mfgSelect2').hide();
-    }
+        // preselect existing if it matches
+        if (window.CURRENT_MFG && window.CURRENT_MFG.type === selectedType && window.CURRENT_MFG.mfg) {
+            $mfg.val(window.CURRENT_MFG.mfg);
+        } else {
+            $mfg.prop('selectedIndex', 0);
+        }
 
-    if(visibleOptions1.length) {
-        visibleOptions1.eq(0).prop('selected', true);
-    }
-    else
-        $('#mfgSelect2').val('');
-    $('#mfgSelect2').change();
-}).change();
-
-//OTHER item type text box
-$('#itemSelect2').change(function() {
-    var selected = $(this).val();
-    if (selected == 'OTHER') {
-        $('#otherItemType').show();
-        $('#mfgList').show();
-        $('#mfgList').change();
-        $('#mfgSelect2').hide();
-    }
-    else {
+        $('#otherMfgType').hide();
         $('#otherItemType').hide();
-        $('#mfgList').hide();
-        $('#mfgSelect2').show();
+    } else if (selectedType === 'OTHER') {
+        // item type OTHER → allow free-text manufacturer
+        $mfg.append($('<option>', { value: 'OTHER', text: 'OTHER' }));
+        $mfg.prop('selectedIndex', 1);
+        $('#otherItemType').show();
+        $('#otherMfgType').show();
+    } else {
+        // no type selected → keep only placeholder
+        $mfg.prop('selectedIndex', 0);
+        $('#otherMfgType').hide();
+        $('#otherItemType').hide();
     }
-});
+
+    // trigger Select2 to update
+    try { $mfg.trigger('change.select2'); } catch (e) { $mfg.trigger('change'); }
+}).change();
 
 //OTHER mfg type text box
 $('#mfgSelect2').change(function() {
