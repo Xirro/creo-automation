@@ -1042,6 +1042,76 @@
                                                 </div>
                                             </div>
 
+                                            <% // build unit list from existing common items for unit of issue dropdown %>
+                                            <% const unitSet = new Set(); for (let it of (comItemData || [])) if (it && it.unitOfIssue) unitSet.add(it.unitOfIssue); const unitList = Array.from(unitSet).sort(); %>
+                                            <div id="uncommonRow" class="row" style="display:none;">
+                                                <div class="col-md-4">
+                                                    <label class="col-form-label">Unit Of Issue</label>
+                                                    <select name="unitOfIssue" class="form-control unitOfIssueSelect">
+                                                        <option value="">Select Unit</option>
+                                                        <% for (let u of unitList) { %>
+                                                            <option value="<%= u %>"><%= u %></option>
+                                                        <% } %>
+                                                    </select>
+                                                </div>
+
+                                                <div class="col-md-4">
+                                                    <label class="col-form-label">Cat. Code</label>
+                                                    <select name="catCode" class="form-control catCodeSelect">
+                                                        <option value="">Select Cat. Code</option>
+                                                        <% for (let c of (catCodeData || [])) { %>
+                                                            <option value="<%= c %>"><%= c %></option>
+                                                        <% } %>
+                                                    </select>
+                                                </div>
+                                                
+                                                <div class="col-md-4">
+                                                    <label class="col-form-label">Class</label>
+                                                    <select name="class" class="form-control classSelect">
+                                                        <option value="">Select Class</option>
+                                                        <% for (let cl of (classCodeData || [])) { %>
+                                                            <option value="<%= cl %>"><%= cl %></option>
+                                                        <% } %>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                            <script>
+                                                (function(){
+                                                    // Show Uncommon row when any of the primary selects is OTHER or any manual primary input has content
+                                                    const uncommonRow = document.getElementById('uncommonRow');
+                                                    const selects = [
+                                                        document.querySelector('.itemTypeSelect'),
+                                                        document.querySelector('.itemMfgSelect'),
+                                                        document.querySelector('.itemDescSelect'),
+                                                        document.querySelector('.itemPNSelect')
+                                                    ];
+                                                    const manualInputs = [
+                                                        document.querySelector('.itemTypeOther'),
+                                                        document.querySelector('.itemMfgOther'),
+                                                        document.querySelector('.itemDescOther'),
+                                                        document.querySelector('.itemPNOther')
+                                                    ];
+
+                                                    function updateUncommon(){
+                                                        let show = false;
+                                                        for (let s of selects){ if (s && String(s.value) === 'OTHER') show = true; }
+                                                        for (let i of manualInputs){ if (i && i.value && i.value.trim() !== '') show = true; }
+
+                                                        if (show){
+                                                            if (uncommonRow) uncommonRow.style.display = '';
+                                                        } else {
+                                                            if (uncommonRow) uncommonRow.style.display = 'none';
+                                                        }
+                                                    }
+
+                                                    for (let s of selects){ if (s) s.addEventListener('change', updateUncommon); }
+                                                    for (let i of manualInputs){ if (i) i.addEventListener('input', updateUncommon); }
+
+                                                    // initial state
+                                                    updateUncommon();
+                                                }());
+                                            </script>
+
                                             <div class="row align-items-end">
                                                 <div class="col-md-1">
                                                     <label for="" class="col-form-label">Qty</label>

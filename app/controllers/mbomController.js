@@ -1103,9 +1103,121 @@ exports.createComItemTableGET = function(req, res) {
 
 
 //createComItemTablePOST function (handles the POST request to createComItemTable)
+// This endpoint handles two use-cases:
+// 1) Admin creating/updating the common items table (original behavior)
+// 2) The Add-Item form on searchMBOM which should create the comItem if necessary
+//    (status='Uncommon') and then add the item into the MBOM (mbom item table).
 exports.createComItemTablePOST = function(req, res) {
     req.setTimeout(0); //no timeout (this is needed to prevent error due to page taking a long time to load)
-    //Initialize variables
+
+    // Helper to normalize values and uppercase where appropriate
+    function norm(v){ return (typeof v === 'string') ? v.trim() : v; }
+
+    // If this request includes an MBOM context (mbomID) we'll treat it as an Add-Item submission
+    if (req.body && req.body.mbomID) {
+        // Map fields from the add-item form
+        let itemType = norm(req.body.itemType) || '';
+        if (itemType === 'OTHER') itemType = (norm(req.body.itemTypeOther) || '').toUpperCase();
+
+        let itemMfg = norm(req.body.itemMfg) || '';
+        if (itemMfg === 'OTHER') itemMfg = (norm(req.body.itemMfgOther) || '').toUpperCase();
+
+        let itemDesc = norm(req.body.itemDesc) || '';
+        if (itemDesc === 'OTHER') itemDesc = (norm(req.body.itemDescOther) || '').toUpperCase();
+
+        let itemPN = norm(req.body.itemPN) || '';
+        if (itemPN === 'OTHER') itemPN = (norm(req.body.itemPNOther) || '');
+
+        // Build comItem data; mark status 'Uncommon' when inserted from the Add-Item flow
+        let comData = {
+            itemType: (itemType || '').toUpperCase(),
+            itemMfg: (itemMfg || '').toUpperCase(),
+            itemDesc: (itemDesc || '').toUpperCase(),
+            itemPN: itemPN,
+            status: 'Uncommon',
+            unitOfIssue: (norm(req.body.unitOfIssue) || '') || null,
+            catCode: (norm(req.body.catCode) || '') || null,
+            class: (norm(req.body.class) || '') || null
+        };
+
+        // Lookup existing common item
+        querySql("SELECT * FROM " + database + "." + dbConfig.MBOM_common_items + " WHERE itemType = ? AND itemMfg = ? AND itemDesc = ? AND itemPN = ?", [comData.itemType, comData.itemMfg, comData.itemDesc, comData.itemPN])
+            .then(rows => {
+                if (rows && rows.length > 0) {
+                    // Use existing comItemID
+                    return Promise.resolve(rows[0].comItemID);
+                }
+                // Insert new common item and return the insertId
+                return querySql("INSERT INTO " + database + "." + dbConfig.MBOM_common_items + " SET ?", comData)
+                    .then(result => {
+                        // mysql2 returns an OkPacket for inserts; insertId should be available
+                        return (result && result.insertId) ? result.insertId : null;
+                    });
+            })
+            .then(comItemID => {
+                if (!comItemID) throw new Error('Failed to resolve comItemID');
+
+                // Prepare mbom item insertion(s)
+                const shipLoose = req.body.shipLoose ? 'Y' : 'N';
+
+                // Helper to perform insert for a single secID (can be null)
+                function insertForSec(secID){
+                    const itemSumData = {
+                        comItemID: comItemID,
+                        mbomID: req.body.mbomID,
+                        itemQty: req.body.itemQty || 1,
+                        shipLoose: shipLoose,
+                        secID: secID || null
+                    };
+                    return querySql("INSERT INTO " + database + "." + dbConfig.MBOM_item_table + " SET ?", itemSumData);
+                }
+
+                // If the Section select asked to 'assign', insert one row per checked assignSecIDs[]
+                if (String(req.body.secID || '') === 'assign'){
+                    let assigns = req.body.assignSecIDs || [];
+                    // normalize single value to array
+                    if (!Array.isArray(assigns)) assigns = [assigns];
+
+                    if (assigns.length === 0){
+                        // Nothing checked — fallback to single insert with no secID
+                        return insertForSec(null).then(() => {
+                            res.locals.title = 'Add Com Item';
+                            const redirectUrl = 'searchMBOM/?bomID=' + (req.body.jobNum || '') + (req.body.releaseNum || '') + '_' + req.body.mbomID;
+                            res.redirect(redirectUrl);
+                            return null;
+                        });
+                    }
+
+                    // insert for each checked section in sequence
+                    return assigns.reduce((p, sec) => {
+                        return p.then(() => insertForSec(sec));
+                    }, Promise.resolve()).then(() => {
+                        res.locals.title = 'Add Com Item';
+                        const redirectUrl = 'searchMBOM/?bomID=' + (req.body.jobNum || '') + (req.body.releaseNum || '') + '_' + req.body.mbomID;
+                        res.redirect(redirectUrl);
+                        return null;
+                    });
+                }
+
+                // Otherwise, insert a single row; if a specific secID was provided, include it
+                const specificSec = (req.body.secID && String(req.body.secID).trim() !== '') ? req.body.secID : null;
+                return insertForSec(specificSec).then(() => {
+                    res.locals.title = 'Add Com Item';
+                    const redirectUrl = 'searchMBOM/?bomID=' + (req.body.jobNum || '') + (req.body.releaseNum || '') + '_' + req.body.mbomID;
+                    res.redirect(redirectUrl);
+                    return null;
+                });
+            })
+            .catch(err => {
+                console.log('there was an error:' + err);
+                res.status(500).send('Server error');
+            });
+
+        return;
+    }
+
+    // FALLBACK: original create-common-item-table behavior (admin flow)
+    //Initialize variables (existing behavior)
     let itemType = req.body.itemSelect2;
     if (itemType == 'OTHER')
         itemType = (req.body.otherItemType).toUpperCase();
@@ -1136,7 +1248,8 @@ exports.createComItemTablePOST = function(req, res) {
         .then(rows => {
             //insert a new row in the mbomComItem table with data from
             if(rows.length == 0){
-                querySql("INSERT INTO " + database + " . " + dbConfig.MBOM_common_items + " SET ?", data);
+                // preserve existing admin-provided fields; do not force status here
+                return querySql("INSERT INTO " + database + " . " + dbConfig.MBOM_common_items + " SET ?", data);
             }
 
             return null;
