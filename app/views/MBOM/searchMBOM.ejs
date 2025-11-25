@@ -201,7 +201,71 @@
                     </div>
                     <div class="row">
                         <div class="col-sm-12">
-                            <div class="card m-b-20">
+                            <div class="card m-b-20" id="viewOptionsCard">
+                                <div class="card-body">
+                                    <h4 class="mt-0 header-title">View Options</h4>
+                                    <div class="form-group">
+                                        <input type="checkbox" id="hideSectionCardCheckbox" />
+                                        <label for="hideSectionCardCheckbox" class="ml-1">Hide Section Summary</label>
+                                        &nbsp;&nbsp;
+                                        <input type="checkbox" id="hideBreakerCardCheckbox" />
+                                        <label for="hideBreakerCardCheckbox" class="ml-1">Hide Breaker Summary</label>
+                                        &nbsp;&nbsp;
+                                        <input type="checkbox" id="hideItemCardCheckbox" />
+                                        <label for="hideItemCardCheckbox" class="ml-1">Hide Item Summary</label>
+                                    </div>
+                                </div>
+                            </div>
+                            <script>
+                                (function(){
+                                    const keys = {
+                                        section: 'mbom_hideSection',
+                                        breaker: 'mbom_hideBreakerTable',
+                                        item: 'mbom_hideItem'
+                                    };
+                                    const checkboxSection = document.getElementById('hideSectionCardCheckbox');
+                                    const checkboxBreaker = document.getElementById('hideBreakerCardCheckbox');
+                                    const checkboxItem = document.getElementById('hideItemCardCheckbox');
+
+                                    function applyState(){
+                                        const sectionCard = document.getElementById('sectionCard');
+                                        const breakerCard = document.getElementById('breakerCard');
+                                        const itemCard = document.getElementById('itemCard');
+
+                                        const hideSection = localStorage.getItem(keys.section) === '1';
+                                        const hideBreaker = localStorage.getItem(keys.breaker) === '1';
+                                        const hideItem = localStorage.getItem(keys.item) === '1';
+
+                                        if(sectionCard) sectionCard.style.display = hideSection ? 'none' : '';
+                                        if(breakerCard) breakerCard.style.display = hideBreaker ? 'none' : '';
+                                        if(itemCard) itemCard.style.display = hideItem ? 'none' : '';
+
+                                        if(checkboxSection) checkboxSection.checked = hideSection;
+                                        if(checkboxBreaker) checkboxBreaker.checked = hideBreaker;
+                                        if(checkboxItem) checkboxItem.checked = hideItem;
+                                    }
+
+                                    function wire(){
+                                        if(checkboxSection) checkboxSection.addEventListener('change', function(){
+                                            if(checkboxSection.checked) localStorage.setItem(keys.section,'1'); else localStorage.removeItem(keys.section);
+                                            applyState();
+                                        });
+                                        if(checkboxBreaker) checkboxBreaker.addEventListener('change', function(){
+                                            if(checkboxBreaker.checked) localStorage.setItem(keys.breaker,'1'); else localStorage.removeItem(keys.breaker);
+                                            applyState();
+                                        });
+                                        if(checkboxItem) checkboxItem.addEventListener('change', function(){
+                                            if(checkboxItem.checked) localStorage.setItem(keys.item,'1'); else localStorage.removeItem(keys.item);
+                                            applyState();
+                                        });
+                                    }
+
+                                    if (document.readyState === 'loading') {
+                                        document.addEventListener('DOMContentLoaded', function(){ applyState(); wire(); });
+                                    } else { applyState(); wire(); }
+                                })();
+                            </script>
+                            <div class="card m-b-20" id="sectionCard">
                                 <div class="card-body">
                                     <h4 class="mt-0 header-title">Section Summary</h4>
                                     <form id="mbomAddSection" class="mbomAddSection" action="" method="POST">
@@ -545,7 +609,7 @@
                     </div>
                     <div class="row">
                         <div class="col-sm-12">
-                            <div class="card m-b-20">
+                            <div class="card m-b-20" id="breakerCard">
                                 <div class="card-body">
                                     <h4 class="mt-0 header-title">Circuit Breaker Summary</h4>
                                     <form id="breakerForm" class="breakerForm" action="/addBrk" method="POST">
@@ -899,7 +963,7 @@
                     </div>
                     <div class="row">
                         <div class="col-sm-12">
-                            <div class="card m-b-20">
+                            <div class="card m-b-20" id="itemCard">
                                 <div class="card-body">
                                     <h4 class="mt-0 header-title">Item Summary</h4>
                                     <div class="card-body">
