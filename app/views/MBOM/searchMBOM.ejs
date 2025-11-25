@@ -753,7 +753,7 @@
                                     <!-- Add button moved above the horizontal rule so it's closer to the Loose Accessories section -->
                                     <div class="row justify-content-center mb-3" style="margin-top: .5rem;">
                                         <div class="col-2 text-center">
-                                            <input id="uploadBtn" type="submit" value="Add" class="btn-block btn-lg btn-outline-secondary waves-effect waves-light" form="breakerForm"/>
+                                            <input id="uploadBtn" type="submit" value="Add" class="btn-block btn-lg btn-success waves-effect waves-light" form="breakerForm"/>
                                         </div>
                                     </div>
                                     <hr>
@@ -903,7 +903,7 @@
                                 <div class="card-body">
                                     <h4 class="mt-0 header-title">Item Summary</h4>
                                     <div class="card-body">
-                                        <form id="addItemForm" class="itemForm" action="/createComItem" method="POST">
+                                        <form id="addItemForm" class="g-2 needs-validation" action="/createComItem" method="POST" novalidate>
                                             <% // Build distinct item types and manufacturer lists from available data %>
                                             <% 
                                                 const itemTypeSet = new Set();
@@ -968,8 +968,8 @@
                                             <div id="desc-data" style="display:none;" data-desc='<%= safeDescJson %>'></div>
                                             <div id="pn-data" style="display:none;" data-pn='<%= safePnJson %>'></div>
 
-                                            <div class="form-row align-items-center">
-                                                <div class="form-group col-sm-3">
+                                            <div class="row">
+                                                <div class="col-md-3">
                                                     <label class="col-form-label">Item Type</label>
                                                     <div class="relative-input">
                                                         <select name="itemType" class="form-control itemTypeSelect" required>
@@ -979,12 +979,18 @@
                                                             <% } %>
                                                             <option value="OTHER">OTHER</option>
                                                         </select>
-                                                        <input type="text" name="itemTypeOther" class="form-control mt-2 itemTypeOther manual-input" placeholder="Enter item type" disabled="disabled" />
+                                                        <input type="text" name="itemTypeOther" class="form-control mt-2 itemTypeOther manual-input" placeholder="Enter item type" disabled="disabled" required/>
+                                                        <div class="invalid-feedback">
+                                                            Please select or enter an item type.
+                                                        </div>
+                                                        <div class="valid-feedback">
+                                                            Looks good!
+                                                        </div>
                                                     </div>
                                                 </div>
 
-                                                <div class="form-group col-sm-3">
-                                                    <label class="col-form-label small mb-1">Item Mfg.</label>
+                                                <div class="col-md-3">
+                                                    <label class="col-form-label">Item Mfg.</label>
                                                     <div class="relative-input">
                                                         <select name="itemMfg" class="form-control itemMfgSelect">
                                                             <option value="">Select Manufacturer</option>
@@ -994,57 +1000,146 @@
                                                             <option value="OTHER">OTHER</option>
                                                         </select>
                                                         <input type="text" name="itemMfgOther" class="form-control mt-2 itemMfgOther manual-input" placeholder="Enter manufacturer" disabled="disabled" />
+                                                        <div class="invalid-feedback">
+                                                            Please select or enter a manufacturer.
+                                                        </div>
+                                                        <div class="valid-feedback">
+                                                            Looks good!
+                                                        </div>
                                                     </div>
                                                 </div>
 
-                                                <div class="form-group col-sm-3">
+                                                <div class="col-md-3">
                                                     <label class="col-form-label">Description</label>
                                                     <div class="relative-input">
                                                         <select name="itemDesc" class="form-control itemDescSelect">
                                                             <option value="">Select Description</option>
                                                         </select>
                                                         <input type="text" name="itemDescOther" class="form-control mt-2 itemDescOther manual-input" maxlength="255" placeholder="Enter description" disabled="disabled" />
+                                                        <div class="invalid-feedback">
+                                                            Please select or enter a description.
+                                                        </div>
+                                                        <div class="valid-feedback">
+                                                            Looks good!
+                                                        </div>
                                                     </div>
                                                 </div>
 
-                                                <div class="form-group col ">
+                                                <div class="col-md-3">
                                                     <label class="col-form-label">Item P/N</label>
                                                     <div class="relative-input">
                                                         <select name="itemPN" class="form-control itemPNSelect">
                                                             <option value="">Select P/N</option>
                                                         </select>
                                                         <input type="text" name="itemPNOther" class="form-control mt-2 itemPNOther manual-input" placeholder="Type P/N here" disabled="disabled" />
+                                                        <div class="invalid-feedback">
+                                                            Please select or enter an item P/N.
+                                                        </div>
+                                                        <div class="valid-feedback">
+                                                            Looks good!
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </div>
 
-                                            <div class="form-row justify-content-start">
-                                                <div class="form-group col-auto">
+                                            <div class="row align-items-end">
+                                                <div class="col-md-1">
                                                     <label for="" class="col-form-label">Qty</label>
                                                     <input name="itemQty" type="number" min="1" max="99" step="1" value="1" class="form-control form-control-sm itemQtyInput" style="width:60px; height:38px;" required />
                                                 </div>
 
-                                                <div class="form-group col-2">
+                                                <div class="col-md-2">
                                                     <label class="col-form-label">Section</label>
                                                     <select name="secID" class="form-control itemSectionSelect">
                                                         <option value="">Unassigned</option>
-                                                        <% for (let s of (mbomSecData || [])) { %>
-                                                            <option value="<%= s.secID %>">Section <%= s.sectionNum %></option>
-                                                        <% } %>
+                                                        <option value="assign">Assign</option>
                                                     </select>
                                                 </div>
 
-                                                <div class="form-group col-2">
-                                                    <label class="col-form-label">&nbsp;</label>
+                                                <div class="col-md-2" id="checkAllCol" style="display:none;">
+                                                    <button type="button" id="checkAllBtn" class="btn btn-block btn-lg btn-outline-primary">Check All</button>
+                                                </div>
+
+                                                <div class="col-md-2" id="uncheckAllCol" style="display:none;">
+                                                    <button type="button" id="uncheckAllBtn" class="btn btn-block btn-lg btn-outline-secondary">Uncheck All</button>
+                                                </div>
+                                            </div>
+                                            <div id="assignSection" class="row" style="display:none; margin-top: 15px;">
+                                                <% if ((mbomSecData || []).length === 0) { %>
+                                                    <div class="col">
+                                                        No sections available
+                                                    </div>
+                                                <% } else { %>
+                                                    <% for (let s of (mbomSecData || [])) { %>
+                                                        <% const sNum = parseInt(s.sectionNum, 10); %>
+                                                        <div class="col-auto">
+                                                            <div class="text-center">
+                                                                <label class="" for="assignSec_<%= s.secID %>">Sec<br> <%= (!isNaN(sNum) && sNum < 10) ? ('10' + s.sectionNum) : ('1' + s.sectionNum) %></label>
+                                                                <br>
+                                                                <div>
+                                                                    <input class="" type="checkbox" name="assignSecIDs[]" value="<%= s.secID %>" id="assignSec_<%= s.secID %>" />
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    <% } %>
+                                                <% } %>
+                                            </div>
+                                            <script>
+                                                (function(){
+                                                    const sel = document.querySelector('.itemSectionSelect');
+                                                    const assignRow = document.getElementById('assignSection');
+                                                    const checkAllCol = document.getElementById('checkAllCol');
+                                                    const uncheckAllCol = document.getElementById('uncheckAllCol');
+                                                    const checkAllBtn = document.getElementById('checkAllBtn');
+                                                    const uncheckAllBtn = document.getElementById('uncheckAllBtn');
+                                                    if (!sel || !assignRow) return;
+
+                                                    function setAllChecks(checked){
+                                                        assignRow.querySelectorAll('input[type="checkbox"]').forEach(function(cb){ cb.checked = !!checked; });
+                                                    }
+
+                                                    function updateAssign(){
+                                                        const shipLoose = document.getElementById('shipLooseCheckbox');
+                                                        if (sel.value === 'assign'){
+                                                            assignRow.style.display = '';
+                                                            if (checkAllCol) checkAllCol.style.display = '';
+                                                            if (uncheckAllCol) uncheckAllCol.style.display = '';
+                                                            // disable ship loose when assigning specific sections
+                                                            if (shipLoose){ shipLoose.disabled = true; shipLoose.checked = false; }
+                                                        } else {
+                                                            assignRow.style.display = 'none';
+                                                            if (checkAllCol) checkAllCol.style.display = 'none';
+                                                            if (uncheckAllCol) uncheckAllCol.style.display = 'none';
+                                                            // clear any checked boxes when hiding
+                                                            setAllChecks(false);
+                                                            // re-enable ship loose when not assigning
+                                                            if (shipLoose){ shipLoose.disabled = false; }
+                                                        }
+                                                    }
+
+                                                    if (checkAllBtn) checkAllBtn.addEventListener('click', function(){ setAllChecks(true); });
+                                                    if (uncheckAllBtn) uncheckAllBtn.addEventListener('click', function(){ setAllChecks(false); });
+
+                                                    sel.addEventListener('change', updateAssign);
+                                                    // initial state
+                                                    updateAssign();
+                                                }());
+                                            </script>
+                                            <div class="row">
+                                                <div class="col text-center p-2">
                                                     <div>
-                                                        <button type="submit" class="btn btn-success btn-block" formaction="/createComItem">Add Item</button>
+                                                        <div class="">
+                                                            <label for="shipLooseCheckbox" class="form-check-label" style="margin-top: 15px;">Ship Loose?</label>
+                                                            <input type="checkbox" id="shipLooseCheckbox" name="shipLoose" value="Y" />
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </div>
-                                            <div class="form-row align-items-center">
-                                                <div class="form-check">
-                                                    <label class="form-check-label">Ship Loose?</label>
-                                                    <input type="checkbox" for="flexCheckDefault" name="shipLoose" value="Y" />
+                                            <div class="row justify-content-center">
+                                                <div class="col-2 text-center">
+                                                    <button type="submit" class="btn-block btn-lg btn-success waves-effect waves-light" formaction="/createComItem">
+                                                        Add Item
+                                                    </button>
                                                 </div>
                                             </div>
                                             <% // Hidden job/context fields: keep as name-only to avoid duplicate id collisions elsewhere %>
@@ -1106,6 +1201,56 @@
                                                 // initial state
                                                 updateMfg();
                                                 updateType();
+                                            }());
+                                            (function(){
+                                                const form = document.getElementById('addItemForm');
+                                                if (!form) return;
+
+                                                function clearCustom(el){ if(!el) return; try{ el.setCustomValidity(''); }catch(e){} }
+
+                                                function checkSelectOrOther(sel, other, friendlyName){
+                                                    clearCustom(sel);
+                                                    clearCustom(other);
+                                                    if (!sel) return true;
+                                                    const val = String(sel.value || '').trim();
+                                                    if (val === ''){
+                                                        if (other && other.value && other.value.trim() !== '') return true;
+                                                        try { sel.setCustomValidity('Please select a ' + friendlyName + ' or enter one.'); } catch(e){}
+                                                        return false;
+                                                    }
+                                                    if (val === 'OTHER'){
+                                                        if (!other || !other.value || other.value.trim() === ''){
+                                                            try { other.setCustomValidity('Please enter a value for ' + friendlyName + ' when OTHER is selected.'); } catch(e){}
+                                                            return false;
+                                                        }
+                                                    }
+                                                    return true;
+                                                }
+
+                                                form.addEventListener('submit', function(ev){
+                                                    // clear any previous custom validity
+                                                    ['itemType','itemMfg','itemDesc','itemPN'].forEach(function(cls){
+                                                        clearCustom(form.querySelector('.' + cls + 'Select'));
+                                                        clearCustom(form.querySelector('.' + cls + 'Other'));
+                                                    });
+
+                                                    const typeOk = checkSelectOrOther(form.querySelector('.itemTypeSelect'), form.querySelector('.itemTypeOther'), 'Item Type');
+                                                    const mfgOk  = checkSelectOrOther(form.querySelector('.itemMfgSelect'), form.querySelector('.itemMfgOther'), 'Item Manufacturer');
+                                                    const descOk = checkSelectOrOther(form.querySelector('.itemDescSelect'), form.querySelector('.itemDescOther'), 'Description');
+                                                    const pnOk   = checkSelectOrOther(form.querySelector('.itemPNSelect'), form.querySelector('.itemPNOther'), 'Item P/N');
+
+                                                    const browserValid = form.checkValidity();
+
+                                                    if (!(typeOk && mfgOk && descOk && pnOk && browserValid)){
+                                                        ev.preventDefault();
+                                                        ev.stopPropagation();
+                                                        form.classList.add('was-validated');
+                                                        const firstInvalid = form.querySelector(':invalid');
+                                                        if (firstInvalid && typeof firstInvalid.focus === 'function') try{ firstInvalid.focus(); }catch(e){}
+                                                        return false;
+                                                    }
+                                                    form.classList.add('was-validated');
+                                                }, false);
                                             }());
                                         </script>
                                     </div>
