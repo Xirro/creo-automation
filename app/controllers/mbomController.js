@@ -468,8 +468,8 @@ exports.editMBOM = function(req, res) {
     };
 
     //Initial sql query - update the mbomSum table with the user input at the specific mbomID
-    querySql("UPDATE " + database + "." + dbConfig.MBOM_summary_table + " SET jobName = ?, customer = ?, " +
-        "boardDesignation = ?, noSectionMBOM = ? WHERE mbomID = ?", [data.jobName, data.customer, data.boardDesignation, data.noSectionMBOM, qs.mbomID])
+    querySql("UPDATE " + database + "." + dbConfig.MBOM_summary_table + " SET jobNum = ?, releaseNum = ?, jobName = ?, customer = ?, " +
+        "boardDesignation = ?, noSectionMBOM = ? WHERE mbomID = ?", [data.jobNum, data.releaseNum, data.jobName, data.customer, data.boardDesignation, data.noSectionMBOM, qs.mbomID])
         .then(() => {
             //redirect to the searchMBOM page
             res.locals.title = 'Search MBOM';
