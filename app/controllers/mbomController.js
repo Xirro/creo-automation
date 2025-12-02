@@ -1487,6 +1487,8 @@ exports.editComItem = function(req, res) {
     let comItemData = [];
     let data = [];
     let editData = {};
+    let catCodeData = [];
+    let classCodeData = [];
     let mbomData = {
         mbomID: req.body.mbomID,
         jobNum: req.body.jobNum,
@@ -1504,13 +1506,16 @@ exports.editComItem = function(req, res) {
         const itemSum = await querySql("SELECT * FROM " + database + "." + dbConfig.MBOM_item_table + " WHERE itemSumID = ?", itemSumID);
         //lookup mbomComItem row with specific comItemID and write result to editItem
         const editItem = await querySql("SELECT * FROM " + database + "." + dbConfig.MBOM_common_items + " WHERE comItemID = ?", comItemID);
+        // lookup cat/class codes for Uncommon row selects
+        const catCodes = await querySql("SELECT catCode FROM " + database + "." + dbConfig.jobscope_codes_table);
+        const classCodes = await querySql("SELECT classCode FROM " + database + "." + dbConfig.jobscope_classCodes_table);
 
-        return {comItem, itemSum, editItem};
+        return {comItem, itemSum, editItem, catCodes, classCodes};
     }
 
     //execute getItemData
     getItemData()
-        .then(({comItem, itemSum, editItem, userProfile}) => {
+        .then(({comItem, itemSum, editItem, catCodes, classCodes}) => {
             //for each item in comItem push to comItemData
             for(let row of comItem){
                 comItemData.push(row);
@@ -1529,16 +1534,52 @@ exports.editComItem = function(req, res) {
                     itemPN: row.itemPN
                 };
             }
+            // cat/class codes (if any)
+            if (catCodes && Array.isArray(catCodes)) {
+                for (let r of catCodes) catCodeData.push(r.catCode);
+            }
+            if (classCodes && Array.isArray(classCodes)) {
+                for (let r of classCodes) classCodeData.push(r.classCode);
+            }
             return null;
         })
-        //render MBOMeditComItem page with mbomItemData, mbomData, comItemData, and editData
+        //render MBOMeditComItem page with mbomItemData, mbomData, comItemData, editData and mbomSecData
         .then(() => {
+            // ensure we have the mbomID from the itemSum data to lookup sections
+            if (data && data.length && data[0].mbomID) {
+                let mbomID = data[0].mbomID;
+                // lookup sections for this mbomID
+                return querySql("SELECT * FROM " + database + "." + dbConfig.MBOM_new_section_sum + " WHERE mbomID = ?", [mbomID])
+                    .then(rows => {
+                        let mbomSecData = [];
+                        if (rows && rows.length) {
+                            for (let row of rows) mbomSecData.push(row);
+                            // sort ascending by sectionNum
+                            mbomSecData.sort((a, b) => parseInt(a.sectionNum) - parseInt(b.sectionNum));
+                        }
+                        res.locals.title = 'Edit Item';
+                        res.render('MBOM/MBOMeditComItem', {
+                            mbomItemData: data,
+                            mbomData: mbomData,
+                            comItemData: comItemData,
+                            editData: editData,
+                            mbomSecData: mbomSecData,
+                            catCodeData: catCodeData,
+                            classCodeData: classCodeData
+                        });
+                        return null;
+                    });
+            }
+            // fallback: render with empty sections array
             res.locals.title = 'Edit Item';
             res.render('MBOM/MBOMeditComItem', {
                 mbomItemData: data,
                 mbomData: mbomData,
                 comItemData: comItemData,
-                editData: editData
+                editData: editData,
+                mbomSecData: [],
+                catCodeData: catCodeData,
+                classCodeData: classCodeData
             });
         })
         .catch(err => {
@@ -1570,12 +1611,24 @@ exports.editComItemSave = function(req, res) {
         shipLooseCheck = 'Y';
     else
         shipLooseCheck = 'N';
+    // Helper to gracefully handle values that may be either pipe-delimited
+    // (old behavior: "a|mfg|desc|pn") or plain strings (new behavior)
+    function pickPart(src, index) {
+        try {
+            if (typeof src !== 'string') return '';
+            var parts = src.split('|');
+            return (parts.length > index) ? parts[index] : src;
+        } catch (e) {
+            return '';
+        }
+    }
+
     let updateData = {
         itemQty: req.body.itemQty,
         itemType: req.body.itemType,
-        itemMfg: req.body.itemMfg.split('|')[1],
-        itemDesc: req.body.itemDesc.split('|')[2],
-        itemPN: req.body.itemPN.split('|')[3],
+        itemMfg: pickPart(req.body.itemMfg, 1),
+        itemDesc: pickPart(req.body.itemDesc, 2),
+        itemPN: pickPart(req.body.itemPN, 3),
         shipLoose: shipLooseCheck
     };
     let mbomData = {
@@ -1588,13 +1641,34 @@ exports.editComItemSave = function(req, res) {
     querySql("SELECT comItemID FROM " + database + "." + dbConfig.MBOM_common_items + " WHERE itemType= ? AND " +
         "itemMfg = ? AND itemDesc = ? AND itemPN = ?", [updateData.itemType, updateData.itemMfg, updateData.itemDesc, updateData.itemPN])
         .then(rows => {
-            //write result id to comItemID
-            comItemID = rows[0].comItemID;
-            //update mbomItemSum with the updateData in the row referenced by itemSumID
-            querySql("UPDATE mbomItemSum SET comItemID = ?, itemQty = ?, shipLoose = ? WHERE itemSumID = ?",
-                [comItemID, updateData.itemQty, updateData.shipLoose, itemSumID]);
+            if (rows && rows.length > 0) {
+                // existing common item found
+                return Promise.resolve(rows[0].comItemID);
+            }
 
-            return null
+            // no common item exists for this combination — insert as 'Uncommon'
+            const comData = {
+                itemType: (updateData.itemType || '').toUpperCase(),
+                itemMfg: (updateData.itemMfg || '').toUpperCase(),
+                itemDesc: (updateData.itemDesc || '').toUpperCase(),
+                itemPN: (updateData.itemPN || ''),
+                status: 'Uncommon',
+                unitOfIssue: (req.body.unitOfIssue && req.body.unitOfIssue.trim()) ? req.body.unitOfIssue : null,
+                catCode: (req.body.catCode && req.body.catCode.trim()) ? req.body.catCode : null,
+                class: (req.body.class && req.body.class.trim()) ? req.body.class : null
+            };
+
+            return querySql("INSERT INTO " + database + "." + dbConfig.MBOM_common_items + " SET ?", comData)
+                .then(result => {
+                    return (result && result.insertId) ? result.insertId : null;
+                });
+        })
+        .then(comId => {
+            if (!comId) throw new Error('Failed to resolve or create comItemID');
+            comItemID = comId;
+            //update mbomItemSum with the updateData in the row referenced by itemSumID
+            return querySql("UPDATE mbomItemSum SET comItemID = ?, itemQty = ?, shipLoose = ? WHERE itemSumID = ?",
+                [comItemID, updateData.itemQty, updateData.shipLoose, itemSumID]);
         })
         .then(() => {
             //redirect to searchMBOM page
@@ -4084,5 +4158,27 @@ exports.generateMBOM = function (req, res) {
         .catch(err => {
             //if error occurs at anytime at any point in the code above, log it to the console
             console.log('there was an error:' + err);
+        });
+};
+
+
+// updateItemSection: AJAX endpoint to update secID for a given itemSumID
+exports.updateItemSection = function(req, res) {
+    req.setTimeout(0);
+    if (!req.body || !req.body.itemSumID) {
+        res.json({ success: false, error: 'itemSumID required' });
+        return;
+    }
+    const itemSumID = req.body.itemSumID;
+    // allow null/empty secID to clear assignment
+    const secID = (typeof req.body.secID !== 'undefined' && req.body.secID !== '') ? req.body.secID : null;
+
+    querySql("UPDATE " + database + "." + dbConfig.MBOM_item_table + " SET secID = ? WHERE itemSumID = ?", [secID, itemSumID])
+        .then(() => {
+            res.json({ success: true });
+        })
+        .catch(err => {
+            console.error('updateItemSection error:', err);
+            res.json({ success: false, error: String(err) });
         });
 };

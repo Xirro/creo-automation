@@ -515,8 +515,26 @@
 			var $mfgOther = $form.find('.itemMfgOther'); if ($mfgOther.length && $mfgOther.val() && $mfgOther.val().trim() !== '') show = true;
 			var $descOther = $form.find('.itemDescOther'); if ($descOther.length && $descOther.val() && $descOther.val().trim() !== '') show = true;
 			var $pnOther = $form.find('.itemPNOther'); if ($pnOther.length && $pnOther.val() && $pnOther.val().trim() !== '') show = true;
-			var $row = $('#uncommonRow');
+			var $row = $form.find('#uncommonRow');
+			if (!$row || $row.length === 0) $row = $('#uncommonRow');
 			if ($row.length) { $row.toggle(show); }
+
+			// Toggle Unit / Cat / Class selects required/disabled state so
+			// HTML5 validation doesn't block submission while the row is hidden.
+			var $unit = $row.find('.unitOfIssueSelect');
+			var $cat = $row.find('.catCodeSelect');
+			var $cls = $row.find('.classSelect');
+			if (show) {
+				if ($unit.length) { $unit.prop('disabled', false).prop('required', true).removeClass('disabled'); }
+				if ($cat.length)  { $cat.prop('disabled', false).prop('required', true).removeClass('disabled'); }
+				if ($cls.length)  { $cls.prop('disabled', false).prop('required', true).removeClass('disabled'); }
+			} else {
+				if ($unit.length) { $unit.prop('disabled', true).prop('required', false).val('').addClass('disabled'); }
+				if ($cat.length)  { $cat.prop('disabled', true).prop('required', false).val('').addClass('disabled'); }
+				if ($cls.length)  { $cls.prop('disabled', true).prop('required', false).val('').addClass('disabled'); }
+			}
+			// If these are Select2-enhanced, update their UI
+			try { if ($unit.length) triggerSelect2($unit); if ($cat.length) triggerSelect2($cat); if ($cls.length) triggerSelect2($cls); } catch (e) {}
 		}
 
 		$(document).on('change input', '.itemTypeSelect, .itemMfgSelect, .itemDescSelect, .itemPNSelect, .itemTypeOther, .itemMfgOther, .itemDescOther, .itemPNOther', function(){
@@ -535,7 +553,11 @@
 			var $assignRow = $('#assignSection');
 			var $checkAllCol = $('#checkAllCol');
 			var $uncheckAllCol = $('#uncheckAllCol');
-			var shipLoose = document.getElementById('shipLooseCheckbox');
+			// find a ship-loose checkbox: prefer form-local editShipLoose, then generic shipLoose, then global id
+			var $ship = $form.find('input[name="editShipLoose"], input[name="shipLoose"]').add('#shipLooseCheckbox');
+			// normalize to first element or null
+			var shipLoose = ($ship && $ship.length) ? $ship.get(0) : null;
+
 			if (val === 'assign') {
 				if ($assignRow.length) $assignRow.show();
 				if ($checkAllCol.length) $checkAllCol.show();
@@ -547,11 +569,44 @@
 				if ($uncheckAllCol.length) $uncheckAllCol.hide();
 				// clear checks
 				$assignRow.find('input[type=checkbox]').prop('checked', false);
-				if (shipLoose) shipLoose.disabled = false;
+				// If a specific section was selected (non-empty), disable ship-loose; if Unassigned (empty), enable it.
+				if (shipLoose) {
+					if (val && String(val).trim() !== '') {
+						shipLoose.disabled = true;
+						shipLoose.checked = false;
+					} else {
+						shipLoose.disabled = false;
+					}
+				}
 			}
 		}
 
-		$(document).on('change', '.itemSectionSelect', function(){ updateAssignState($(this)); });
+		$(document).on('change', '.itemSectionSelect', function(){
+			var $sel = $(this);
+			updateAssignState($sel);
+
+			// If this select is part of an item edit form, attempt to persist the change
+			var $form = $sel.closest('form');
+			if ($form.length) {
+				var itemSumID = $form.find('input[name="itemSumID"]').val();
+				var mbomID = $form.find('input[name="mbomID"]').val();
+				var secID = $sel.val() || null;
+				if (itemSumID) {
+					// POST to endpoint to update the item row's section
+					try {
+						$.post('/updateItemSection', { itemSumID: itemSumID, secID: secID, mbomID: mbomID })
+							.done(function(resp){
+								if (!resp || !resp.success) {
+									console.warn('updateItemSection failed', resp);
+								}
+							})
+							.fail(function(err){
+								console.error('updateItemSection error', err);
+							});
+					} catch (e) { console.error('updateItemSection post failed', e); }
+				}
+			}
+		});
 		$(document).on('click', '#checkAllBtn', function(){ $('#assignSection').find('input[type=checkbox]').prop('checked', true); });
 		$(document).on('click', '#uncheckAllBtn', function(){ $('#assignSection').find('input[type=checkbox]').prop('checked', false); });
 

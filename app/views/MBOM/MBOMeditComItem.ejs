@@ -25,6 +25,12 @@
     <link href="/public/assets/css/icons.css" rel="stylesheet" type="text/css">
     <link href="/public/assets/css/bootstrap.min.css" rel="stylesheet" type="text/css">
     <link href="/public/assets/css/style.css" rel="stylesheet" type="text/css">
+    <style>
+        .relative-input { position: relative; }
+        .manual-input { display: block; margin-top: .5rem; }
+        .manual-input[disabled], .manual-input.disabled { opacity: .65; background-color: #f8f9fa; }
+        .relative-input .form-control, .relative-input .select2-container { min-height: 38px; }
+    </style>
 </head>
 
 <body>
@@ -91,7 +97,6 @@
                                                 Fill out the following for each layout, and click "Save" afterwards
                                             </p>
                                             <p class="text-muted m-b-30"></p>
-                                            <h6>Commonly Used</h6>
                                             <form id="itemForm" class="itemForm" action="/editComItemSave/?itemSumID=<%= mbomItemData[0].itemSumID %>" method="POST">
                                                 <div class="form-group">
                                                     <% if(mbomData) { %>
@@ -158,16 +163,13 @@
                                                         const allPnList = Array.from(allPnSet).sort();
                                                         const safePnJson = JSON.stringify({ byTriplet: pnByTripletObj, all: allPnList }).replace(/</g, '\u003c').replace(/'/g, '&#39;');
                                                     %>
+                                                    <% const _mbomSecData = (typeof mbomSecData !== 'undefined' && mbomSecData) ? mbomSecData : []; %>
+                                                    %>
                                                     <div id="mfg-data" style="display:none;" data-mfg='<%= safeMfgJson %>'></div>
                                                     <div id="desc-data" style="display:none;" data-desc='<%= safeDescJson %>'></div>
                                                     <div id="pn-data" style="display:none;" data-pn='<%= safePnJson %>'></div>
                                                     <div class="row">
-                                                        <div class="col-md-1">
-                                                            <label for="itemQty" class="col-form-label">Qty</label>
-                                                            <input name="itemQty" type="number" min="1" max="99" step="1" class="form-control" value="<%= mbomItemData[0].itemQty %>" placeholder="#" autocomplete="off" style="width:60px; height:38px;" required/>
-                                                        </div>
-
-                                                        <div class="col-md-2">
+                                                        <div class="col-md-3">
                                                             <label class="col-form-label">Item Type</label>
                                                             <select class="form-control itemTypeSelect" id="itemEditSelect" name="itemTypeSelect" required>
                                                                 <option value="">Select Item Type</option>
@@ -183,76 +185,127 @@
                                                                     <% } %>
                                                                 <option value="OTHER">OTHER</option>
                                                             </select>
-                                                            <input type="text" name="itemTypeOther" class="form-control itemTypeOther" id="otherItemType" value="" placeholder="Item Type Here" style="display:none; margin-top:.5rem;" autocomplete="off" />
+                                                            <input type="text" name="itemTypeOther" class="form-control itemTypeOther manual-input" id="otherItemType" value="" placeholder="Item Type Here" disabled="disabled" required/>
                                                             <input type="hidden" name="itemType" class="itemTypeHidden" value="<%= editData.itemType %>" />
                                                         </div>
-                                                        <div class="col-sm-2">
+
+                                                        <div class="col-md-3">
                                                             <label for="example-text-input" class="col-form-label">Item Mfg.</label>
                                                             <select class="form-control select2 itemMfgSelect" id="mfgEditSelect" name="itemMfgSelect" required>
-                                                                <option data-parent="Select" value="Select">Select</option>
-                                                                <% let itemMfg = new Set();%>
-                                                                <% for(let el of comItemData){
-                                                                    itemMfg.add(el.itemType + "|" + el.itemMfg);
-                                                                } %>
-                                                                <% for(let el of itemMfg){ %>
-                                                                    <% if(el.split('|')[1] == editData.itemMfg){ %>
-                                                                        <option data-parent="<%=el.split('|')[0]%>" value="<%= el%>" selected><%= el.split('|')[1]%></option>
-                                                                    <% } else { %>
-                                                                        <option data-parent="<%=el.split('|')[0]%>" value="<%= el%>"><%= el.split('|')[1]%></option>
+                                                                    <option value="">Select</option>
+                                                                    <% if (editData && editData.itemMfg) { %>
+                                                                        <option value="<%= editData.itemMfg %>" selected><%= editData.itemMfg %></option>
                                                                     <% } %>
-                                                                <% } %>
-                                                                <option value="OTHER">OTHER</option>
+                                                                    <option value="OTHER">OTHER</option>
                                                             </select>
-                                                            <input type="text" name="itemMfgOther" class="form-control itemMfgOther" id="otherMfgType" value="" placeholder="Type Mfg. Here" style="display:none; margin-top:.5rem;" autocomplete="off" />
+                                                            <input type="text" name="itemMfgOther" class="form-control itemMfgOther manual-input" id="otherMfgType" value="" placeholder="Type Mfg. Here" disabled="disabled" required/>
                                                             <input type="hidden" name="itemMfg" class="itemMfgHidden" value="<%= editData.itemMfg %>" />
                                                         </div>
-                                                        <div class="col-sm-3">
+
+                                                        <div class="col-md-3">
                                                             <label for="example-text-input" class="col-form-label">Description</label>
-                                                            <select class="form-control itemDescSelect" id="descEditSelect" name="itemDescSelect" required>
-                                                                <option data-parent="Select" value="Select">Select</option>
-                                                                <% for(let el of comItemData){ %>
-                                                                    <% if(el.itemDesc == editData.itemDesc){%>
-                                                                        <option data-parent="<%=el.itemType%>|<%=el.itemMfg%>" value="<%=el.itemType%>|<%=el.itemMfg%>|<%= el.itemDesc%>" selected><%=el.itemDesc%></option>
-                                                                    <% } else { %>
-                                                                        <option data-parent="<%=el.itemType%>|<%=el.itemMfg%>" value="<%=el.itemType%>|<%=el.itemMfg%>|<%= el.itemDesc%>"><%=el.itemDesc%></option>
+                                                                <select class="form-control itemDescSelect" id="descEditSelect" name="itemDescSelect" required>
+                                                                    <option value="">Select</option>
+                                                                    <% if (editData && editData.itemDesc) { %>
+                                                                        <option value="<%= editData.itemDesc %>" selected><%= editData.itemDesc %></option>
                                                                     <% } %>
-                                                                <% } %>
-                                                                <option value="OTHER">OTHER</option>
-                                                            </select>
-                                                            <input type="text" name="itemDescOther" class="form-control itemDescOther" id="itemDescOther" value="" placeholder="Type Description Here" style="display:none; margin-top:.5rem;" autocomplete="off" />
+                                                                    <option value="OTHER">OTHER</option>
+                                                                </select>
+                                                                <input type="text" name="itemDescOther" class="form-control itemDescOther manual-input" id="itemDescOther" value="" placeholder="Type Description Here" disabled="disabled" required/>
                                                             <input type="hidden" name="itemDesc" class="itemDescHidden" value="<%= editData.itemDesc %>" />
                                                         </div>
 
-                                                        <div class="col-md-2">
+                                                        <div class="col-md-3">
                                                             <label for="example-text-input" class="col-form-label">P/N</label>
                                                             <select class="form-control itemPNSelect" id="pnEditSelect" name="itemPNSelect">
-                                                                <option data-parent="Select" value="Select">Select</option>
-                                                                <% for(let el of comItemData){ %>
-                                                                    <% if(el.itemPN == editData.itemPN && el.itemDesc == editData.itemDesc && el.itemMfg == editData.itemMfg && el.itemType == editData.itemType){ %>
-                                                                        <option data-parent="<%=el.itemType%>|<%=el.itemMfg%>|<%= el.itemDesc%>" value="<%=el.itemType%>|<%=el.itemMfg%>|<%= el.itemDesc%>|<%=el.itemPN%>" selected><%=el.itemPN%></option>
-                                                                    <% } else { %>
-                                                                        <option data-parent="<%=el.itemType%>|<%=el.itemMfg%>|<%= el.itemDesc%>" value="<%=el.itemType%>|<%=el.itemMfg%>|<%= el.itemDesc%>|<%=el.itemPN%>"><%=el.itemPN%></option>
-                                                                    <% } %>
+                                                                <option value="">Select</option>
+                                                                <% if (editData && editData.itemPN) { %>
+                                                                    <option value="<%= editData.itemPN %>" selected><%= editData.itemPN %></option>
                                                                 <% } %>
                                                                 <option value="OTHER">OTHER</option>
                                                             </select>
-                                                            <input type="text" name="itemPNOther" class="form-control itemPNOther" id="itemPNOther" value="" placeholder="Type P/N Here" style="display:none; margin-top:.5rem;" autocomplete="off" />
+                                                            <input type="text" name="itemPNOther" class="form-control itemPNOther manual-input" id="itemPNOther" value="" placeholder="Type P/N Here" disabled="disabled" required/>
                                                             <input type="hidden" name="itemPN" class="itemPNHidden" value="<%= editData.itemPN %>" />
                                                         </div>
                                                     </div>
-                                                    <div class="col-sm-2" style="margin-top: 2rem; padding-left: 3.5rem;">
-                                                        <% if(mbomItemData[0].shipLoose == 'Y'){ %>
-                                                            <input class="form-check-input" type="checkbox" name="editShipLoose" id="editShipLoose" value="true" style="margin-top: .7rem;" checked="checked"/>
-                                                            <label for="editShipLoose" class="col-form-label">Ship Loose Item?</label>
-                                                        <% } else { %>
-                                                            <input class="form-check-input" type="checkbox" name="editShipLoose" id="editShipLoose" value="true" style="margin-top: .7rem;"/>
-                                                            <label for="editShipLoose" class="col-form-label">Ship Loose Item?</label>
-                                                        <% } %>
+
+                                                    <% const unitSet = new Set(); for (let it of (comItemData || [])) if (it && it.unitOfIssue) unitSet.add(it.unitOfIssue); const unitList = Array.from(unitSet).sort(); %>
+                                                    <div id="uncommonRow" class="row" style="display:none;">
+                                                        <div class="col-md-4">
+                                                            <label class="col-form-label">Unit Of Issue</label>
+                                                            <select name="unitOfIssue" class="form-control unitOfIssueSelect">
+                                                                <option value="">Select Unit</option>
+                                                                <% for (let u of unitList) { %>
+                                                                    <option value="<%= u %>"><%= u %></option>
+                                                                <% } %>
+                                                            </select>
+                                                        </div>
+
+                                                        <div class="col-md-4">
+                                                            <label class="col-form-label">Cat. Code</label>
+                                                            <select name="catCode" class="form-control catCodeSelect">
+                                                                <option value="">Select Cat. Code</option>
+                                                                <% for (let c of (catCodeData || [])) { %>
+                                                                    <option value="<%= c %>"><%= c %></option>
+                                                                <% } %>
+                                                            </select>
+                                                        </div>
+
+                                                        <div class="col-md-4">
+                                                            <label class="col-form-label">Class</label>
+                                                            <select name="class" class="form-control classSelect">
+                                                                <option value="">Select Class</option>
+                                                                <% for (let cl of (classCodeData || [])) { %>
+                                                                    <option value="<%= cl %>"><%= cl %></option>
+                                                                <% } %>
+                                                            </select>
+                                                        </div>
+                                                    </div>
+
+                                                    <div class="row">
+                                                        <div class="col-md-1">
+                                                            <label for="itemQty" class="col-form-label">Qty</label>
+                                                            <input name="itemQty" type="number" min="1" max="99" step="1" class="form-control" value="<%= mbomItemData[0].itemQty %>" placeholder="#" style="width:60px; height:38px;" required/>
+                                                        </div>
+
+                                                        <div class="col-md-2"> 
+                                                            <label class="col-form-label">Section</label>
+                                                            <select name="secID" class="form-control itemSectionSelect">
+                                                                <option value="">Unassigned</option>
+                                                                <% for (let s of (_mbomSecData || [])) { %>
+                                                                    <% const sn = parseInt(s.sectionNum, 10); %>
+                                                                    <% const label = (!isNaN(sn) && sn < 10) ? ('Section 10' + s.sectionNum) : ('Section 1' + (isNaN(sn) ? s.sectionNum : sn)); %>
+                                                                    <% if (mbomItemData && mbomItemData[0] && mbomItemData[0].secID == s.secID) { %>
+                                                                        <option value="<%= s.secID %>" selected><%= label %></option>
+                                                                    <% } else { %>
+                                                                        <option value="<%= s.secID %>"><%= label %></option>
+                                                                    <% } %>
+                                                                <% } %>
+                                                            </select>
+                                                        </div>
+                                                    </div>
+                                                    
+                                                    <div class="row">
+                                                        <div class="col text-center p-2">
+                                                            <div>
+                                                                <div class="">
+                                                                    <label for="editShipLoose" class="form-check-label" style="margin-top: 15px">Ship Item Loose?</label>
+                                                                    <% if(mbomItemData[0].shipLoose == 'Y'){ %>
+                                                                        <input type="checkbox" name="editShipLoose" id="editShipLoose" value="Y" checked="checked"/>
+                                                                    <% } else { %>
+                                                                        <input type="checkbox" name="editShipLoose" id="editShipLoose" value="Y"/>
+                                                                    <% } %>
+                                                                </div>
+                                                            </div>
+                                                        </div>
                                                     </div>
 
                                                     <div class="row justify-content-center">
-                                                        <div class="col-2" style="padding-top:5%;">
-                                                            <input id="uploadBtn" type="submit" value="Save" class="btn-block btn-lg btn-outline-success waves-effect waves-light" onclick=""/>
+                                                        <div class="col-2 text-center">
+                                                            <input id="uploadBtn" type="submit" value="Save" class="btn btn-block btn-lg btn-success waves-effect waves-light" onclick=""/>
+                                                        </div>
+                                                        <div class="col-2 text-center">
+                                                            <a id="cancelBtn" href="../searchMBOM/?bomID=<%= (mbomData && mbomData.jobNum) ? mbomData.jobNum : '' %><%= (mbomData && mbomData.releaseNum) ? mbomData.releaseNum : '' %>_<%= (mbomData && mbomData.mbomID) ? mbomData.mbomID : '' %>" class="btn btn-block btn-lg btn-secondary waves-effect waves-light">Cancel</a>
                                                         </div>
                                                     </div>
                                                 </div>

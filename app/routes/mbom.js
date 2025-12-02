@@ -80,6 +80,9 @@ app.post('/editComItem', mbomController.editComItem);
 //post request to /editComItemSave url => editComItemSave()
 app.post('/editComItemSave', mbomController.editComItemSave);
 
+//post request to /updateItemSection url => updateItemSection()
+app.post('/updateItemSection', mbomController.updateItemSection);
+
 
 /***********************************************
  USER ITEM IN MBOM
