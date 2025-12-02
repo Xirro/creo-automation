@@ -1139,42 +1139,6 @@
                                                     </select>
                                                 </div>
                                             </div>
-                                            <script>
-                                                (function(){
-                                                    // Show Uncommon row when any of the primary selects is OTHER or any manual primary input has content
-                                                    const uncommonRow = document.getElementById('uncommonRow');
-                                                    const selects = [
-                                                        document.querySelector('.itemTypeSelect'),
-                                                        document.querySelector('.itemMfgSelect'),
-                                                        document.querySelector('.itemDescSelect'),
-                                                        document.querySelector('.itemPNSelect')
-                                                    ];
-                                                    const manualInputs = [
-                                                        document.querySelector('.itemTypeOther'),
-                                                        document.querySelector('.itemMfgOther'),
-                                                        document.querySelector('.itemDescOther'),
-                                                        document.querySelector('.itemPNOther')
-                                                    ];
-
-                                                    function updateUncommon(){
-                                                        let show = false;
-                                                        for (let s of selects){ if (s && String(s.value) === 'OTHER') show = true; }
-                                                        for (let i of manualInputs){ if (i && i.value && i.value.trim() !== '') show = true; }
-
-                                                        if (show){
-                                                            if (uncommonRow) uncommonRow.style.display = '';
-                                                        } else {
-                                                            if (uncommonRow) uncommonRow.style.display = 'none';
-                                                        }
-                                                    }
-
-                                                    for (let s of selects){ if (s) s.addEventListener('change', updateUncommon); }
-                                                    for (let i of manualInputs){ if (i) i.addEventListener('input', updateUncommon); }
-
-                                                    // initial state
-                                                    updateUncommon();
-                                                }());
-                                            </script>
 
                                             <div class="row align-items-end">
                                                 <div class="col-md-1">
@@ -1218,47 +1182,6 @@
                                                     <% } %>
                                                 <% } %>
                                             </div>
-                                            <script>
-                                                (function(){
-                                                    const sel = document.querySelector('.itemSectionSelect');
-                                                    const assignRow = document.getElementById('assignSection');
-                                                    const checkAllCol = document.getElementById('checkAllCol');
-                                                    const uncheckAllCol = document.getElementById('uncheckAllCol');
-                                                    const checkAllBtn = document.getElementById('checkAllBtn');
-                                                    const uncheckAllBtn = document.getElementById('uncheckAllBtn');
-                                                    if (!sel || !assignRow) return;
-
-                                                    function setAllChecks(checked){
-                                                        assignRow.querySelectorAll('input[type="checkbox"]').forEach(function(cb){ cb.checked = !!checked; });
-                                                    }
-
-                                                    function updateAssign(){
-                                                        const shipLoose = document.getElementById('shipLooseCheckbox');
-                                                        if (sel.value === 'assign'){
-                                                            assignRow.style.display = '';
-                                                            if (checkAllCol) checkAllCol.style.display = '';
-                                                            if (uncheckAllCol) uncheckAllCol.style.display = '';
-                                                            // disable ship loose when assigning specific sections
-                                                            if (shipLoose){ shipLoose.disabled = true; shipLoose.checked = false; }
-                                                        } else {
-                                                            assignRow.style.display = 'none';
-                                                            if (checkAllCol) checkAllCol.style.display = 'none';
-                                                            if (uncheckAllCol) uncheckAllCol.style.display = 'none';
-                                                            // clear any checked boxes when hiding
-                                                            setAllChecks(false);
-                                                            // re-enable ship loose when not assigning
-                                                            if (shipLoose){ shipLoose.disabled = false; }
-                                                        }
-                                                    }
-
-                                                    if (checkAllBtn) checkAllBtn.addEventListener('click', function(){ setAllChecks(true); });
-                                                    if (uncheckAllBtn) uncheckAllBtn.addEventListener('click', function(){ setAllChecks(false); });
-
-                                                    sel.addEventListener('change', updateAssign);
-                                                    // initial state
-                                                    updateAssign();
-                                                }());
-                                            </script>
                                             <div class="row">
                                                 <div class="col text-center p-2">
                                                     <div>
@@ -1283,110 +1206,6 @@
                                                 <input type="hidden" name="mbomID" value="<%= mbomData.mbomID %>" />
                                             <% } %>
                                         </form>
-
-                                        <script>
-                                            // Small form helper: toggle the free-text manufacturer field when 'OTHER' is selected
-                                            (function(){
-                                                const root = document.getElementById('addItemForm');
-                                                if (!root) return;
-                                                const mfgSel = root.querySelector('.itemMfgSelect');
-                                                const mfgOther = root.querySelector('.itemMfgOther');
-                                                const typeSel = root.querySelector('.itemTypeSelect');
-                                                const typeOther = root.querySelector('.itemTypeOther');
-
-                                                function updateMfg() {
-                                                    if (!mfgSel || !mfgOther) return;
-                                                    if (mfgSel.value === 'OTHER') {
-                                                        mfgOther.disabled = false;
-                                                        mfgOther.required = true;
-                                                        mfgOther.classList.remove('disabled');
-                                                        try { mfgOther.focus(); } catch (e) {}
-                                                    } else {
-                                                        mfgOther.disabled = true;
-                                                        mfgOther.required = false;
-                                                        mfgOther.value = '';
-                                                        mfgOther.classList.add('disabled');
-                                                    }
-                                                }
-
-                                                function updateType() {
-                                                    if (!typeSel || !typeOther) return;
-                                                    if (typeSel.value === 'OTHER') {
-                                                        typeOther.disabled = false;
-                                                        typeOther.required = true;
-                                                        typeOther.classList.remove('disabled');
-                                                        try { typeOther.focus(); } catch (e) {}
-                                                    } else {
-                                                        typeOther.disabled = true;
-                                                        typeOther.required = false;
-                                                        typeOther.value = '';
-                                                        typeOther.classList.add('disabled');
-                                                    }
-                                                }
-
-                                                if (mfgSel) mfgSel.addEventListener('change', updateMfg);
-                                                if (typeSel) typeSel.addEventListener('change', function(){
-                                                    updateType();
-                                                    // also trigger the existing population behavior (if mbomFilterDropdown.js is active it will handle mfg population)
-                                                    var ev = new Event('change', { bubbles: true });
-                                                    typeSel.dispatchEvent(ev);
-                                                });
-
-                                                // initial state
-                                                updateMfg();
-                                                updateType();
-                                            }());
-                                            (function(){
-                                                const form = document.getElementById('addItemForm');
-                                                if (!form) return;
-
-                                                function clearCustom(el){ if(!el) return; try{ el.setCustomValidity(''); }catch(e){} }
-
-                                                function checkSelectOrOther(sel, other, friendlyName){
-                                                    clearCustom(sel);
-                                                    clearCustom(other);
-                                                    if (!sel) return true;
-                                                    const val = String(sel.value || '').trim();
-                                                    if (val === ''){
-                                                        if (other && other.value && other.value.trim() !== '') return true;
-                                                        try { sel.setCustomValidity('Please select a ' + friendlyName + ' or enter one.'); } catch(e){}
-                                                        return false;
-                                                    }
-                                                    if (val === 'OTHER'){
-                                                        if (!other || !other.value || other.value.trim() === ''){
-                                                            try { other.setCustomValidity('Please enter a value for ' + friendlyName + ' when OTHER is selected.'); } catch(e){}
-                                                            return false;
-                                                        }
-                                                    }
-                                                    return true;
-                                                }
-
-                                                form.addEventListener('submit', function(ev){
-                                                    // clear any previous custom validity
-                                                    ['itemType','itemMfg','itemDesc','itemPN'].forEach(function(cls){
-                                                        clearCustom(form.querySelector('.' + cls + 'Select'));
-                                                        clearCustom(form.querySelector('.' + cls + 'Other'));
-                                                    });
-
-                                                    const typeOk = checkSelectOrOther(form.querySelector('.itemTypeSelect'), form.querySelector('.itemTypeOther'), 'Item Type');
-                                                    const mfgOk  = checkSelectOrOther(form.querySelector('.itemMfgSelect'), form.querySelector('.itemMfgOther'), 'Item Manufacturer');
-                                                    const descOk = checkSelectOrOther(form.querySelector('.itemDescSelect'), form.querySelector('.itemDescOther'), 'Description');
-                                                    const pnOk   = checkSelectOrOther(form.querySelector('.itemPNSelect'), form.querySelector('.itemPNOther'), 'Item P/N');
-
-                                                    const browserValid = form.checkValidity();
-
-                                                    if (!(typeOk && mfgOk && descOk && pnOk && browserValid)){
-                                                        ev.preventDefault();
-                                                        ev.stopPropagation();
-                                                        form.classList.add('was-validated');
-                                                        const firstInvalid = form.querySelector(':invalid');
-                                                        if (firstInvalid && typeof firstInvalid.focus === 'function') try{ firstInvalid.focus(); }catch(e){}
-                                                        return false;
-                                                    }
-                                                    form.classList.add('was-validated');
-                                                }, false);
-                                            }());
-                                        </script>
                                     </div>
                                     <% if(mbomItemData.length != 0){ %>
                                         <p class="text-muted m-b-30"></p>
@@ -1470,11 +1289,7 @@
                                                                 <td><%= String(mbomItemData[i].shipLoose).toUpperCase() === 'Y' ? 'Yes' : 'No' %></td>
                                                                 <td>
                                                                     <input id="copyButton" type="submit" value="Copy" class="btn btn-md btn-outline-secondary waves-effect waves-light" formaction="../copyItem/?itemSumID=<%= mbomItemData[i].itemSumID%>"/>
-                                                                    <% if(mbomItemData[i].userItemID != null){%>
-                                                                        <input id="editButton" type="submit" value="Edit" class="btn btn-md btn-outline-warning waves-effect waves-light" formaction="../editUserItem/?itemSumID=<%= mbomItemData[i].itemSumID%>&userItemID=<%=mbomItemData[i].userItemID%>"/>
-                                                                    <% }else{ %>
-                                                                        <input id="editButton" type="submit" value="Edit" class="btn btn-md btn-outline-warning waves-effect waves-light" formaction="../editComItem/?itemSumID=<%= mbomItemData[i].itemSumID%>&comItemID=<%=mbomItemData[i].comItemID%>"/>
-                                                                    <% } %>
+                                                                    <input id="editButton" type="submit" value="Edit" class="btn btn-md btn-outline-warning waves-effect waves-light" formaction="../editComItem/?itemSumID=<%= mbomItemData[i].itemSumID%>&comItemID=<%=mbomItemData[i].comItemID%>"/>
                                                                     <input id="deleteButton" type="submit" value="Delete" class="btn btn-md btn-outline-danger waves-effect waves-light" formaction="../deleteItem/?itemSumID=<%= mbomItemData[i].itemSumID %>"/>
                                                                 </td>
                                                             </tr>

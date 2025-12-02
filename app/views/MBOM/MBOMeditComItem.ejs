@@ -108,31 +108,87 @@
                                                     <% if(mbomItemData) { %>
                                                         <input type="text" name="itemSumID" class="form-control" value="<%= mbomItemData[0].itemSumID %>" hidden="hidden" >
                                                     <% } %>
+                                                    <% // Provide mapping JSON for client-side dependent selects (mfg, desc, pn)
+                                                        const mfgByType = {};
+                                                        const mfgSet = new Set();
+                                                        for (let it of (comItemData || [])) {
+                                                            if (!it || !it.itemType) continue;
+                                                            if (!mfgByType[it.itemType]) mfgByType[it.itemType] = new Set();
+                                                            if (it.itemMfg && String(it.itemMfg).toUpperCase() !== 'OTHER') {
+                                                                mfgByType[it.itemType].add(it.itemMfg);
+                                                                mfgSet.add(it.itemMfg);
+                                                            }
+                                                        }
+                                                        const mfgByTypeObj = {};
+                                                        for (let t of Object.keys(mfgByType)) mfgByTypeObj[t] = Array.from(mfgByType[t]).sort();
+                                                        const safeMfgJson = JSON.stringify(mfgByTypeObj).replace(/</g, '\u003c').replace(/'/g, '&#39;');
+
+                                                        const descByPair = {};
+                                                        const allDescSet = new Set();
+                                                        for (let it of (comItemData || [])) {
+                                                            if (!it || !it.itemType) continue;
+                                                            const t = it.itemType;
+                                                            const m = it.itemMfg || '';
+                                                            const d = it.itemDesc || '';
+                                                            if (d) allDescSet.add(d);
+                                                            const key = t + '||' + m;
+                                                            if (!descByPair[key]) descByPair[key] = new Set();
+                                                            if (d && String(d).toUpperCase() !== 'OTHER') descByPair[key].add(d);
+                                                        }
+                                                        const descByPairObj = {};
+                                                        for (let k of Object.keys(descByPair)) descByPairObj[k] = Array.from(descByPair[k]).sort();
+                                                        const allDescList = Array.from(allDescSet).sort();
+                                                        const safeDescJson = JSON.stringify({ byPair: descByPairObj, all: allDescList }).replace(/</g, '\u003c').replace(/'/g, '&#39;');
+
+                                                        const pnByTriplet = {};
+                                                        const allPnSet = new Set();
+                                                        for (let it of (comItemData || [])) {
+                                                            if (!it || !it.itemType) continue;
+                                                            const t = it.itemType;
+                                                            const m = it.itemMfg || '';
+                                                            const d = it.itemDesc || '';
+                                                            const p = it.itemPN || '';
+                                                            if (p) allPnSet.add(p);
+                                                            const key = t + '||' + m + '||' + d;
+                                                            if (!pnByTriplet[key]) pnByTriplet[key] = new Set();
+                                                            if (p && String(p).toUpperCase() !== 'OTHER') pnByTriplet[key].add(p);
+                                                        }
+                                                        const pnByTripletObj = {};
+                                                        for (let k of Object.keys(pnByTriplet)) pnByTripletObj[k] = Array.from(pnByTriplet[k]).sort();
+                                                        const allPnList = Array.from(allPnSet).sort();
+                                                        const safePnJson = JSON.stringify({ byTriplet: pnByTripletObj, all: allPnList }).replace(/</g, '\u003c').replace(/'/g, '&#39;');
+                                                    %>
+                                                    <div id="mfg-data" style="display:none;" data-mfg='<%= safeMfgJson %>'></div>
+                                                    <div id="desc-data" style="display:none;" data-desc='<%= safeDescJson %>'></div>
+                                                    <div id="pn-data" style="display:none;" data-pn='<%= safePnJson %>'></div>
                                                     <div class="row">
-                                                        <div class="col-sm-1">
-                                                            <label for="example-text-input" class="col-form-label">Qty</label>
-                                                            <input type="number" min="1" name="itemQty" class="form-control" value="<%= mbomItemData[0].itemQty%>" placeholder="#" autocomplete="off" required/>
+                                                        <div class="col-md-1">
+                                                            <label for="itemQty" class="col-form-label">Qty</label>
+                                                            <input name="itemQty" type="number" min="1" max="99" step="1" class="form-control" value="<%= mbomItemData[0].itemQty %>" placeholder="#" autocomplete="off" style="width:60px; height:38px;" required/>
                                                         </div>
-                                                        <div class="col-sm-2">
-                                                            <label for="example-text-input" class="col-form-label">Item Type</label>
-                                                            <select class="form-control select2" id="itemEditSelect" name="itemType" required>
-                                                                <option value="">Select</option>
-                                                                <% let itemTypes = new Set();%>
-                                                                <% for(let el of comItemData){
-                                                                    itemTypes.add(el.itemType);
-                                                                } %>
-                                                                <% for(let el of itemTypes){ %>
-                                                                    <% if(el == editData.itemType){ %>
-                                                                        <option value="<%= el%>" selected><%=el%></option>
-                                                                    <% } else { %>
-                                                                        <option value="<%= el%>"><%=el%></option>
+
+                                                        <div class="col-md-2">
+                                                            <label class="col-form-label">Item Type</label>
+                                                            <select class="form-control itemTypeSelect" id="itemEditSelect" name="itemTypeSelect" required>
+                                                                <option value="">Select Item Type</option>
+                                                                    <% let itemTypes = new Set();%>
+                                                                    <% for(let el of (comItemData || [])){ if(el && el.itemType) itemTypes.add(el.itemType); } %>
+                                                                    <% const sortedItemTypes = Array.from(itemTypes).sort(); %>
+                                                                    <% for(let el of sortedItemTypes){ %>
+                                                                        <% if(el == editData.itemType){ %>
+                                                                            <option value="<%= el%>" selected><%=el%></option>
+                                                                        <% } else { %>
+                                                                            <option value="<%= el%>"><%=el%></option>
+                                                                        <% } %>
                                                                     <% } %>
-                                                                <% } %>
+                                                                <option value="OTHER">OTHER</option>
                                                             </select>
+                                                            <input type="text" name="itemTypeOther" class="form-control itemTypeOther" id="otherItemType" value="" placeholder="Item Type Here" style="display:none; margin-top:.5rem;" autocomplete="off" />
+                                                            <input type="hidden" name="itemType" class="itemTypeHidden" value="<%= editData.itemType %>" />
                                                         </div>
                                                         <div class="col-sm-2">
                                                             <label for="example-text-input" class="col-form-label">Item Mfg.</label>
-                                                            <select class="form-control select2" id="mfgEditSelect" name="itemMfg" required>
+                                                            <select class="form-control select2 itemMfgSelect" id="mfgEditSelect" name="itemMfgSelect" required>
                                                                 <option data-parent="Select" value="Select">Select</option>
                                                                 <% let itemMfg = new Set();%>
                                                                 <% for(let el of comItemData){
@@ -145,11 +201,14 @@
                                                                         <option data-parent="<%=el.split('|')[0]%>" value="<%= el%>"><%= el.split('|')[1]%></option>
                                                                     <% } %>
                                                                 <% } %>
+                                                                <option value="OTHER">OTHER</option>
                                                             </select>
+                                                            <input type="text" name="itemMfgOther" class="form-control itemMfgOther" id="otherMfgType" value="" placeholder="Type Mfg. Here" style="display:none; margin-top:.5rem;" autocomplete="off" />
+                                                            <input type="hidden" name="itemMfg" class="itemMfgHidden" value="<%= editData.itemMfg %>" />
                                                         </div>
                                                         <div class="col-sm-3">
                                                             <label for="example-text-input" class="col-form-label">Description</label>
-                                                            <select class="form-control" id="descEditSelect" name="itemDesc" required>
+                                                            <select class="form-control itemDescSelect" id="descEditSelect" name="itemDescSelect" required>
                                                                 <option data-parent="Select" value="Select">Select</option>
                                                                 <% for(let el of comItemData){ %>
                                                                     <% if(el.itemDesc == editData.itemDesc){%>
@@ -158,27 +217,39 @@
                                                                         <option data-parent="<%=el.itemType%>|<%=el.itemMfg%>" value="<%=el.itemType%>|<%=el.itemMfg%>|<%= el.itemDesc%>"><%=el.itemDesc%></option>
                                                                     <% } %>
                                                                 <% } %>
+                                                                <option value="OTHER">OTHER</option>
                                                             </select>
+                                                            <input type="text" name="itemDescOther" class="form-control itemDescOther" id="itemDescOther" value="" placeholder="Type Description Here" style="display:none; margin-top:.5rem;" autocomplete="off" />
+                                                            <input type="hidden" name="itemDesc" class="itemDescHidden" value="<%= editData.itemDesc %>" />
                                                         </div>
-                                                        <div class="col-sm-2">
+
+                                                        <div class="col-md-2">
                                                             <label for="example-text-input" class="col-form-label">P/N</label>
-                                                            <select class="form-control" id="pnEditSelect" name="itemPN">
+                                                            <select class="form-control itemPNSelect" id="pnEditSelect" name="itemPNSelect">
                                                                 <option data-parent="Select" value="Select">Select</option>
                                                                 <% for(let el of comItemData){ %>
-                                                                <option data-parent="<%=el.itemType%>|<%=el.itemMfg%>|<%= el.itemDesc%>" value="<%=el.itemType%>|<%=el.itemMfg%>|<%= el.itemDesc%>|<%=el.itemPN%>"><%=el.itemPN%></option>
+                                                                    <% if(el.itemPN == editData.itemPN && el.itemDesc == editData.itemDesc && el.itemMfg == editData.itemMfg && el.itemType == editData.itemType){ %>
+                                                                        <option data-parent="<%=el.itemType%>|<%=el.itemMfg%>|<%= el.itemDesc%>" value="<%=el.itemType%>|<%=el.itemMfg%>|<%= el.itemDesc%>|<%=el.itemPN%>" selected><%=el.itemPN%></option>
+                                                                    <% } else { %>
+                                                                        <option data-parent="<%=el.itemType%>|<%=el.itemMfg%>|<%= el.itemDesc%>" value="<%=el.itemType%>|<%=el.itemMfg%>|<%= el.itemDesc%>|<%=el.itemPN%>"><%=el.itemPN%></option>
+                                                                    <% } %>
                                                                 <% } %>
+                                                                <option value="OTHER">OTHER</option>
                                                             </select>
-                                                        </div>
-                                                        <div class="col-sm-2" style="margin-top: 2rem; padding-left: 3.5rem;">
-                                                            <% if(mbomItemData[0].shipLoose == 'Y'){ %>
-                                                                <input class="form-check-input" type="checkbox" name="editShipLoose" id="editShipLoose" value="true" style="margin-top: .7rem;" checked="checked"/>
-                                                                <label for="editShipLoose" class="col-form-label">Ship Loose Item?</label>
-                                                            <% } else { %>
-                                                                <input class="form-check-input" type="checkbox" name="editShipLoose" id="editShipLoose" value="true" style="margin-top: .7rem;"/>
-                                                                <label for="editShipLoose" class="col-form-label">Ship Loose Item?</label>
-                                                            <% } %>
+                                                            <input type="text" name="itemPNOther" class="form-control itemPNOther" id="itemPNOther" value="" placeholder="Type P/N Here" style="display:none; margin-top:.5rem;" autocomplete="off" />
+                                                            <input type="hidden" name="itemPN" class="itemPNHidden" value="<%= editData.itemPN %>" />
                                                         </div>
                                                     </div>
+                                                    <div class="col-sm-2" style="margin-top: 2rem; padding-left: 3.5rem;">
+                                                        <% if(mbomItemData[0].shipLoose == 'Y'){ %>
+                                                            <input class="form-check-input" type="checkbox" name="editShipLoose" id="editShipLoose" value="true" style="margin-top: .7rem;" checked="checked"/>
+                                                            <label for="editShipLoose" class="col-form-label">Ship Loose Item?</label>
+                                                        <% } else { %>
+                                                            <input class="form-check-input" type="checkbox" name="editShipLoose" id="editShipLoose" value="true" style="margin-top: .7rem;"/>
+                                                            <label for="editShipLoose" class="col-form-label">Ship Loose Item?</label>
+                                                        <% } %>
+                                                    </div>
+
                                                     <div class="row justify-content-center">
                                                         <div class="col-2" style="padding-top:5%;">
                                                             <input id="uploadBtn" type="submit" value="Save" class="btn-block btn-lg btn-outline-success waves-effect waves-light" onclick=""/>
@@ -208,8 +279,9 @@
             });
         </script>
 
+        
+
         <!-- User developed scripts -->
-        <script src="/public/assets/js/mbomDragDrop.js"></script>
         <script src="/public/assets/js/mbomFilterDropdown.js"></script>
 
         </body>

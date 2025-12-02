@@ -134,6 +134,32 @@
 		try { $el.trigger('change.select2'); } catch (e) { $el.trigger('change'); }
 	}
 
+	// Try to set a select's value repeatedly until it remains stable.
+	// Useful when other scripts (Select2 init or later wiring) may re-initialize
+	// the control and overwrite programmatic values. Attempts are bounded.
+	function prefillSelectWithRetry($select, desiredVal, attemptsLeft, delayMs) {
+		attemptsLeft = typeof attemptsLeft === 'number' ? attemptsLeft : 8;
+		delayMs = typeof delayMs === 'number' ? delayMs : 100;
+		if (!$select || !$select.length) return;
+
+		try { $select.val(desiredVal); } catch (e) {}
+		triggerSelect2($select);
+
+		// After a short delay, verify the underlying select still has the desired value.
+		setTimeout(function(){
+			try {
+				var cur = $select.val();
+				if (String(cur) === String(desiredVal) || attemptsLeft <= 1) {
+					// stable or out of attempts — ensure final trigger
+					try { $select.trigger('change'); } catch (e) {}
+					return;
+				}
+			} catch (e) {}
+			// Retry
+			prefillSelectWithRetry($select, desiredVal, attemptsLeft - 1, delayMs);
+		}, delayMs);
+	}
+
 	function graySelect($el, disabled) {
 		$el.prop('disabled', !!disabled);
 		// add a class so CSS can gray it; also try to adjust inline style lightly
@@ -368,8 +394,25 @@
 			var $form = $t.closest('form');
 			var $mfg = $form.find('.itemMfgSelect');
 			if (!$mfg.length) return;
+
+			// If this form has hidden canonical values (edit flow), prefer them when initializing
+			var hiddenType = ($form.find('.itemTypeHidden').length ? String($form.find('.itemTypeHidden').val() || '') : '');
+			var hiddenMfg = ($form.find('.itemMfgHidden').length ? String($form.find('.itemMfgHidden').val() || '') : '');
+			var hiddenDesc = ($form.find('.itemDescHidden').length ? String($form.find('.itemDescHidden').val() || '') : '');
+			var hiddenPN = ($form.find('.itemPNHidden').length ? String($form.find('.itemPNHidden').val() || '') : '');
+
+			// Set the item type select to the hidden value first (if present) so dependent population works
+			if (hiddenType) {
+				try { prefillSelectWithRetry($t, hiddenType); } catch (e) {}
+			}
+
 			var val = $t.val();
 			populateMfgForType($mfg, val);
+
+			// If there's a hiddenMfg (edit), select it in the new mfg options (use retry to survive re-inits)
+			if (hiddenMfg) {
+				try { prefillSelectWithRetry($mfg, hiddenMfg); } catch (e) {}
+			}
 			// ensure OTHER free input is enabled/disabled correctly
 			var $other = $form.find('.itemMfgOther');
 			if ($other.length) {
@@ -393,6 +436,10 @@
 			if ($desc.length) {
 				loadDescMap();
 				populateDescForTypeMfg($desc, $t.val(), $mfg.val());
+					// If hiddenDesc present, select it
+					if (hiddenDesc) {
+						try { prefillSelectWithRetry($desc, hiddenDesc); } catch (e) {}
+					}
 				var $descOtherInit = $form.find('.itemDescOther');
 				if ($descOtherInit.length) {
 					if ($desc.val() === 'OTHER') $descOtherInit.prop('disabled', false).prop('required', true).removeClass('disabled'); else $descOtherInit.prop('disabled', true).prop('required', false).val('').addClass('disabled');
@@ -402,11 +449,20 @@
 				if ($pnInit.length) {
 					loadPnMap();
 					populatePnForTriplet($pnInit, $t.val(), $mfg.val(), $desc.val());
+						// If hiddenPN present, select it (use retry helper)
+						if (hiddenPN) {
+							try { prefillSelectWithRetry($pnInit, hiddenPN); } catch (e) {}
+						}
 					var $pnOtherInit = $form.find('.itemPNOther');
 					if ($pnOtherInit.length) {
 						if ($pnInit.val() === 'OTHER') $pnOtherInit.prop('disabled', false).prop('required', true).removeClass('disabled'); else $pnOtherInit.prop('disabled', true).prop('required', false).val('').addClass('disabled');
 					}
 				}
+			}
+
+			// If any hidden canonical value was present, trigger change to ensure all downstreams update
+			if (hiddenType || hiddenMfg || hiddenDesc || hiddenPN) {
+				try { $t.trigger('change'); $mfg.trigger('change'); $desc.trigger('change'); } catch (e) {}
 			}
 		});
 
@@ -438,6 +494,152 @@
 			// Update P/N row after window.load population
 			updatePnRow($form);
 		});
+	});
+
+	/* Additional UI wiring moved from templates into this shared asset:
+	 - Uncommon row visibility (shows when any primary field is OTHER or has manual text)
+	 - Assign-section row toggles (show/hide, check/uncheck all, disable ship-loose)
+	 - Form validation helper for Add-Item forms (check select or OTHER has value)
+	 - Pre-submit copy for edit forms that use hidden fields (.itemTypeHidden etc)
+	*/
+
+	function initUncommonRow() {
+		function updateUncommonForForm($form) {
+			var show = false;
+			var t = $form.find('.itemTypeSelect').val();
+			var m = $form.find('.itemMfgSelect').val();
+			var d = $form.find('.itemDescSelect').val();
+			var p = $form.find('.itemPNSelect').val();
+			if (t === 'OTHER' || m === 'OTHER' || d === 'OTHER' || p === 'OTHER') show = true;
+			var $typeOther = $form.find('.itemTypeOther'); if ($typeOther.length && $typeOther.val() && $typeOther.val().trim() !== '') show = true;
+			var $mfgOther = $form.find('.itemMfgOther'); if ($mfgOther.length && $mfgOther.val() && $mfgOther.val().trim() !== '') show = true;
+			var $descOther = $form.find('.itemDescOther'); if ($descOther.length && $descOther.val() && $descOther.val().trim() !== '') show = true;
+			var $pnOther = $form.find('.itemPNOther'); if ($pnOther.length && $pnOther.val() && $pnOther.val().trim() !== '') show = true;
+			var $row = $('#uncommonRow');
+			if ($row.length) { $row.toggle(show); }
+		}
+
+		$(document).on('change input', '.itemTypeSelect, .itemMfgSelect, .itemDescSelect, .itemPNSelect, .itemTypeOther, .itemMfgOther, .itemDescOther, .itemPNOther', function(){
+			var $form = $(this).closest('form'); if (!$form.length) $form = $(document);
+			updateUncommonForForm($form);
+		});
+
+		// initial pass for existing forms
+		$('form').each(function(){ updateUncommonForForm($(this)); });
+	}
+
+	function initAssignSection() {
+		function updateAssignState($sel) {
+			var $form = $sel.closest('form');
+			var val = $sel.val();
+			var $assignRow = $('#assignSection');
+			var $checkAllCol = $('#checkAllCol');
+			var $uncheckAllCol = $('#uncheckAllCol');
+			var shipLoose = document.getElementById('shipLooseCheckbox');
+			if (val === 'assign') {
+				if ($assignRow.length) $assignRow.show();
+				if ($checkAllCol.length) $checkAllCol.show();
+				if ($uncheckAllCol.length) $uncheckAllCol.show();
+				if (shipLoose) { shipLoose.disabled = true; shipLoose.checked = false; }
+			} else {
+				if ($assignRow.length) $assignRow.hide();
+				if ($checkAllCol.length) $checkAllCol.hide();
+				if ($uncheckAllCol.length) $uncheckAllCol.hide();
+				// clear checks
+				$assignRow.find('input[type=checkbox]').prop('checked', false);
+				if (shipLoose) shipLoose.disabled = false;
+			}
+		}
+
+		$(document).on('change', '.itemSectionSelect', function(){ updateAssignState($(this)); });
+		$(document).on('click', '#checkAllBtn', function(){ $('#assignSection').find('input[type=checkbox]').prop('checked', true); });
+		$(document).on('click', '#uncheckAllBtn', function(){ $('#assignSection').find('input[type=checkbox]').prop('checked', false); });
+
+		// initial update
+		$('.itemSectionSelect').each(function(){ updateAssignState($(this)); });
+	}
+
+	function initFormValidationAndSubmitCopy() {
+		function clearCustom(el){ try{ if(el && el.setCustomValidity) el.setCustomValidity(''); } catch(e){} }
+
+		function checkSelectOrOther(sel, other, friendlyName){
+			clearCustom(sel); clearCustom(other);
+			if (!sel) return true;
+			var val = String(sel.value || '').trim();
+			if (val === ''){
+				if (other && other.value && other.value.trim() !== '') return true;
+				try{ if (sel.setCustomValidity) sel.setCustomValidity('Please select a ' + friendlyName + ' or enter one.'); }catch(e){}
+				return false;
+			}
+			if (val === 'OTHER'){
+				if (!other || !other.value || other.value.trim() === ''){
+					try{ if (other && other.setCustomValidity) other.setCustomValidity('Please enter a value for ' + friendlyName + ' when OTHER is selected.'); }catch(e){}
+					return false;
+				}
+			}
+			return true;
+		}
+
+		// Add-Item form validation (same behavior as previous inline script)
+		$(document).on('submit', '#addItemForm', function(ev){
+			var form = this;
+			var typeOk = checkSelectOrOther(form.querySelector('.itemTypeSelect'), form.querySelector('.itemTypeOther'), 'Item Type');
+			var mfgOk  = checkSelectOrOther(form.querySelector('.itemMfgSelect'), form.querySelector('.itemMfgOther'), 'Item Manufacturer');
+			var descOk = checkSelectOrOther(form.querySelector('.itemDescSelect'), form.querySelector('.itemDescOther'), 'Description');
+			var pnOk   = checkSelectOrOther(form.querySelector('.itemPNSelect'), form.querySelector('.itemPNOther'), 'Item P/N');
+			var browserValid = form.checkValidity ? form.checkValidity() : true;
+			if (!(typeOk && mfgOk && descOk && pnOk && browserValid)){
+				ev.preventDefault(); ev.stopPropagation();
+				form.classList.add('was-validated');
+				var firstInvalid = form.querySelector(':invalid'); if (firstInvalid && typeof firstInvalid.focus === 'function') try{ firstInvalid.focus(); }catch(e){}
+				return false;
+			}
+			form.classList.add('was-validated');
+		});
+
+		// Pre-submit copy for edit forms that use hidden fields named .itemTypeHidden/.itemMfgHidden/.itemDescHidden/.itemPNHidden
+		$(document).on('submit', '.itemForm', function(){
+			var $form = $(this);
+			// itemType
+			var hiddenType = $form.find('.itemTypeHidden');
+			var typeSel = $form.find('.itemTypeSelect');
+			var typeOther = $form.find('.itemTypeOther');
+			if (hiddenType.length){
+				if (typeSel.length && typeSel.val() === 'OTHER' && typeOther.length && typeOther.val().trim()) hiddenType.val(typeOther.val().trim());
+				else if (typeSel.length) hiddenType.val(typeSel.val() || '');
+			}
+			// itemMfg
+			var hiddenMfg = $form.find('.itemMfgHidden');
+			var mfgSel = $form.find('.itemMfgSelect');
+			var mfgOther = $form.find('.itemMfgOther');
+			if (hiddenMfg.length){
+				if (mfgSel.length && (mfgSel.val() === 'OTHER' || String(mfgSel.val()).endsWith('|OTHER')) && mfgOther.length && mfgOther.val().trim()) hiddenMfg.val(mfgOther.val().trim());
+				else if (mfgSel.length){ var parts = String(mfgSel.val()).split('|'); hiddenMfg.val(parts.length>1? parts[1] : mfgSel.val()); }
+			}
+			// itemDesc
+			var hiddenDesc = $form.find('.itemDescHidden');
+			var descSel = $form.find('.itemDescSelect');
+			var descOther = $form.find('.itemDescOther');
+			if (hiddenDesc.length){
+				if (descSel.length && descSel.val() === 'OTHER' && descOther.length && descOther.val().trim()) hiddenDesc.val(descOther.val().trim());
+				else if (descSel.length){ var parts = String(descSel.val()).split('|'); hiddenDesc.val(parts.slice(2).join('|') || descSel.val()); }
+			}
+			// itemPN
+			var hiddenPN = $form.find('.itemPNHidden');
+			var pnSel = $form.find('.itemPNSelect');
+			var pnOther = $form.find('.itemPNOther');
+			if (hiddenPN.length){
+				if (pnSel.length && pnSel.val() === 'OTHER' && pnOther.length && pnOther.val().trim()) hiddenPN.val(pnOther.val().trim());
+				else if (pnSel.length){ var parts = String(pnSel.val()).split('|'); hiddenPN.val(parts.slice(3).join('|') || pnSel.val()); }
+			}
+		});
+	}
+
+	// wire additional features on DOM ready
+	$(function(){
+		initUncommonRow();
+		initAssignSection();
+		initFormValidationAndSubmitCopy();
 	});
 
 })(jQuery);
