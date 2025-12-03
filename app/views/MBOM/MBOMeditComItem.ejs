@@ -110,6 +110,8 @@
                                                             <input type="text" name="numSections" class="form-control" value="<%= mbomData.numSections %>" id="numSections" hidden="hidden">
                                                         </div>
                                                     <% } %>
+                                                    <!-- Hidden wiring for current item status (read-only) -->
+                                                    <input type="hidden" id="itemStatus" value="<%= (typeof editData !== 'undefined' && editData && editData.status) ? editData.status : '' %>" />
                                                     <% if(mbomItemData) { %>
                                                         <input type="text" name="itemSumID" class="form-control" value="<%= mbomItemData[0].itemSumID %>" hidden="hidden" >
                                                     <% } %>
@@ -300,6 +302,14 @@
                                                         </div>
                                                     </div>
 
+                                                    <div class="row" id="obsoleteWarningRow" style="display:none;">
+                                                        <div class="col text-center p-2">
+                                                            <div class="alert alert-danger" role="alert">
+                                                                <strong>Warning:</strong> This item is marked <strong>OBSOLETE</strong>. Do not use in new designs.
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
                                                     <div class="row justify-content-center">
                                                         <div class="col-2 text-center">
                                                             <input id="uploadBtn" type="submit" value="Save" class="btn btn-block btn-lg btn-success waves-effect waves-light" onclick=""/>
@@ -330,6 +340,37 @@
                     addDisplayAllBtn: 'btn btn-secondary'
                 });
             });
+        </script>
+
+        <script>
+            (function(){
+                try {
+                    var statusElem = document.getElementById('itemStatus');
+                    var status = statusElem ? String(statusElem.value || '').toUpperCase() : '';
+                    var warningRow = document.getElementById('obsoleteWarningRow');
+                    if (status === 'OBSOLETE' && warningRow) {
+                        warningRow.style.display = 'block';
+                    }
+
+                    var form = document.getElementById('itemForm');
+                    if (form) {
+                        form.addEventListener('submit', function (e) {
+                            // Re-check in case status field is modified elsewhere
+                            var s = (document.getElementById('itemStatus') ? String(document.getElementById('itemStatus').value || '') : '').toUpperCase();
+                            if (s === 'OBSOLETE') {
+                                var ok = confirm('This item is marked OBSOLETE. Are you sure you want to save changes?');
+                                if (!ok) {
+                                    e.preventDefault();
+                                    return false;
+                                }
+                            }
+                        });
+                    }
+                } catch (err) {
+                    // graceful fallback - don't block the form
+                    console && console.error && console.error('OBSOLETE wiring error', err);
+                }
+            })();
         </script>
 
         

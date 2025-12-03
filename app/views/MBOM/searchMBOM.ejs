@@ -968,20 +968,26 @@
                                     <h4 class="mt-0 header-title">Item Summary</h4>
                                     <div class="card-body">
                                         <form id="addItemForm" class="g-2 needs-validation" action="/createComItem" method="POST" novalidate>
-                                            <% // Build distinct item types and manufacturer lists from available data %>
+                                            <% // Build distinct item types and manufacturer lists from available data,
+                                               // excluding items marked OBSOLETE so dropdowns don't show them %>
                                             <% 
+                                                // Filter out OBSOLETE common items
+                                                const filteredCom = (comItemData || []).filter(function(it){
+                                                    return !(it && it.status && String(it.status).toUpperCase() === 'OBSOLETE');
+                                                });
+
                                                 const itemTypeSet = new Set();
-                                                // Only include item types from the common items table (mbomComItem)
-                                                for (let it of (comItemData || [])) if (it && it.itemType) itemTypeSet.add(it.itemType);
+                                                // Only include item types from the (non-obsolete) common items
+                                                for (let it of filteredCom) if (it && it.itemType) itemTypeSet.add(it.itemType);
                                                 const itemTypes = Array.from(itemTypeSet).sort();
 
                                                 const mfgSet = new Set();
-                                                // Only include manufacturers from the common items table (mbomComItem)
-                                                for (let it of (comItemData || [])) if (it && it.itemMfg) mfgSet.add(it.itemMfg);
+                                                // Only include manufacturers from the (non-obsolete) common items
+                                                for (let it of filteredCom) if (it && it.itemMfg) mfgSet.add(it.itemMfg);
                                                 const mfgList = Array.from(mfgSet).sort();
                                                 // Build per-type manufacturer mapping and expose as safe JSON for client-side use
                                                 const mfgByType = {};
-                                                for (let it of (comItemData || [])) {
+                                                for (let it of filteredCom) {
                                                     if (!it || !it.itemType) continue;
                                                     if (!mfgByType[it.itemType]) mfgByType[it.itemType] = new Set();
                                                     if (it.itemMfg && String(it.itemMfg).toUpperCase() !== 'OTHER') mfgByType[it.itemType].add(it.itemMfg);
@@ -992,7 +998,7 @@
                                                 // Build description mapping keyed by '<type>||<mfg>' for client-side description population
                                                 const descByPair = {};
                                                 const allDescSet = new Set();
-                                                for (let it of (comItemData || [])) {
+                                                for (let it of filteredCom) {
                                                     if (!it || !it.itemType) continue;
                                                     const t = it.itemType;
                                                     const m = it.itemMfg || '';
@@ -1009,7 +1015,7 @@
                                                 // Build P/N mapping keyed by '<type>||<mfg>||<desc>' for client-side P/N population
                                                 const pnByTriplet = {};
                                                 const allPnSet = new Set();
-                                                for (let it of (comItemData || [])) {
+                                                for (let it of filteredCom) {
                                                     if (!it || !it.itemType) continue;
                                                     const t = it.itemType;
                                                     const m = it.itemMfg || '';
@@ -1106,8 +1112,8 @@
                                                 </div>
                                             </div>
 
-                                            <% // build unit list from existing common items for unit of issue dropdown %>
-                                            <% const unitSet = new Set(); for (let it of (comItemData || [])) if (it && it.unitOfIssue) unitSet.add(it.unitOfIssue); const unitList = Array.from(unitSet).sort(); %>
+                                            <% // build unit list from existing common items for unit of issue dropdown (exclude OBSOLETE)
+                                                const unitSet = new Set(); for (let it of (filteredCom || [])) if (it && it.unitOfIssue) unitSet.add(it.unitOfIssue); const unitList = Array.from(unitSet).sort(); %>
                                             <div id="uncommonRow" class="row" style="display:none;">
                                                 <div class="col-md-4">
                                                     <label class="col-form-label">Unit Of Issue</label>

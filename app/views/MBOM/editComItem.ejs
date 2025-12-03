@@ -50,7 +50,6 @@
                                                 Fill out the following for each layout, and click "Save" afterwards
                                             </p>
                                             <p class="text-muted m-b-30"></p>
-                                            <h6>Commonly Used</h6>
                                             <form id="editComItemTableForm" class="editComItemTableForm" action="/editComItemTablePOST/?comItemID=<%=editComItemData.comItemID%>" method="POST">
                                                 <div class="form-group">
                                                     <div class="row">
@@ -80,52 +79,22 @@
                                                         </div>
                                                         <div class="col-sm-3">
                                                             <label for="example-text-input" class="col-form-label">Item Mfg.</label>
+                                                            <% // Single dropdown for manufacturer: values keep the itemType|itemMfg format for server compatibility %>
                                                             <select class="form-control select2" id="mfgSelect2" name="mfgSelect2">
-                                                                <% let userItemMfg = new Set();%>
-                                                                <% let other = new Set()%>
-                                                                <% for(let el of comItemData){
-                                                                    userItemMfg.add(el.itemType + "|" + el.itemMfg);
-                                                                } %>
-                                                                <% for(let el of comItemData){
-                                                                    other.add(el.itemType + "|" + "OTHER");
-                                                                } %>
-                                                                <% for(let el of userItemMfg){ %>
-                                                                    <% if(el == editComItemData.itemMfg){ %>
-                                                                        <% var notOther = true; %>
-                                                                        <option data-parent="<%=el.split('|')[0]%>" value="<%= el%>" selected><%= el.split('|')[1]%></option>
-                                                                    <% } else { %>
-                                                                    <option data-parent="<%=el.split('|')[0]%>" value="<%= el%>"><%= el.split('|')[1]%></option>
-                                                                    <% } %>
-                                                                <% } %>
-                                                                <% for(let el of other){ %>
-                                                                    <% if(!notOther){ %>
-                                                                    <option data-parent="<%=el.split('|')[0]%>" selected><%=el.split('|')[1]%></option>
-                                                                    <% } else { %>
-                                                                    <option data-parent="<%=el.split('|')[0]%>"><%=el.split('|')[1]%></option>]
-                                                                    <% } %>
-                                                                <% } %>
-                                                            </select>
-                                                            <select class="form-control select2" id="mfgList" name="mfgList">
                                                                 <option value="">Select</option>
-                                                                <% let userItemMfg2 = new Set();%>
-                                                                <% for(let el of comItemData){
-                                                                    userItemMfg2.add(el.itemMfg);
-                                                                } %>
-                                                                <% for(let el of userItemMfg2){ %>
-                                                                    <% if(el == editComItemData.itemMfg){ %>
-                                                                        <% var notOther = true; %>
-                                                                        <option value="<%= el%>" selected><%= el%></option>
-                                                                    <% } else {%>
-                                                                        <option value="<%= el%>"><%= el%></option>
+                                                                <% let userItemMfg = new Set(); %>
+                                                                <% for (let el of comItemData) { if (el && el.itemType) userItemMfg.add(el.itemType + '|' + (el.itemMfg || '')); } %>
+                                                                <% for (let el of Array.from(userItemMfg).sort()) { %>
+                                                                    <% const parts = String(el).split('|'); const mfg = parts[1] || ''; %>
+                                                                    <% if (mfg == editComItemData.itemMfg) { %>
+                                                                        <option data-parent="<%= parts[0] %>" value="<%= el %>" selected><%= mfg %></option>
+                                                                    <% } else { %>
+                                                                        <option data-parent="<%= parts[0] %>" value="<%= el %>"><%= mfg %></option>
                                                                     <% } %>
                                                                 <% } %>
-                                                                <% if(!notOther){ %>
-                                                                    <option selected="selected">OTHER</option>
-                                                                <% } else {%>
-                                                                    <option>OTHER</option>
-                                                                <% } %>
+                                                                <option value="OTHER">OTHER</option>
                                                             </select>
-                                                            <input type="text" name="otherMfgType" class="form-control" id="otherMfgType" value="<%=editComItemData.itemMfg%>" placeholder="Type Mfg. Here" style="display:none;" autocomplete="off"/>
+                                                            <input type="text" name="otherMfgType" class="form-control" id="otherMfgType" value="<%= editComItemData.itemMfg %>" placeholder="Type Mfg. Here" style="display:none;" autocomplete="off"/>
                                                         </div>
                                                         <div class="col-sm-6">
                                                             <label for="example-text-input" class="col-form-label">Description</label>
@@ -184,10 +153,22 @@
                                                                 <% } %>
                                                             </select>
                                                         </div>
+                                                        <div class="col-sm-2">
+                                                            <label for="statusSelect" class="col-form-label">Status</label>
+                                                            <select class="form-control select2" id="statusSelect" name="status">
+                                                                <% const curStatus = (editComItemData && editComItemData.status) ? String(editComItemData.status).toUpperCase() : 'COMMON'; %>
+                                                                <option value="Common" <%= curStatus === 'COMMON' ? 'selected' : '' %>>Common</option>
+                                                                <option value="Uncommon" <%= curStatus === 'UNCOMMON' ? 'selected' : '' %>>Uncommon</option>
+                                                                <option value="OBSOLETE" <%= curStatus === 'OBSOLETE' ? 'selected' : '' %>>OBSOLETE</option>
+                                                            </select>
+                                                        </div>
                                                     </div>
                                                     <div class="row justify-content-center">
                                                         <div class="col-2" style="padding-top:5%;">
-                                                            <input id="uploadBtn" type="submit" value="Save" class="btn-block btn-lg btn-outline-success waves-effect waves-light" onclick=""/>
+                                                            <input id="uploadBtn" type="submit" value="Save" class="btn-block btn-lg btn-outline-success waves-effect waves-light" />
+                                                        </div>
+                                                        <div class="col-2" style="padding-top:5%;">
+                                                            <a id="cancelBtn" href="../MBOM" class="btn-block btn-lg btn-outline-secondary waves-effect waves-light">Cancel</a>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -227,7 +208,46 @@
 </script>
 
 <!-- User developed scripts -->
-<script src="/public/assets/js/mbomDragDrop.js"></script>
+<script>
+    (function($){
+        function setItemTypeState(){
+            var v = $('#itemSelect2').val();
+            if (v === 'OTHER') {
+                $('#otherItemType').show().prop('disabled', false);
+            } else {
+                $('#otherItemType').hide().prop('disabled', true);
+            }
+        }
+        function setMfgState(){
+            var v = $('#mfgSelect2').val() || '';
+            // If value is exactly 'OTHER' or ends with '|OTHER'
+            if (v === 'OTHER' || v.toUpperCase().endsWith('|OTHER')) {
+                $('#otherMfgType').show().prop('disabled', false);
+            } else {
+                $('#otherMfgType').hide().prop('disabled', true);
+            }
+        }
+        $(function(){
+            setItemTypeState();
+            setMfgState();
+            $('#itemSelect2').on('change', setItemTypeState);
+            $('#mfgSelect2').on('change', setMfgState);
+
+            // Warn on OBSOLETE
+            $('#editComItemTableForm').on('submit', function(e){
+                var status = ($('#statusSelect').val() || '').toUpperCase();
+                if (status === 'OBSOLETE'){
+                    var ok = window.confirm('This item will be marked OBSOLETE and will be hidden from normal selection lists. Continue?');
+                    if (!ok) {
+                        e.preventDefault();
+                        return false;
+                    }
+                }
+                return true;
+            });
+        });
+    })(jQuery);
+</script>
 <script src="/public/assets/js/mbomFilterDropdown.js"></script>
 
 </body>

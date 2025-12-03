@@ -1315,7 +1315,8 @@ exports.editComItemTableGET = function(req, res) {
                     itemPN: row.itemPN,
                     unitOfIssue: row.unitOfIssue,
                     catCode: row.catCode,
-                    classCode: row.class
+                    classCode: row.class,
+                    status: row.status
                 }
             }
             //for each item in comItems, write to comItemData
@@ -1383,13 +1384,14 @@ exports.editComItemTablePOST = function(req, res) {
         itemPN: (req.body.itemPN).toUpperCase(),
         unitOfIssue: req.body.unitOfIssue,
         catCode: req.body.catCode,
+        status: (req.body.status && String(req.body.status).trim()) ? String(req.body.status).trim() : null,
         class: req.body.class
     };
 
     //Initial db query - update mbomComItems with user input at the given comItemID
     querySql("UPDATE " + database + "." + dbConfig.MBOM_common_items + " SET itemType = ?, itemMfg = ?, itemDesc = ?, " +
-        "itemPN = ?, unitOfIssue = ?, catCode = ?, class = ? WHERE comItemID = ?", [updateData.itemType, updateData.itemMfg,
-        updateData.itemDesc, updateData.itemPN, updateData.unitOfIssue, updateData.catCode, updateData.class, qs.comItemID])
+        "itemPN = ?, unitOfIssue = ?, catCode = ?, status = ?, class = ? WHERE comItemID = ?", [updateData.itemType, updateData.itemMfg,
+        updateData.itemDesc, updateData.itemPN, updateData.unitOfIssue, updateData.catCode, updateData.status, updateData.class, qs.comItemID])
         .then(() => {
             //redirect to the main mbom page
             res.locals.title = 'Edit Common Item';
@@ -1531,7 +1533,8 @@ exports.editComItem = function(req, res) {
                     itemType: row.itemType,
                     itemMfg: row.itemMfg,
                     itemDesc: row.itemDesc,
-                    itemPN: row.itemPN
+                    itemPN: row.itemPN,
+                    status: row.status
                 };
             }
             // cat/class codes (if any)

@@ -304,9 +304,66 @@
 
                                 <div class="card m-b-20 mbom-common-card" style="height:94%;">
                             <div class="card-body">
-                                <h4 class="mt-0 header-title">Commonly Used Items</h4>
+                                <h4 class="mt-0 header-title">Item Library</h4>
                                 <div class="row justify-content-center">
                                     <div class="col-sm-12">
+                                        <% // build unique lists and mapping for cascading filters %>
+                                        <% const _typeSet = new Set(); const _mfgSet = new Set(); %>
+                                        <% const _mfgByType = {}; const _statusByPair = {}; const _allStatusSet = new Set(); %>
+                                        <% for (let it of (comItemData || [])) {
+                                            if (!it) continue;
+                                            const t = it.itemType || '';
+                                            const m = it.itemMfg || '';
+                                            const s = it.status || '';
+                                            if (t) _typeSet.add(t);
+                                            if (m) _mfgSet.add(m);
+                                            if (t) {
+                                                if (!_mfgByType[t]) _mfgByType[t] = new Set();
+                                                if (m) _mfgByType[t].add(m);
+                                            }
+                                            const key = (t || '') + '||' + (m || '');
+                                            if (!_statusByPair[key]) _statusByPair[key] = new Set();
+                                            if (s) {
+                                                _statusByPair[key].add(s);
+                                                _allStatusSet.add(s);
+                                            }
+                                        } %>
+                                        <% const _types = Array.from(_typeSet).sort(); const _mfgs = Array.from(_mfgSet).sort(); %>
+                                        <% const _mfgByTypeObj = {}; for (let k of Object.keys(_mfgByType)) _mfgByTypeObj[k] = Array.from(_mfgByType[k]).sort(); %>
+                                        <% const _statusByPairObj = {}; for (let k of Object.keys(_statusByPair)) _statusByPairObj[k] = Array.from(_statusByPair[k]).sort(); %>
+                                        <% const safeMfgByType = JSON.stringify(_mfgByTypeObj).replace(/</g, '\u003c').replace(/'/g, '&#39;'); %>
+                                        <% const safeStatusByPair = JSON.stringify(_statusByPairObj).replace(/</g, '\u003c').replace(/'/g, '&#39;'); %>
+                                        <% const safeAllMfg = JSON.stringify(_mfgs).replace(/</g, '\u003c').replace(/'/g, '&#39;'); %>
+                                        <% const safeAllStatus = JSON.stringify(Array.from(_allStatusSet).sort()).replace(/</g, '\u003c').replace(/'/g, '&#39;'); %>
+
+                                        <div id="filters-data" style="display:none;"
+                                             data-mfg-by-type='<%= safeMfgByType %>'
+                                             data-status-by-pair='<%= safeStatusByPair %>'
+                                             data-all-mfg='<%= safeAllMfg %>'
+                                             data-all-status='<%= safeAllStatus %>'></div>
+
+                                        <div class="mb-2 d-flex align-items-center" style="gap:.5rem; flex-wrap:wrap;">
+                                            <input id="comItemSearch" type="search" class="form-control form-control-sm mbom-search" placeholder="Search items..." aria-label="Search items">
+                                            <select id="comItemTypeFilter" class="form-control form-control-sm" style="width:200px;">
+                                                <option value="">All Item Types</option>
+                                                <% for (let t of _types) { %>
+                                                    <option value="<%= t %>"><%= t %></option>
+                                                <% } %>
+                                            </select>
+                                            <select id="comItemMfgFilter" class="form-control form-control-sm" style="width:200px;">
+                                                <option value="">All Manufacturers</option>
+                                                <% for (let m of _mfgs) { %>
+                                                    <option value="<%= m %>"><%= m %></option>
+                                                <% } %>
+                                            </select>
+                                            <select id="comItemStatusFilter" class="form-control form-control-sm" style="width:160px;">
+                                                <option value="">All Statuses</option>
+                                                <% const _allStatusArr = Array.from(_allStatusSet).sort(); for (let s of _allStatusArr) { %>
+                                                    <option value="<%= s %>"><%= s %></option>
+                                                <% } %>
+                                            </select>
+                                        </div>
+
                                         <table id="mbomComItemTable" class="table table-hover table-sm" style="border-collapse: collapse; border-spacing: 0; width: 100%;">
                                             <thead>
                                             <tr class="header">
@@ -403,12 +460,139 @@
             });
         })();
 
-        // Initialize common items table
-        $('#mbomComItemTable').DataTable({
+        // Initialize common items table and wire up filters
+        var comTable = $('#mbomComItemTable').DataTable({
             "scrollCollapse": true,
             "paging": true,
             "pagingType": "simple",
-            "pageLength": 10
+            "pageLength": 10,
+            "dom": 'lrtip' // remove built-in filter input; we use the inline `#comItemSearch` next to filters
+        });
+
+        // Debounced search input for common items table
+        (function(){
+            var comTimer = null;
+            $('#comItemSearch').on('input', function(){
+                var val = this.value || '';
+                if (comTimer) clearTimeout(comTimer);
+                comTimer = setTimeout(function(){
+                    comTable.search(val).draw();
+                }, 180);
+            });
+        })();
+
+        // small helper to escape user input for regex-based column search
+        function escapeRegex(val) {
+            return val.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+        }
+
+        // parse server-side mapping data for cascading selects
+        var filtersData = (function(){
+            var el = document.getElementById('filters-data');
+            if (!el) return null;
+            try {
+                return {
+                    mfgByType: JSON.parse(el.getAttribute('data-mfg-by-type') || '{}'),
+                    statusByPair: JSON.parse(el.getAttribute('data-status-by-pair') || '{}'),
+                    allMfg: JSON.parse(el.getAttribute('data-all-mfg') || '[]'),
+                    allStatus: JSON.parse(el.getAttribute('data-all-status') || '[]')
+                };
+            } catch (e) { console.warn('Failed to parse filters-data', e); return null; }
+        })();
+
+        function populateSelect($sel, items, includeEmpty, emptyLabel, currentVal) {
+            $sel.empty();
+            var label = (typeof emptyLabel !== 'undefined' && emptyLabel !== null) ? emptyLabel : 'All';
+            if (includeEmpty) $sel.append($('<option>').attr('value','').text(label));
+            for (var i = 0; i < items.length; i++) {
+                var v = items[i];
+                var $opt = $('<option>').attr('value', v).text(v);
+                $sel.append($opt);
+            }
+            if (currentVal) $sel.val(currentVal);
+        }
+
+        function updateMfgOptions(type) {
+            var $mfg = $('#comItemMfgFilter');
+            if (!filtersData) return;
+            if (!type) {
+                populateSelect($mfg, filtersData.allMfg || [], true, 'All Manufacturers');
+                return;
+            }
+            var list = filtersData.mfgByType && filtersData.mfgByType[type] ? filtersData.mfgByType[type] : [];
+            populateSelect($mfg, list, true, 'All Manufacturers');
+        }
+
+        function updateStatusOptions(type, mfg) {
+            var $st = $('#comItemStatusFilter');
+            if (!filtersData) return;
+            var statuses = new Set();
+            if (type && mfg) {
+                var key = type + '||' + mfg;
+                (filtersData.statusByPair[key] || []).forEach(function(s){ statuses.add(s); });
+            } else if (type) {
+                var mlist = filtersData.mfgByType && filtersData.mfgByType[type] ? filtersData.mfgByType[type] : [];
+                for (var i = 0; i < mlist.length; i++) {
+                    var key2 = type + '||' + mlist[i];
+                    (filtersData.statusByPair[key2] || []).forEach(function(s){ statuses.add(s); });
+                }
+            } else if (mfg) {
+                // any type with this mfg
+                Object.keys(filtersData.mfgByType || {}).forEach(function(t){
+                    if ((filtersData.mfgByType[t] || []).indexOf(mfg) !== -1) {
+                        var key3 = t + '||' + mfg;
+                        (filtersData.statusByPair[key3] || []).forEach(function(s){ statuses.add(s); });
+                    }
+                });
+            } else {
+                (filtersData.allStatus || []).forEach(function(s){ statuses.add(s); });
+            }
+            var arr = Array.from(statuses).sort();
+            populateSelect($st, arr, true, 'All Statuses');
+        }
+
+        // initialize cascading selects state
+        if (filtersData) {
+            updateMfgOptions($('#comItemTypeFilter').val());
+            updateStatusOptions($('#comItemTypeFilter').val(), $('#comItemMfgFilter').val());
+        }
+
+        // Status filter: exact match on the Status column (zero-based index 6 in the table)
+        $('#comItemStatusFilter').on('change', function(){
+            var v = $(this).val() || '';
+            if (!v) {
+                comTable.column(6).search('').draw();
+            } else {
+                comTable.column(6).search('^' + escapeRegex(v) + '$', true, false).draw();
+            }
+        });
+
+        // Item Type filter (column index 1) — update Manufacturer and Status cascading lists
+        $('#comItemTypeFilter').on('change', function(){
+            var v = $(this).val() || '';
+            // update manufacturer options based on selected type
+            try { updateMfgOptions(v); } catch (e) { console.warn(e); }
+            // reset manufacturer selection after type change (user can pick a new one)
+            $('#comItemMfgFilter').val('');
+            // update status options for the new selection
+            try { updateStatusOptions(v, ''); } catch (e) { console.warn(e); }
+            if (!v) {
+                comTable.column(1).search('').draw();
+            } else {
+                comTable.column(1).search('^' + escapeRegex(v) + '$', true, false).draw();
+            }
+        });
+
+        // Manufacturer filter (column index 2) — update Status cascading list
+        $('#comItemMfgFilter').on('change', function(){
+            var v = $(this).val() || '';
+            var curType = $('#comItemTypeFilter').val() || '';
+            try { updateStatusOptions(curType, v); } catch (e) { console.warn(e); }
+            if (!v) {
+                comTable.column(2).search('').draw();
+            } else {
+                comTable.column(2).search('^' + escapeRegex(v) + '$', true, false).draw();
+            }
         });
     });
 </script>
