@@ -1884,6 +1884,7 @@ exports.editUserItem = function(req, res) {
         .then(() => {
             //render the editUserItem page with mbomItemData, mbomData, comItemData, userItemData, catCodeData, and classCodeData
             res.locals.title = 'Edit User Item';
+            // console.log('editUserItem userItemData:', userItemData);
             res.render('MBOM/editUserItem', {
                 mbomItemData: data,
                 mbomData: mbomData,
@@ -1916,93 +1917,171 @@ exports.editUserItemSave = function(req, res) {
     };
     let itemSumID = req.body.itemSumID;
     let userItemID;
+    let comItemID = null;
     let shipLooseCheck;
     if(req.body.editUserShipLoose)
         shipLooseCheck = 'Y';
     else
         shipLooseCheck = 'N';
-    let itemType = req.body.itemSelect2;
-    if (itemType == 'OTHER')
-        itemType = (req.body.otherItemType).toUpperCase();
-    let itemMfg;
-    let otherMfgDropdown = req.body.mfgList;
-    let mfgSelect = req.body.mfgSelect2;
-    if (mfgSelect == 'OTHER' || otherMfgDropdown == 'OTHER')
-        itemMfg = req.body.otherMfgType.toUpperCase();
-    else if (mfgSelect)
-        itemMfg = mfgSelect.split('|')[1];
-    else
-        itemMfg = otherMfgDropdown;
+    // Use only the template select names and manual OTHER inputs.
+    // If the selected value is 'OTHER', use the corresponding manual input instead.
+    // Item Type
+    let itemType = '';
+    if (String(req.body.itemTypeSelect) === 'OTHER') {
+        itemType = (req.body.itemTypeOther || '').toUpperCase();
+    } else {
+        itemType = (req.body.itemTypeSelect || '').toUpperCase();
+    }
+
+    // Item Manufacturer
+    let itemMfg = '';
+    if (String(req.body.itemMfgSelect) === 'OTHER') {
+        itemMfg = (req.body.itemMfgOther || '').toUpperCase();
+    } else {
+        itemMfg = (req.body.itemMfgSelect || '').toUpperCase();
+    }
+
+    // Description
+    let itemDescVal = '';
+    if (String(req.body.itemDescSelect) === 'OTHER') {
+        itemDescVal = (req.body.itemDescOther || '').toUpperCase();
+    } else {
+        itemDescVal = (req.body.itemDescSelect || '').toUpperCase();
+    }
+
+    // Part Number (PN)
+    let itemPNVal = '';
+    if (String(req.body.itemPNSelect) === 'OTHER') {
+        itemPNVal = (req.body.itemPNOther || '') || '';
+    } else {
+        itemPNVal = req.body.itemPNSelect || '';
+    }
+
     let updateData = {
         mbomID: req.body.mbomID,
         itemQty: req.body.itemQty,
         itemType: itemType,
         itemMfg: itemMfg,
-        itemDesc: (req.body.itemDesc).toUpperCase(),
+        itemDesc: (itemDescVal).toUpperCase(),
         unitOfIssue: req.body.unitOfIssue,
         catCode: req.body.catCode,
         class: req.body.class,
-        itemPN: req.body.itemPN,
+        itemPN: itemPNVal,
         shipLoose: shipLooseCheck
     };
 
-    //Initial db query - lookup mbomUserItem row where itemPN and mbomID match
-    querySql("SELECT * FROM " + database + "." + dbConfig.MBOM_user_items + " WHERE itemPN = ? AND mbomID = ?",
-        [updateData.itemPN, updateData.mbomID])
+    // Debug: log the payload that will be sent to the DB (only when DEBUG_MODE enables server logs)
+    if (DEBUG_SERVER) {
+        try {
+            console.log('editUserItemSave payload:', JSON.stringify(updateData));
+        } catch (e) {
+            console.log('editUserItemSave payload (non-serializable):', updateData);
+        }
+    }
+
+    // Ensure the corresponding MBOM_common_items entry exists (insert as 'Uncommon' if missing)
+    querySql("SELECT comItemID FROM " + database + "." + dbConfig.MBOM_common_items + " WHERE itemType = ? AND itemMfg = ? AND itemDesc = ? AND itemPN = ?", [
+        (updateData.itemType || '').toUpperCase(), (updateData.itemMfg || '').toUpperCase(), (updateData.itemDesc || '').toUpperCase(), (updateData.itemPN || '')
+    ])
         .then(rows => {
-            //if rows have data
-            if(rows.length > 0){
-                //write id to userItemID
+            if (rows && rows.length > 0) {
+                comItemID = rows[0].comItemID;
+                return comItemID;
+            }
+            const comData = {
+                itemType: (updateData.itemType || '').toUpperCase(),
+                itemMfg: (updateData.itemMfg || '').toUpperCase(),
+                itemDesc: (updateData.itemDesc || '').toUpperCase(),
+                itemPN: (updateData.itemPN || ''),
+                status: 'Uncommon',
+                unitOfIssue: (req.body.unitOfIssue && req.body.unitOfIssue.trim()) ? req.body.unitOfIssue : null,
+                catCode: (req.body.catCode && req.body.catCode.trim()) ? req.body.catCode : null,
+                class: (req.body.class && req.body.class.trim()) ? req.body.class : null
+            };
+            if (DEBUG_SERVER) console.log('editUserItemSave: inserting Uncommon MBOM_common_items for', comData);
+            return querySql("INSERT INTO " + database + "." + dbConfig.MBOM_common_items + " SET ?", comData)
+                .then(result => {
+                    comItemID = (result && result.insertId) ? result.insertId : null;
+                    return comItemID;
+                });
+        })
+        .then(() => {
+            // Before updating MBOM_user_items, set catCode to 'OBSOLETE'
+            updateData.catCode = 'OBSOLETE';
+            if (DEBUG_SERVER) console.log('editUserItemSave: catCode for userItem set to OBSOLETE for itemSumID=' + itemSumID + ', mbomID=' + updateData.mbomID);
+            // Continue with primary-key based update via MBOM_item_table lookup
+            return querySql("SELECT userItemID FROM " + database + "." + dbConfig.MBOM_item_table + " WHERE itemSumID = ? AND mbomID = ?", [itemSumID, updateData.mbomID]);
+        })
+        .then(rows => {
+            if (rows && rows.length > 0 && rows[0].userItemID) {
+                // We have a primary key mapping; update by PK
                 userItemID = rows[0].userItemID;
-
-                //update mbomUserItems with new data in the row referenced by itemPN and mbomID
-                querySql("UPDATE " + database + "." + dbConfig.MBOM_user_items + " SET itemType = ?, itemMfg = ?, " +
-                    "itemDesc = ?, unitOfIssue = ?, catCode = ?, class = ? WHERE itemPN = ? AND mbomID = ?", [updateData.itemType,
-                    updateData.itemMfg, updateData.itemDesc, updateData.unitOfIssue, updateData.catCode, updateData.class, updateData.itemPN, updateData.mbomID])
+                if (DEBUG_SERVER) console.log('editUserItemSave: updating existing MBOM_user_items by userItemID=', userItemID);
+                return querySql("UPDATE " + database + "." + dbConfig.MBOM_user_items + " SET itemType = ?, itemMfg = ?, " +
+                    "itemDesc = ?, unitOfIssue = ?, catCode = ?, class = ? WHERE userItemID = ?", [updateData.itemType,
+                    updateData.itemMfg, updateData.itemDesc, updateData.unitOfIssue, updateData.catCode, updateData.class, userItemID])
                     .then(() => {
-                        //update mbomItemSum with new data in the row referenced by itemSumID
-                        querySql("UPDATE " + database + "." + dbConfig.MBOM_item_table + " SET itemQty = ?, shipLoose = ? " +
-                            "WHERE itemSumID = ?", [updateData.itemQty, updateData.shipLoose, itemSumID]);
-                        return null
+                        if (DEBUG_SERVER) console.log('editUserItemSave: updating MBOM_item_table itemSumID=', itemSumID, ' with itemQty=', updateData.itemQty, ' shipLoose=', updateData.shipLoose);
+                        return querySql("UPDATE " + database + "." + dbConfig.MBOM_item_table + " SET itemQty = ?, shipLoose = ? WHERE itemSumID = ?", [updateData.itemQty, updateData.shipLoose, itemSumID]);
                     })
                     .then(() => {
-                        //update mbomItemSum with new userItemID in the row referenced by itemSumID and mbomID
-                        querySql("UPDATE " + database + "." + dbConfig.MBOM_item_table + " SET userItemID = ? WHERE " +
-                            "itemSumID = ? AND mbomID = ? ", [userItemID, itemSumID, updateData.mbomID]);
-
-                        return null
-                    })
-                    .catch(err => {
-                        //if error occurs at anytime at any point in the code above, log it to the console
-                        console.log('there was an error:' + err);
-                    });
-            } else {
-                //if rows dont have data
-                //insert new row into mbomUserItem with updateData
-                querySql("INSERT INTO " + database + "." + dbConfig.MBOM_user_items + " SET itemType = ?, itemMfg = ?, " +
-                    "itemDesc = ?, unitOfIssue = ?, catCode = ?, class = ?, itemPN = ?, mbomID = ?", [updateData.itemType,
-                    updateData.itemMfg, updateData.itemDesc, updateData.unitOfIssue, updateData.catCode, updateData.class, updateData.itemPN, updateData.mbomID])
-                    .then(() => {
-                        //lookup mbomUserItem row referenced by itemPN and mbomID
-                        return querySql("SELECT * FROM " + database + "." + dbConfig.MBOM_user_items + " WHERE itemPN = ? " +
-                            "AND mbomID = ?", [updateData.itemPN, updateData.mbomID])
-                    })
-                    .then(rows => {
-                        //set userItemID
-                        userItemID = rows[0].userItemID;
-
-                        //update mbomItemSum with update data in the row referenced by itemSumID
-                        querySql("UPDATE " + database + "." + dbConfig.MBOM_item_table + " SET userItemID = ?, itemQty = ?, " +
-                            "shipLoose = ? WHERE itemSumID = ?", [userItemID, updateData.itemQty, updateData.shipLoose, itemSumID]);
-                        return null
-                    })
-                    .catch(err => {
-                        //if error occurs at anytime at any point in the code above, log it to the console
-                        console.log('there was an error:' + err);
+                        if (DEBUG_SERVER) console.log('editUserItemSave: ensuring userItemID=', userItemID, ' is set on MBOM_item_table for itemSumID=', itemSumID);
+                        return querySql("UPDATE " + database + "." + dbConfig.MBOM_item_table + " SET userItemID = ? WHERE itemSumID = ? AND mbomID = ? ", [userItemID, itemSumID, updateData.mbomID]);
                     });
             }
 
-            return null
+            // No userItemID mapping found for this itemSumID — insert a new MBOM_user_items row
+            if (DEBUG_SERVER) console.log('editUserItemSave: no userItemID found for itemSumID=', itemSumID, ' — inserting new MBOM_user_items');
+            return querySql("INSERT INTO " + database + "." + dbConfig.MBOM_user_items + " SET itemType = ?, itemMfg = ?, " +
+                "itemDesc = ?, unitOfIssue = ?, catCode = ?, class = ?, itemPN = ?, mbomID = ?", [updateData.itemType,
+                updateData.itemMfg, updateData.itemDesc, updateData.unitOfIssue, updateData.catCode, updateData.class, updateData.itemPN, updateData.mbomID])
+                .then(insertRes => {
+                    if (insertRes && insertRes.insertId) {
+                        userItemID = insertRes.insertId;
+                        if (DEBUG_SERVER) console.log('editUserItemSave: inserted MBOM_user_items userItemID=', userItemID);
+                    } else {
+                        if (DEBUG_SERVER) console.log('editUserItemSave: insert returned no insertId for MBOM_user_items');
+                    }
+                    return null;
+                })
+                .then(() => {
+                    if (userItemID) {
+                        if (DEBUG_SERVER) console.log('editUserItemSave: updating MBOM_item_table set userItemID=', userItemID, ' itemSumID=', itemSumID, ' itemQty=', updateData.itemQty, ' shipLoose=', updateData.shipLoose);
+                        return querySql("UPDATE " + database + "." + dbConfig.MBOM_item_table + " SET userItemID = ?, itemQty = ?, " +
+                            "shipLoose = ? WHERE itemSumID = ?", [userItemID, updateData.itemQty, updateData.shipLoose, itemSumID]);
+                    }
+                    return null;
+                });
+        })
+        .then(() => {
+            // If we have a comItemID (found or just created), ensure the mbom itemSum row references it
+            if (comItemID) {
+                if (DEBUG_SERVER) console.log('editUserItemSave: updating MBOM_item_table set comItemID=', comItemID, ' for itemSumID=', itemSumID);
+                // Update the specific itemSum row first
+                return querySql("UPDATE " + database + "." + dbConfig.MBOM_item_table + " SET comItemID = ? WHERE itemSumID = ?", [comItemID, itemSumID])
+                    .then(() => {
+                        // Also propagate the comItemID to all MBOM_item_table rows that reference the same userItemID
+                        if (userItemID) {
+                            if (DEBUG_SERVER) console.log('editUserItemSave: propagating comItemID=', comItemID, ' to all MBOM_item_table rows with userItemID=', userItemID);
+                            return querySql("UPDATE " + database + "." + dbConfig.MBOM_item_table + " SET comItemID = ? WHERE userItemID = ?", [comItemID, userItemID]);
+                        }
+                        return null;
+                    });
+            }
+            return null;
+        })
+        .then(() => {
+            // Final cleanup: unlink user item and item-sum references if requested.
+            // Set mbomID to NULL on MBOM_user_items for this userItemID, then clear userItemID on MBOM_item_table for this itemSumID.
+            if (userItemID) {
+                if (DEBUG_SERVER) console.log('editUserItemSave: nulling MBOM_user_items.mbomID for userItemID=', userItemID);
+                return querySql("UPDATE " + database + "." + dbConfig.MBOM_user_items + " SET mbomID = NULL WHERE userItemID = ?", [userItemID])
+                    .then(() => {
+                        if (DEBUG_SERVER) console.log('editUserItemSave: nulling MBOM_item_table.userItemID for userItemID=', userItemID);
+                        return querySql("UPDATE " + database + "." + dbConfig.MBOM_item_table + " SET userItemID = NULL WHERE userItemID = ?", [userItemID]);
+                    });
+            }
+            return null;
         })
         .then(() => {
             //redirect to searchMBOM page

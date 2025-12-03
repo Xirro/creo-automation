@@ -25,6 +25,13 @@
     <link href="/public/assets/css/icons.css" rel="stylesheet" type="text/css">
     <link href="/public/assets/css/bootstrap.min.css" rel="stylesheet" type="text/css">
     <link href="/public/assets/css/style.css" rel="stylesheet" type="text/css">
+    <style>
+        .relative-input { position: relative; }
+        .manual-input { display: block; margin-top: .5rem; }
+        .manual-input[disabled], .manual-input.disabled { opacity: .65; background-color: #f8f9fa; }
+        .relative-input .form-control, .relative-input .select2-container { min-height: 38px; }
+        .cancel-outline { border: 1px solid #6c757d; color: #6c757d; background: transparent; }
+    </style>
 </head>
 
 <body>
@@ -91,7 +98,7 @@
                                                 Fill out the following for each layout, and click "Save" afterwards
                                             </p>
                                             <h6>User Defined</h6>
-                                            <form id="userDefinedForm" class="userDefinedForm" action="/editUserItemSave" method="POST">
+                                            <form id="userDefinedForm" class="userDefinedForm" action="/editUserItemSave/?itemSumID=<%= mbomItemData[0].itemSumID %>" method="POST">
                                                 <div class="form-group">
                                                     <div class="row">
                                                         <% if(mbomData) { %>
@@ -119,148 +126,214 @@
                                                         <% if(mbomItemData) { %>
                                                             <input type="text" name="itemSumID" class="form-control" value="<%= mbomItemData[0].itemSumID %>" hidden="hidden" >
                                                         <% } %>
-                                                        <div class="col-sm-1">
-                                                            <label for="example-text-input" class="col-form-label">Qty</label>
-                                                            <input type="number" min="0" name="itemQty" class="form-control" value="<%= mbomItemData[0].itemQty%>" selected="selected" placeholder="#" autocomplete="off" required/>
-                                                        </div>
-                                                        <div class="col-sm-2">
-                                                            <label for="example-text-input" class="col-form-label">Item Type</label>
-                                                            <select class="form-control select2" id="itemSelect2" name="itemSelect2" required>
-                                                                <option value="">Select</option>
-                                                                <% let userItemTypes = new Set();%>
-                                                                <% for(let el of comItemData){
-                                                                    userItemTypes.add(el.itemType);
-                                                                } %>
-                                                                <% for(let el of userItemTypes){ %>
+                                                        <div class="col-md-3">
+                                                            <label class="col-form-label">Item Type</label>
+                                                            <select class="form-control itemTypeSelect" id="itemEditSelect" name="itemTypeSelect" required>
+                                                                <option value="">Select Item Type</option>
+                                                                <% let itemTypes = new Set();%>
+                                                                <% for(let el of (comItemData || [])){ if(el && el.itemType) itemTypes.add(el.itemType); } %>
+                                                                <% const sortedItemTypes = Array.from(itemTypes).sort(); %>
+                                                                <% for(let el of sortedItemTypes){ %>
                                                                     <% if(el == userItemData.itemType){ %>
                                                                         <option value="<%= el%>" selected><%=el%></option>
-                                                                        <% var notOther = true; %>
                                                                     <% } else { %>
                                                                         <option value="<%= el%>"><%=el%></option>
                                                                     <% } %>
                                                                 <% } %>
-                                                                <% if(!notOther){ %>
-                                                                    <option selected>OTHER</option>
-                                                                <% } else { %>
-                                                                    <option>OTHER</option>
-                                                                <% } %>
+                                                                <option value="OTHER">OTHER</option>
+                                                            </select>
+                                                            <input type="text" name="itemTypeOther" class="form-control itemTypeOther manual-input" id="otherItemType" value="" placeholder="Item Type Here" disabled="disabled" required/>
+                                                            <input type="hidden" name="itemType" class="itemTypeHidden" value="<%= userItemData.itemType %>" />
+                                                        </div>
 
-                                                            </select>
-                                                            <input type="text" name="otherItemType" class="form-control" id="otherItemType" value="<%= userItemData.itemType %>" placeholder="Item Type Here" style="display:none;" autocomplete="off"/>
-                                                        </div>
-                                                        <div class="col-sm-2">
+                                                        <div class="col-md-3">
                                                             <label for="example-text-input" class="col-form-label">Item Mfg.</label>
-                                                            <% // Build a map: itemType -> Set of manufacturers to dedupe and group by type %>
-                                                            <% let mfgByType = {}; %>
-                                                            <% for (let el of comItemData) { %>
-                                                                <% if (!mfgByType[el.itemType]) mfgByType[el.itemType] = new Set(); %>
-                                                                <% // skip placeholder/OTHER entries from the common list to avoid duplicate OTHER options %>
-                                                                <% if (el.itemMfg && String(el.itemMfg).toUpperCase() !== 'OTHER') { %>
-                                                                    <% mfgByType[el.itemType].add(el.itemMfg); %>
-                                                                <% } %>
-                                                            <% } %>
-                                                            <select class="form-control select2" id="mfgList" name="mfgList">
+                                                            <select class="form-control select2 itemMfgSelect" id="mfgEditSelect" name="itemMfgSelect" required>
                                                                 <option value="">Select</option>
-                                                                <% // Render options grouped by type (data-parent used for client-side filtering) %>
-                                                                <% for (let type of Object.keys(mfgByType)) { %>
-                                                                    <% for (let mfg of Array.from(mfgByType[type]).sort()) { %>
-                                                                        <% if (type == userItemData.itemType && mfg == userItemData.itemMfg) { %>
-                                                                            <option data-parent="<%= type %>" value="<%= mfg %>" selected><%= mfg %></option>
-                                                                        <% } else { %>
-                                                                            <option data-parent="<%= type %>" value="<%= mfg %>"><%= mfg %></option>
-                                                                        <% } %>
-                                                                    <% } %>
-                                                                    <% // per-type OTHER option (only add if not already present) %>
-                                                                    <% if (!Array.from(mfgByType[type]).includes('OTHER')) { %>
-                                                                        <% if (type == userItemData.itemType && (!userItemData.itemMfg || !Array.from(mfgByType[type]).includes(userItemData.itemMfg))) { %>
-                                                                            <option data-parent="<%= type %>" value="OTHER" selected>OTHER</option>
-                                                                        <% } else { %>
-                                                                            <option data-parent="<%= type %>" value="OTHER">OTHER</option>
-                                                                        <% } %>
+                                                                <% if (userItemData && userItemData.itemMfg) { %>
+                                                                    <option value="<%= userItemData.itemMfg %>" selected><%= userItemData.itemMfg %></option>
+                                                                <% } %>
+                                                                <option value="OTHER">OTHER</option>
+                                                            </select>
+                                                            <input type="text" name="itemMfgOther" class="form-control itemMfgOther manual-input" id="otherMfgType" value="" placeholder="Type Mfg. Here" disabled="disabled" required/>
+                                                            <input type="hidden" name="itemMfg" class="itemMfgHidden" value="<%= userItemData.itemMfg %>" />
+                                                        </div>
+
+                                                        <div class="col-md-3">
+                                                            <label for="example-text-input" class="col-form-label">Description</label>
+                                                            <select class="form-control itemDescSelect" id="descEditSelect" name="itemDescSelect" required>
+                                                                <option value="">Select</option>
+                                                                <% if (userItemData && userItemData.itemDesc) { %>
+                                                                    <option value="<%= userItemData.itemDesc %>" selected><%= userItemData.itemDesc %></option>
+                                                                <% } %>
+                                                                <option value="OTHER">OTHER</option>
+                                                            </select>
+                                                            <input type="text" name="itemDescOther" class="form-control itemDescOther manual-input" id="itemDescOther" value="" placeholder="Type Description Here" disabled="disabled" required/>
+                                                            <input type="hidden" name="itemDesc" class="itemDescHidden" value="<%= userItemData.itemDesc %>" />
+                                                        </div>
+
+                                                        <div class="col-md-3">
+                                                            <label for="example-text-input" class="col-form-label">P/N</label>
+                                                            <select class="form-control itemPNSelect" id="pnEditSelect" name="itemPNSelect">
+                                                                <option value="">Select</option>
+                                                                <% if (userItemData && userItemData.itemPN) { %>
+                                                                    <option value="<%= userItemData.itemPN %>" selected><%= userItemData.itemPN %></option>
+                                                                <% } %>
+                                                                <option value="OTHER">OTHER</option>
+                                                            </select>
+                                                            <input type="text" name="itemPNOther" class="form-control itemPNOther manual-input" id="itemPNOther" value="" placeholder="Type P/N Here" disabled="disabled" required/>
+                                                            <input type="hidden" name="itemPN" class="itemPNHidden" value="<%= userItemData.itemPN %>" />
+                                                            <input type="hidden" name="unitHidden" class="unitHidden" value="<%= userItemData.unitOfIssue || '' %>" />
+                                                            <input type="hidden" name="catHidden" class="catHidden" value="<%= userItemData.catCode || '' %>" />
+                                                            <input type="hidden" name="classHidden" class="classHidden" value="<%= userItemData.class || '' %>" />
+                                                        </div>
+                                                    </div>
+
+                                                    <% // Build mapping JSON for client-side
+                                                        const mfgByType = {};
+                                                        for (let it of (comItemData || [])) {
+                                                            if (!it || !it.itemType) continue;
+                                                            if (!mfgByType[it.itemType]) mfgByType[it.itemType] = new Set();
+                                                            if (it.itemMfg && String(it.itemMfg).toUpperCase() !== 'OTHER') {
+                                                                mfgByType[it.itemType].add(it.itemMfg);
+                                                            }
+                                                        }
+                                                        const mfgByTypeObj = {};
+                                                        for (let t of Object.keys(mfgByType)) mfgByTypeObj[t] = Array.from(mfgByType[t]).sort();
+                                                        const safeMfgJson = JSON.stringify(mfgByTypeObj).replace(/</g, '\u003c').replace(/'/g, '&#39;');
+
+                                                        const descByPair = {};
+                                                        const allDescSet = new Set();
+                                                        for (let it of (comItemData || [])) {
+                                                            if (!it || !it.itemType) continue;
+                                                            const t = it.itemType;
+                                                            const m = it.itemMfg || '';
+                                                            const d = it.itemDesc || '';
+                                                            if (d) allDescSet.add(d);
+                                                            const key = t + '||' + m;
+                                                            if (!descByPair[key]) descByPair[key] = new Set();
+                                                            if (d && String(d).toUpperCase() !== 'OTHER') descByPair[key].add(d);
+                                                        }
+                                                        const descByPairObj = {};
+                                                        for (let k of Object.keys(descByPair)) descByPairObj[k] = Array.from(descByPair[k]).sort();
+                                                        const allDescList = Array.from(allDescSet).sort();
+                                                        const safeDescJson = JSON.stringify({ byPair: descByPairObj, all: allDescList }).replace(/</g, '\u003c').replace(/'/g, '&#39;');
+
+                                                        const pnByTriplet = {};
+                                                        const allPnSet = new Set();
+                                                        for (let it of (comItemData || [])) {
+                                                            if (!it || !it.itemType) continue;
+                                                            const t = it.itemType;
+                                                            const m = it.itemMfg || '';
+                                                            const d = it.itemDesc || '';
+                                                            const p = it.itemPN || '';
+                                                            if (p) allPnSet.add(p);
+                                                            const key = t + '||' + m + '||' + d;
+                                                            if (!pnByTriplet[key]) pnByTriplet[key] = new Set();
+                                                            if (p && String(p).toUpperCase() !== 'OTHER') pnByTriplet[key].add(p);
+                                                        }
+                                                        const pnByTripletObj = {};
+                                                        for (let k of Object.keys(pnByTriplet)) pnByTripletObj[k] = Array.from(pnByTriplet[k]).sort();
+                                                        const allPnList = Array.from(allPnSet).sort();
+                                                        const safePnJson = JSON.stringify({ byTriplet: pnByTripletObj, all: allPnList }).replace(/</g, '\u003c').replace(/'/g, '&#39;');
+                                                    %>
+                                                    <% const _mbomSecData = (typeof mbomSecData !== 'undefined' && mbomSecData) ? mbomSecData : []; %>
+                                                    <div id="mfg-data" style="display:none;" data-mfg='<%= safeMfgJson %>'></div>
+                                                    <div id="desc-data" style="display:none;" data-desc='<%= safeDescJson %>'></div>
+                                                    <div id="pn-data" style="display:none;" data-pn='<%= safePnJson %>'></div>
+
+                                                    <% const unitSet = new Set(); for (let it of (comItemData || [])) if (it && it.unitOfIssue) unitSet.add(it.unitOfIssue); const unitList = Array.from(unitSet).sort(); %>
+                                                    <div id="uncommonRow" class="row" style="display:none;">
+                                                        <div class="col-md-4">
+                                                            <label class="col-form-label">Unit Of Issue</label>
+                                                            <select name="unitOfIssue" class="form-control unitOfIssueSelect">
+                                                                <option value="">Select Unit</option>
+                                                                <% for (let u of unitList) { %>
+                                                                    <% if(userItemData.unitOfIssue == u) { %>
+                                                                        <option value="<%= u %>" selected><%= u %></option>
+                                                                    <% } else { %>
+                                                                        <option value="<%= u %>"><%= u %></option>
                                                                     <% } %>
                                                                 <% } %>
                                                             </select>
-                                                            <% // expose deduped JSON as data-attributes on a hidden element to avoid inline JS parsing issues in editors %>
-                                                            <% const mfgByTypeObj = {}; %>
-                                                            <% for (let t of Object.keys(mfgByType)) { mfgByTypeObj[t] = Array.from(mfgByType[t]).sort(); } %>
-                                                            <% const safeMfgJson = JSON.stringify(mfgByTypeObj).replace(/</g, '\\u003c').replace(/'/g, '&#39;'); %>
-                                                            <% const safeCurrentJson = JSON.stringify({ type: userItemData.itemType || '', mfg: userItemData.itemMfg || '' }).replace(/</g, '\\u003c').replace(/'/g, '&#39;'); %>
-                                                            <div id="mfg-data" style="display:none;" data-mfg='<%= safeMfgJson %>' data-current='<%= safeCurrentJson %>'></div>
-                                                            <input type="text" name="otherMfgType" class="form-control" id="otherMfgType" value="<%= userItemData.itemMfg %>" placeholder="Type Mfg. Here" style="display:none;" autocomplete="off"/>
                                                         </div>
-                                                        <div class="col-sm-7">
-                                                            <label for="example-text-input" class="col-form-label" required>Description</label>
-                                                            <input type="text" name="itemDesc" maxlength="160" class="form-control" value="<%= userItemData.itemDesc %>" placeholder="Type Description Here" autocomplete="off" required/>
+
+                                                        <div class="col-md-4">
+                                                            <label class="col-form-label">Cat. Code</label>
+                                                            <select name="catCode" class="form-control catCodeSelect">
+                                                                <option value="">Select Cat. Code</option>
+                                                                <% for (let c of (catCodeData || [])) { %>
+                                                                    <% const code = (c && c.catCode) ? c.catCode : c; %>
+                                                                    <% if(userItemData.catCode == code) { %>
+                                                                        <option value="<%= code %>" selected><%= code %></option>
+                                                                    <% } else { %>
+                                                                        <option value="<%= code %>"><%= code %></option>
+                                                                    <% } %>
+                                                                <% } %>
+                                                            </select>
+                                                        </div>
+
+                                                        <div class="col-md-4">
+                                                            <label class="col-form-label">Class</label>
+                                                            <select name="class" class="form-control classSelect">
+                                                                <option value="">Select Class</option>
+                                                                <% for (let cl of (classCodeData || [])) { %>
+                                                                    <% const code = (cl && cl.classCode) ? cl.classCode : cl; %>
+                                                                    <% if(userItemData.class == code) { %>
+                                                                        <option value="<%= code %>" selected><%= code %></option>
+                                                                    <% } else { %>
+                                                                        <option value="<%= code %>"><%= code %></option>
+                                                                    <% } %>
+                                                                <% } %>
+                                                            </select>
                                                         </div>
                                                     </div>
+
                                                     <div class="row">
-                                                        <div class="col-sm-6">
-                                                            <label for="example-text-input" class="col-form-label" required>P/N</label>
-                                                            <input type="text" name="itemPN" class="form-control" value="<%= userItemData.itemPN %>" placeholder="Type P/N Here" autocomplete="off" required/>
+                                                        <div class="col-md-1">
+                                                            <label for="itemQty" class="col-form-label">Qty</label>
+                                                            <input name="itemQty" type="number" min="1" max="99" step="1" class="form-control" value="<%= mbomItemData[0].itemQty %>" placeholder="#" style="width:60px; height:38px;" required/>
                                                         </div>
-                                                        <div class="col-sm-2">
-                                                            <label for="example-text-input" class="col-form-label" required>Unit of Issue</label>
-                                                            <select class="form-control" name="unitOfIssue">
-                                                                <option value="Select">Select</option>
-                                                                <% if (userItemData.unitOfIssue == 'EA') { %>
-                                                                    <option value="EA" selected="selected">EA</option>
-                                                                <% } else { %>
-                                                                    <option value="EA">EA</option>
-                                                                <% } %>
-                                                                <% if (userItemData.unitOfIssue == 'FT') { %>
-                                                                    <option value="FT" selected="selected">FT</option>
-                                                                <% } else { %>
-                                                                    <option value="FT">FT</option>
-                                                                <% } %>
-                                                                <% if (userItemData.unitOfIssue == 'LBS') { %>
-                                                                    <option value="LBS" selected="selected">LBS</option>
-                                                                <% } else { %>
-                                                                    <option value="LBS">LBS</option>
-                                                                <% } %>
-                                                            </select>
-                                                        </div>
-                                                        <div class="col-sm-2">
-                                                            <label for="example-text-input" class="col-form-label" required>Cat. Code</label>
-                                                            <select class="form-control" name="catCode">
-                                                                <option value="Select">Select</option>
-                                                                <% for (let i = 0; i < catCodeData.length; i++) { %>
-                                                                    <% if(catCodeData[i].catCode == userItemData.catCode){ %>
-                                                                        <option value="<%= catCodeData[i].catCode%>" selected><%= catCodeData[i].catCode%></option>
+
+                                                        <div class="col-md-2"> 
+                                                            <label class="col-form-label">Section</label>
+                                                            <select name="secID" class="form-control itemSectionSelect">
+                                                                <option value="">Unassigned</option>
+                                                                <% for (let s of (_mbomSecData || [])) { %>
+                                                                    <% const sn = parseInt(s.sectionNum, 10); %>
+                                                                    <% const label = (!isNaN(sn) && sn < 10) ? ('Section 10' + s.sectionNum) : ('Section 1' + (isNaN(sn) ? s.sectionNum : sn)); %>
+                                                                    <% if (mbomItemData && mbomItemData[0] && mbomItemData[0].secID == s.secID) { %>
+                                                                        <option value="<%= s.secID %>" selected><%= label %></option>
                                                                     <% } else { %>
-                                                                        <option value="<%= catCodeData[i].catCode%>"><%= catCodeData[i].catCode%></option>
-                                                                    <% } %>
-                                                                <% } %>
-                                                            </select>
-                                                        </div>
-                                                        <div class="col-sm-2">
-                                                            <label for="example-text-input" class="col-form-label" required>Class</label>
-                                                            <select class="form-control" name="class">
-                                                                <option value="Select">Select</option>
-                                                                <% for (let i = 0; i < classCodeData.length; i++) { %>
-                                                                    <% if(classCodeData[i].classCode == userItemData.class){ %>
-                                                                        <option value="<%= classCodeData[i].classCode%>" selected><%= classCodeData[i].classCode%></option>
-                                                                    <% } else { %>
-                                                                        <option value="<%= classCodeData[i].classCode%>"><%= classCodeData[i].classCode%></option>
+                                                                        <option value="<%= s.secID %>"><%= label %></option>
                                                                     <% } %>
                                                                 <% } %>
                                                             </select>
                                                         </div>
                                                     </div>
+
+                                                    <div class="row">
+                                                        <div class="col text-center p-2">
+                                                            <div>
+                                                                <div class="">
+                                                                    <label for="editUserShipLoose" class="form-check-label" style="margin-top: 15px">Ship Item Loose?</label>
+                                                                    <% if(mbomItemData[0].shipLoose == 'Y'){ %>
+                                                                        <input type="checkbox" name="editUserShipLoose" id="editUserShipLoose" value="Y" checked="checked"/>
+                                                                    <% } else { %>
+                                                                        <input type="checkbox" name="editUserShipLoose" id="editUserShipLoose" value="Y"/>
+                                                                    <% } %>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
                                                     <div class="row justify-content-center">
-                                                        <div class="col-sm-2" style="margin-top: 2rem; padding-left: 3.5rem;">
-                                                            <% if(mbomItemData[0].shipLoose == 'Y'){ %>
-                                                                <input class="form-check-input" type="checkbox" name="editUserShipLoose" id="editUserShipLoose" value="true" style="margin-top: .7rem;" checked="checked"/>
-                                                                <label for="editUserShipLoose" class="col-form-label">Ship Loose Item?</label>
-                                                            <% } else {%>
-                                                                <input class="form-check-input" type="checkbox" name="editUserShipLoose" id="editUserShipLoose" value="true" style="margin-top: .7rem;"/>
-                                                                <label for="editUserShipLoose" class="col-form-label">Ship Loose Item?</label>
-                                                            <% } %>
+                                                        <div class="col-2 text-center">
+                                                            <input id="uploadBtn" type="submit" value="Save" class="btn btn-block btn-lg btn-success waves-effect waves-light" onclick=""/>
                                                         </div>
-                                                    </div>
-                                                </div>
-                                                <div class="row justify-content-center">
-                                                    <div class="col-2" style="padding-top:5%;">
-                                                        <input id="uploadBtn" type="submit" value="Save" class="btn-block btn-lg btn-outline-success waves-effect waves-light" onclick=""/>
+                                                        <div class="col-2 text-center">
+                                                            <a id="cancelBtn" href="../searchMBOM/?bomID=<%= (mbomData && mbomData.jobNum) ? mbomData.jobNum : '' %><%= (mbomData && mbomData.releaseNum) ? mbomData.releaseNum : '' %>_<%= (mbomData && mbomData.mbomID) ? mbomData.mbomID : '' %>" class="btn btn-block btn-lg cancel-outline waves-effect waves-light">Cancel</a>
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </form>
@@ -287,8 +360,178 @@
 </script>
 
 <!-- User developed scripts -->
-<script src="/public/assets/js/mbomDragDrop.js"></script>
 <script src="/public/assets/js/mbomFilterDropdown.js"></script>
+
+        <script>
+            // When editing a user item, if the canonical hidden values are not present
+            // in the corresponding select options, switch the select to OTHER and
+            // populate + enable the manual input with the hidden value.
+            (function(){
+                function ensureOtherIfMissing(selectSelector, hiddenSelector, otherInputSelector) {
+                    try {
+                        var hidden = $(hiddenSelector).val();
+                        if (!hidden) return;
+                        var $select = $(selectSelector);
+                        if (!$select || !$select.length) return;
+                        // look for option whose value matches the hidden canonical value
+                        var exists = $select.find('option').filter(function(){ return String($(this).val()) === String(hidden); }).length > 0;
+                        var $other = $(otherInputSelector);
+                        if (exists) {
+                            // select the canonical value and ensure manual input is disabled/hidden
+                            $select.val(String(hidden)).trigger('change');
+                            if ($other && $other.length) {
+                                $other.prop('disabled', true).val('');
+                                $other.hide();
+                            }
+                        } else {
+                            // not found in options -> select OTHER and populate manual input
+                            $select.val('OTHER').trigger('change');
+                            if ($other && $other.length) {
+                                $other.prop('disabled', false).val(hidden);
+                                $other.show();
+                            }
+                        }
+                    } catch (e) { console && console.warn && console.warn('ensureOtherIfMissing', e); }
+                }
+
+                // Run with a bounded retry so we wait for Select2 / other initialization.
+                $(function(){
+                    var maxAttempts = 8;
+                    var delayMs = 150;
+                    function attemptApply(attemptsLeft) {
+                        try {
+                            var selectors = ['#itemEditSelect','#mfgEditSelect','#descEditSelect','#pnEditSelect'];
+                            var ready = true;
+                            selectors.forEach(function(sel){
+                                var $s = $(sel);
+                                if ($s.length && $s.find('option').length <= 1) {
+                                    // not yet populated
+                                    ready = false;
+                                }
+                            });
+                            if (ready || attemptsLeft <= 0) {
+                                // Final attempt (or timed out)
+                                ensureOtherIfMissing('#itemEditSelect', '.itemTypeHidden', '.itemTypeOther');
+                                ensureOtherIfMissing('#mfgEditSelect', '.itemMfgHidden', '.itemMfgOther');
+                                ensureOtherIfMissing('#descEditSelect', '.itemDescHidden', '.itemDescOther');
+                                ensureOtherIfMissing('#pnEditSelect', '.itemPNHidden', '.itemPNOther');
+
+                                // populate uncommon selects (unit/cat/class) from hidden canonical fields
+                                try {
+                                    // Determine if any primary select is OTHER
+                                    var primaryOther = false;
+                                    ['#itemEditSelect','#mfgEditSelect','#descEditSelect','#pnEditSelect'].forEach(function(sel){
+                                        var v = $(sel).val(); if (String(v) === 'OTHER') primaryOther = true;
+                                    });
+
+                                    // read hidden canonical uncommon values (server rendered)
+                                    var unitHidden = ($('.unitHidden').length && $('.unitHidden').val()) ? $('.unitHidden').val() : '';
+                                    var catHidden = ($('.catHidden').length && $('.catHidden').val()) ? $('.catHidden').val() : '';
+                                    var classHidden = ($('.classHidden').length && $('.classHidden').val()) ? $('.classHidden').val() : '';
+
+                                    var uncommonHasHidden = (unitHidden && unitHidden !== '') || (catHidden && catHidden !== '') || (classHidden && classHidden !== '');
+
+                                    if (primaryOther || uncommonHasHidden) {
+                                        // show and enable uncommon row
+                                        $('#uncommonRow').show();
+                                        $('.unitOfIssueSelect, .catCodeSelect, .classSelect').prop('disabled', false).attr('required', true);
+
+                                        // Helper to set or append option and select it
+                                        function setOrAppend($select, value) {
+                                            if (!value || value === '') return;
+                                            var exists = $select.find('option').filter(function(){ return String($(this).val()) === String(value); }).length > 0;
+                                            if (exists) {
+                                                $select.val(String(value)).trigger('change');
+                                            } else {
+                                                // append new option so the hidden canonical value can be selected
+                                                try {
+                                                    var $opt = $('<option>').val(value).text(value);
+                                                    $select.append($opt);
+                                                    $select.val(String(value)).trigger('change');
+                                                } catch (e) { /* ignore append failures */ }
+                                            }
+                                        }
+
+                                        // Apply hidden values to uncommon selects
+                                        setOrAppend($('.unitOfIssueSelect'), unitHidden);
+                                        setOrAppend($('.catCodeSelect'), catHidden);
+                                        setOrAppend($('.classSelect'), classHidden);
+                                    } else {
+                                        // No uncommon values and no OTHER selected; ensure uncommon row stays hidden
+                                        $('#uncommonRow').hide();
+                                        $('.unitOfIssueSelect, .catCodeSelect, .classSelect').prop('disabled', true).removeAttr('required');
+                                    }
+                                } catch (e) { console && console.warn && console.warn('populateUncommon error', e); }
+                                return;
+                            }
+                        } catch (e) {
+                            console && console.warn && console.warn('attemptApply error', e);
+                        }
+                        setTimeout(function(){ attemptApply(attemptsLeft - 1); }, delayMs);
+                    }
+                    attemptApply(maxAttempts);
+                });
+            })();
+        </script>
+
+        <script>
+            // Warn user when saving will create a new common-item entry
+            (function(){
+                function willCreateCommonItem() {
+                    try {
+                        // If any primary select is OTHER, this implies creating a new common item
+                        var primaries = ['#itemEditSelect','#mfgEditSelect','#descEditSelect','#pnEditSelect'];
+                        for (var i = 0; i < primaries.length; i++) {
+                            var v = $(primaries[i]).val();
+                            if (String(v) === 'OTHER') return true;
+                        }
+
+                        // If uncommon row has values (unit/cat/class) treat as custom and warn
+                        if ($('#uncommonRow').is(':visible')) {
+                            var unit = $('.unitOfIssueSelect').val();
+                            var cat = $('.catCodeSelect').val();
+                            var cls = $('.classSelect').val();
+                            if ((unit && unit !== '') || (cat && cat !== '') || (cls && cls !== '')) return true;
+                        }
+                    } catch (e) { /* ignore */ }
+                    return false;
+                }
+
+                $(function(){
+                    // Bind to the edit form submit. Use action match to avoid interfering with other forms.
+                    $('form[action*="editUserItemSave"]').on('submit', function(e){
+                        var $form = $(this);
+                        if (!willCreateCommonItem()) return true; // allow submit
+
+                        // Prevent default and show a SweetAlert2 confirmation if available
+                        e.preventDefault();
+                        var proceed = function() {
+                            // Unbind handler and submit to avoid re-triggering
+                            $form.off('submit');
+                            $form.trigger('submit');
+                        };
+
+                        if (window.Swal && typeof window.Swal.fire === 'function') {
+                            window.Swal.fire({
+                                title: 'Create Common Item? ',
+                                text: 'Saving will add a new entry to the common items table. Please ensure all custom fields (Manufacturer, Description, P/N, Unit of Issue, Cat. Code, Class) are filled accurately before continuing.',
+                                icon: 'warning',
+                                showCancelButton: true,
+                                confirmButtonText: 'Continue',
+                                cancelButtonText: 'Cancel',
+                                reverseButtons: true
+                            }).then(function(result){
+                                if (result && result.isConfirmed) proceed();
+                            });
+                        } else {
+                            // Fallback to browser confirm
+                            var msg = 'Warning: Saving will add a new entry to the common items table. Please ensure all custom fields (Manufacturer, Description, P/N, Unit of Issue, Cat. Code, Class) are filled accurately before continuing. Do you want to continue?';
+                            if (window.confirm(msg)) proceed();
+                        }
+                    });
+                });
+            })();
+        </script>
 
 </body>
 </html>
