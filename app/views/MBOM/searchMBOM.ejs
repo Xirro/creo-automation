@@ -602,7 +602,6 @@
                                             </form>
                                         </div>
                                     </div>
-                                    <p class="text-muted m-b-30"></p>
                                 </div>
                             </div>
                         </div>
@@ -840,7 +839,6 @@
                                                 <button id="brkClearFilter" type="button" class="btn btn-outline-danger" style="height:38px; padding: .375rem .75rem;">Clear Filter</button>
                                             </div>
                                         </div>
-                                        <p class="text-muted m-b-30"></p>
                                         <form id="brkForm" class="brkForm" action="" method="POST">
                                         <% if(mbomData) { %>
                                             <input type="text" name="jobNum" class="form-control" value="<%= mbomData.jobNum %>" id="jobNum" hidden="hidden">
@@ -913,9 +911,15 @@
                                                             <td><%= mbomBrkData[i].cradlePN %></td>
                                                             <td><%= secLabel %></td>
                                                             <td>
-                                                                <input id="copyButton" type="submit" value="Copy" class="btn btn-md btn-outline-secondary waves-effect waves-light" formaction="../copyBreaker/?idDev=<%= mbomBrkData[i].idDev%>"/>
-                                                                <input id="editBrkButton" type="submit" value="Edit" class="btn btn-md btn-outline-warning waves-effect waves-light" formaction="../editBreaker/?idDev=<%= mbomBrkData[i].idDev%>"/>
-                                                                <input id="deleteButton" type="submit" value="Delete" class="btn btn-md btn-outline-danger waves-effect waves-light" formaction="../deleteBreaker/?idDev=<%= mbomBrkData[i].idDev%>"/>
+                                                                <button id="copyButton" type="submit" class="btn btn-md btn-outline-secondary waves-effect waves-light copy-brk-btn" formaction="../copyBreaker/?idDev=<%= mbomBrkData[i].idDev%>" data-toggle="tooltip" title="Clone" aria-label="Clone">
+                                                                    <i class="fas fa-clone" aria-hidden="true"></i>
+                                                                </button>
+                                                                <button id="editBrkButton" type="submit" class="btn btn-md btn-outline-warning waves-effect waves-light edit-brk-btn" formaction="../editBreaker/?idDev=<%= mbomBrkData[i].idDev%>" data-toggle="tooltip" title="Edit" aria-label="Edit">
+                                                                    <i class="fas fa-pencil-alt" aria-hidden="true"></i>
+                                                                </button>
+                                                                <button id="deleteButton" type="submit" class="btn btn-md btn-outline-danger waves-effect waves-light delete-brk-btn" formaction="../deleteBreaker/?idDev=<%= mbomBrkData[i].idDev%>" data-toggle="tooltip" title="Delete" aria-label="Delete">
+                                                                    <i class="fas fa-trash" aria-hidden="true"></i>
+                                                                </button>
                                                             </td>
                                                         </tr>
                                                         <% if(idDevs.has(currentBrk)){ %>
@@ -1297,9 +1301,15 @@
                                                                 <td><%= secLabel %></td>
                                                                 <td><%= String(mbomItemData[i].shipLoose).toUpperCase() === 'Y' ? 'Yes' : 'No' %></td>
                                                                 <td>
-                                                                    <input id="copyButton" type="submit" value="Copy" class="btn btn-md btn-outline-secondary waves-effect waves-light" formaction="../copyItem/?itemSumID=<%= mbomItemData[i].itemSumID%>"/>
-                                                                    <input id="editButton" type="submit" value="Edit" class="btn btn-md btn-outline-warning waves-effect waves-light" formaction="../editComItem/?itemSumID=<%= mbomItemData[i].itemSumID%>&comItemID=<%=mbomItemData[i].comItemID%>"/>
-                                                                    <input id="deleteButton" type="submit" value="Delete" class="btn btn-md btn-outline-danger waves-effect waves-light" formaction="../deleteItem/?itemSumID=<%= mbomItemData[i].itemSumID %>"/>
+                                                                    <button id="copyButton" type="submit" class="btn btn-md btn-outline-secondary waves-effect waves-light copy-item-btn" formaction="../copyItem/?itemSumID=<%= mbomItemData[i].itemSumID%>" data-toggle="tooltip" title="Clone" aria-label="Clone">
+                                                                            <i class="fas fa-clone" aria-hidden="true"></i>
+                                                                    </button>
+                                                                    <button id="editButton" type="submit" class="btn btn-md btn-outline-warning waves-effect waves-light edit-item-btn" formaction="../editComItem/?itemSumID=<%= mbomItemData[i].itemSumID%>&comItemID=<%=mbomItemData[i].comItemID%>" data-toggle="tooltip" title="Edit" aria-label="Edit">
+                                                                        <i class="fas fa-pencil-alt" aria-hidden="true"></i>
+                                                                    </button>
+                                                                    <button id="deleteButton" type="submit" class="btn btn-md btn-outline-danger waves-effect waves-light delete-item-btn" formaction="../deleteItem/?itemSumID=<%= mbomItemData[i].itemSumID %>" data-toggle="tooltip" title="Delete" aria-label="Delete">
+                                                                            <i class="fas fa-trash" aria-hidden="true"></i>
+                                                                    </button>
                                                                 </td>
                                                             </tr>
                                                         <% } %>
@@ -1319,13 +1329,21 @@
                                                                 <td><%= secLabel %></td>
                                                                 <td><%= String(mbomItemData[i].shipLoose).toUpperCase() === 'Y' ? 'Yes' : 'No' %></td>
                                                                 <td>
-                                                                    <input id="copyButton" type="submit" value="Copy" class="btn btn-md btn-outline-secondary waves-effect waves-light" formaction="../copyItem/?itemSumID=<%= mbomItemData[i].itemSumID%>"/>
+                                                                    <button id="copyButton" type="submit" class="btn btn-md btn-outline-secondary waves-effect waves-light copy-item-btn" formaction="../copyItem/?itemSumID=<%= mbomItemData[i].itemSumID%>" data-toggle="tooltip" title="Clone" aria-label="Clone">
+                                                                            <i class="fas fa-clone" aria-hidden="true"></i>
+                                                                    </button>
                                                                     <% if(mbomItemData[i].userItemID != null){%>
-                                                                        <input id="editButton" type="submit" value="Edit" class="btn btn-md btn-outline-warning waves-effect waves-light" formaction="../editUserItem/?itemSumID=<%= mbomItemData[i].itemSumID%>&userItemID=<%=mbomItemData[i].userItemID%>" />
+                                                                        <button id="editButton" type="submit" class="btn btn-md btn-outline-warning waves-effect waves-light edit-item-btn" formaction="../editUserItem/?itemSumID=<%= mbomItemData[i].itemSumID%>&userItemID=<%=mbomItemData[i].userItemID%>" data-toggle="tooltip" title="Edit" aria-label="Edit">
+                                                                            <i class="fas fa-pencil-alt" aria-hidden="true"></i>
+                                                                        </button>
                                                                     <% }else{ %>
-                                                                        <input id="editButton" type="submit" value="Edit" class="btn btn-md btn-outline-warning waves-effect waves-light" formaction="../editComItem/?itemSumID=<%= mbomItemData[i].itemSumID%>&comItemID=<%=mbomItemData[i].comItemID%>"/>
+                                                                        <button id="editButton" type="submit" class="btn btn-md btn-outline-warning waves-effect waves-light edit-item-btn" formaction="../editComItem/?itemSumID=<%= mbomItemData[i].itemSumID%>&comItemID=<%=mbomItemData[i].comItemID%>" data-toggle="tooltip" title="Edit" aria-label="Edit">
+                                                                            <i class="fas fa-pencil-alt" aria-hidden="true"></i>
+                                                                        </button>
                                                                     <% } %>
-                                                                    <input id="deleteButton" type="submit" value="Delete" class="btn btn-md btn-outline-danger waves-effect waves-light" formaction="../deleteItem/?itemSumID=<%= mbomItemData[i].itemSumID %>"/>
+                                                                    <button id="deleteButton" type="submit" class="btn btn-md btn-outline-danger waves-effect waves-light delete-item-btn" formaction="../deleteItem/?itemSumID=<%= mbomItemData[i].itemSumID %>" data-toggle="tooltip" title="Delete" aria-label="Delete">
+                                                                            <i class="fas fa-trash" aria-hidden="true"></i>
+                                                                    </button>
                                                                 </td>
                                                             </tr>
                                                         <% } %>
