@@ -474,6 +474,9 @@ function setupFilter(inputId, tableId, opts){
             if(opts && opts.groupSelectId){
                 const sel = document.getElementById(opts.groupSelectId);
                 if(sel){ sel.value = 'none'; if(typeof opts.applyGrouping === 'function') opts.applyGrouping(); }
+                if(opts && opts.groupStorageKey){
+                    try{ localStorage.setItem(opts.groupStorageKey, 'none'); }catch(e){}
+                }
             }
         });
     }
@@ -513,12 +516,51 @@ function mbomInit(configs){
                 if(table) table.setAttribute('data-group-col', String(cfg.defaultGroup));
             }
             try{ groupTable(cfg.tableId); }catch(e){}
-            try{ setupFilter(cfg.filterId, cfg.tableId, {clearFilterId: cfg.clearFilterId, groupSelectId: cfg.groupSelectId, applyGrouping: function(){ applyGroupingFor(cfg.tableId, cfg.groupSelectId, cfg.groupMap); }}); }catch(e){}
+            try{
+                // provide a storage key for grouping to allow setupFilter to clear persisted grouping
+                // storage key base includes tableId; actual key will include mbomID when used
+                const groupStorageKeyBase = 'mbom.group.' + cfg.tableId;
+                setupFilter(cfg.filterId, cfg.tableId, {clearFilterId: cfg.clearFilterId, groupSelectId: cfg.groupSelectId, groupStorageKey: groupStorageKeyBase, applyGrouping: function(){ applyGroupingFor(cfg.tableId, cfg.groupSelectId, cfg.groupMap); }});
+            }catch(e){}
             try{ makeHeadersSortable(cfg.tableId, {filterId: cfg.filterId}); }catch(e){}
             if(cfg.groupSelectId){
                 const sel = document.getElementById(cfg.groupSelectId);
+                const storageKeyBase = 'mbom.group.' + cfg.tableId;
                 if(sel){
-                    sel.addEventListener('change', function(){ applyGroupingFor(cfg.tableId, cfg.groupSelectId, cfg.groupMap); });
+                    // restore persisted selection if present for this mbom
+                    try{
+                        var mbomEl = document.getElementById('mbomID');
+                        var key = storageKeyBase;
+                        if(mbomEl && mbomEl.value) key = storageKeyBase + '.' + String(mbomEl.value);
+                        const stored = localStorage.getItem(key);
+                        if(stored !== null && stored !== undefined){ sel.value = stored; }
+
+                        // clear any other MBOM-specific keys for this table so switching MBOMs doesn't retain previous MBOM's grouping
+                        if(mbomEl && mbomEl.value){
+                            try{
+                                var cur = String(mbomEl.value);
+                                var prefix = storageKeyBase + '.';
+                                for(var i=localStorage.length-1;i>=0;i--){
+                                    var k = localStorage.key(i);
+                                    if(!k) continue;
+                                    if(k.indexOf(prefix) === 0){
+                                        var suffix = k.substring(prefix.length);
+                                        if(suffix !== cur){ try{ localStorage.removeItem(k); }catch(e){} }
+                                    }
+                                }
+                            }catch(e){}
+                        }
+                    }catch(e){}
+
+                    sel.addEventListener('change', function(){
+                        try{
+                            var mbomEl2 = document.getElementById('mbomID');
+                            var key2 = storageKeyBase;
+                            if(mbomEl2 && mbomEl2.value) key2 = storageKeyBase + '.' + String(mbomEl2.value);
+                            localStorage.setItem(key2, sel.value);
+                        }catch(e){}
+                        applyGroupingFor(cfg.tableId, cfg.groupSelectId, cfg.groupMap);
+                    });
                     if(!sel.value) sel.value = 'none';
                     applyGroupingFor(cfg.tableId, cfg.groupSelectId, cfg.groupMap);
                 }

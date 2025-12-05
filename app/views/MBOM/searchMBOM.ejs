@@ -822,14 +822,14 @@
                                     </div>
                                     <hr>
                                     <div class="row mb-2 border rounded" style="padding-top: 15px; padding-bottom: 10px; margin-left: 0px; margin-right: 0px;">
-                                        <div class="d-flex col-sm-2 text-center" style="min-width: 250px;">
+                                        <div class="d-flex col-sm-2 text-center" style="min-width: 260px;">
                                             <h5>Circuit Breaker(s) (<span id="breakerCount"><%= mbomBrkData.length %></span>)</h5>
                                         </div>
                                         <div class="d-flex col-sm-2 align-items-center justify-content-between" style="min-width: 155px; max-width: 180px;">
-                                            <button id="copyBreakersBtn" type="button" class="btn btn-md btn-outline-secondary waves-effect waves-light bulk-action-btn copy-breaker-btn" data-action="/copyBreakers" data-target-form="breakerForm" data-toggle="tooltip" title="Copy selected breakers" aria-label="Copy selected breakers">
+                                            <button id="copyBreakersBtn" type="button" class="btn btn-md btn-outline-secondary waves-effect waves-light bulk-action-btn copy-breaker-btn" data-action="/copyBreakers" data-target-form="brkForm" data-toggle="tooltip" title="Copy selected breakers" aria-label="Copy selected breakers">
                                                 <i class="fas fa-clone" aria-hidden="true"></i>
                                             </button>
-                                            <button id="deleteBreakersBtn" type="button" class="btn btn-md btn-outline-danger waves-effect waves-light bulk-action-btn delete-breaker-btn" data-action="/deleteBreakers" data-target-form="breakerForm" data-toggle="tooltip" title="Delete selected breakers" aria-label="Delete selected breakers">
+                                            <button id="deleteBreakersBtn" type="button" class="btn btn-md btn-outline-danger waves-effect waves-light bulk-action-btn delete-breaker-btn" data-action="/deleteBreakers" data-target-form="brkForm" data-toggle="tooltip" title="Delete selected breakers" aria-label="Delete selected breakers">
                                                 <i class="fas fa-trash" aria-hidden="true"></i>
                                             </button>
                                             <button id="filterBreakerBtn" type="button" class="btn btn-md btn-outline-info waves-effect waves-light filter-breaker-btn" title="Show Breaker Filters" aria-pressed="false" aria-label="Show or hide breaker filter options">
