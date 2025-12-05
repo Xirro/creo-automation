@@ -113,10 +113,6 @@ function groupTable(tableId){
             icon.textContent = isCollapsed ? '\u25B6' : '\u25BC';
             rowsForKey.forEach(r => {
                 r.style.display = isCollapsed ? 'none' : '';
-                const next = r.nextElementSibling;
-                if(next && next.querySelector('td') && next.querySelector('td').hasAttribute('colspan')){
-                    next.style.display = isCollapsed ? 'none' : '';
-                }
             });
         });
     }
