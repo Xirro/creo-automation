@@ -1,0 +1,128 @@
+/* MBOM table shared styles (moved from searchMBOM.ejs) */
+
+/* Truncate long table cell content with an ellipsis (responsive fallbacks) */
+.ellipsis {
+    display: inline-block;
+    max-width: 300px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    vertical-align: middle;
+}
+
+/* Items table: make the last column fixed width (actions), other
+   columns responsive and proportional. Use table-layout: fixed so
+   widths are predictable; tweak percentages per breakpoint below. */
+.items-table { table-layout: fixed; width: 100%; }
+.items-table th, .items-table td { vertical-align: middle; }
+
+/* Fixed column widths */
+.items-table .actions-col { width: 155px; min-width: 155px; max-width: 155px; white-space: nowrap; }
+
+/* Default proportional widths (these are percentages of the full table width) */
+.items-table .qty-col      { width: 6%; }
+.items-table .type-col     { width: 12%; }
+.items-table .mfg-col      { width: 12%; }
+.items-table .desc-col     { width: 32%; }
+.items-table .pn-col       { width: 14%; }
+.items-table .section-col  { width: 8%; }
+.items-table .ship-col     { width: 6%; }
+
+/* Small screens: give more room to description and allow columns to reflow */
+@media (max-width: 575.98px) {
+    .items-table { table-layout: auto; }
+    .items-table .qty-col      { width: 8%; }
+    .items-table .type-col     { width: 18%; }
+    .items-table .mfg-col      { width: 18%; }
+    .items-table .desc-col     { width: 34%; }
+    .items-table .pn-col       { width: 12%; }
+    .items-table .section-col  { width: 6%; }
+    .items-table .ship-col     { width: 4%; }
+}
+
+/* Breakers table: proportional widths, with slightly different priorities.
+   Reduce percentage allocation so a fixed actions column doesn't
+   force the table to overflow. Make the table block-scrollable on very
+   small widths to avoid layout breakage. */
+.breakers-table { table-layout: fixed; width: 100%; max-width: 100%; box-sizing: border-box; }
+.breakers-table th, .breakers-table td { vertical-align: middle; box-sizing: border-box; }
+
+/* Fixed actions column */
+.breakers-table .actions-col { width: 155px; min-width: 155px; max-width: 155px; white-space: nowrap; }
+
+.breakers-table .device-col   { width: 18%; }
+.breakers-table .cat-col      { width: 12%; }
+.breakers-table .brkpn-col    { width: 25%; }
+.breakers-table .cradle-col   { width: 25%; }
+.breakers-table .brksection-col { width: 20%; }
+
+/* Small viewport: horizontal scroll to avoid layout breakage */
+@media (max-width: 575.98px) {
+    .breakers-table { table-layout: auto; display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .breakers-table thead, .breakers-table tbody, .breakers-table tr { display: table; width: 100%; table-layout: auto; }
+    .breakers-table .device-col   { width: auto; }
+    .breakers-table .cat-col      { width: auto; }
+    .breakers-table .brkpn-col    { width: auto; }
+    .breakers-table .cradle-col   { width: auto; }
+    .breakers-table .brksection-col { width: auto; }
+}
+
+/* Truncate overflowing text inside the configured groupable tables. */
+.items-table th, .items-table td,
+.breakers-table th, .breakers-table td {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+}
+
+/* Ensure inner ellipsis spans behave correctly and can use full cell width */
+.items-table td > .ellipsis,
+.breakers-table td > .ellipsis {
+    display: inline-block;
+    width: 100%;
+    vertical-align: middle;
+}
+
+/* --- existing breaker-specific rules copied from previous mbomBrkTable.css --- */
+.datatable{
+    border-collapse: collapse;
+    border-spacing: 0;
+    width: 100%;
+}
+
+.no-transition {
+    -webkit-transition: height 0.001s;
+    -moz-transition: height 0.001s;
+    -ms-transition: height 0.001s;
+    -o-transition: height 0.001s;
+    transition: height 0.001s;
+}
+
+.accordion-body{
+    background-color: #f2f2f2;
+    padding: .5% 2% 1% 2%;
+    max-height: none;
+}
+
+#brkAccTable{
+    width: 100%;
+    background-color: white;
+}
+
+#bomTable{
+    width: 100%;
+    background-color: white;
+}
+
+#brkAccTD{
+    padding: 0 !important;
+}
+
+#bomTD{
+    padding: 0 !important;
+}
+
+.fa-angle-down{
+    float: right;
+}

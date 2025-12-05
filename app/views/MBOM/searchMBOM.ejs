@@ -25,7 +25,7 @@
     <link href="/public/assets/css/icons.css" rel="stylesheet" type="text/css">
     <link href="/public/assets/css/bootstrap.min.css" rel="stylesheet" type="text/css">
     <link href="/public/assets/css/style.css" rel="stylesheet" type="text/css">
-    <link href="/public/assets/css/mbomBrkTable.css" rel="stylesheet" type="text/css">
+    <link href="/public/assets/css/mbomTable.css" rel="stylesheet" type="text/css">
     <link href="/public/assets/css/mbomShipLoose.css" rel="stylesheet" type="text/css">
     <script>
         document.addEventListener("DOMContentLoaded", function(event) {
@@ -43,6 +43,7 @@
         div{
             overflow: visible !important;
         }
+        /* MBOM table styles moved to external stylesheet: /public/assets/css/mbomTable.css */
         /* Hide visual sort indicators when table has .sort-hidden, but keep aria-sort for accessibility */
         table.sort-hidden .sort-indicator { visibility: hidden !important; }
           /* Keep the primary selects aligned on one row; manual 'OTHER' inputs are visible
@@ -850,16 +851,17 @@
                                             <input type="text" name="numSections" class="form-control" value="<%= mbomData.numSections %>" id="numSections" hidden="hidden">
                                             <input type="text" name="noSectionMBOM" class="form-control" value="<%= mbomData.noSectionMBOM%>" id="noSectionMBOM" hidden="hidden">
                                         <% } %>
-                                        <table id="breakersTable" class="table table-condensed table-bordered dt-responsive nowrap groupable-table" data-group-col="none">
+                                        <table id="breakersTable" class="table table-bordered dt-responsive nowrap groupable-table breakers-table" data-group-col="none" style="border-collapse: collapse; border-spacing: 0; width: 100%;">
                                             <thead>
                                             <tr>
                                                 <th style="display: none;">ID</th>
-                                                <th style="display:none;">MBOM ID</th>
-                                                <th style="width:12%;">Device Designation</th>
-                                                <th style="width:10%;">Cat. Code</th>
-                                                <th style="width:20%;">Breaker P/N</th>
-                                                <th style="width:20%;">Cradle P/N</th>
-                                                <th style="width:15%;">Section #</th>
+                                                <th style="display: none;">MBOM ID</th>
+                                                <th class="device-col">Device Designation</th>
+                                                <th class="cat-col">Cat. Code</th>
+                                                <th class="brkpn-col">Breaker P/N</th>
+                                                <th class="cradle-col">Cradle P/N</th>
+                                                <th class="brksection-col">Section #</th>
+                                                <th class="actions-col"></th>
                                             </tr>
                                             </thead>
                                             <tbody>
@@ -924,7 +926,7 @@
                                                         </tr>
                                                         <% if(idDevs.has(currentBrk)){ %>
                                                         <tr>
-                                                            <td id="brkAccTD" colspan="7" class="hiddenRow">
+                                                            <td id="brkAccTD" colspan="8" class="hiddenRow">
                                                                 <div class="accordion-body collapse in no-transition" id="breaker<%=currentBrk%>">
                                                                     <h6>Accessories</h6>
                                                                     <table id="brkAccTable" align="center">
@@ -1251,20 +1253,20 @@
                                             <input type="text" name="boardDesignation" class="form-control" value="<%= mbomData.boardDesignation %>" id="boardDesignation" hidden="hidden">
                                             <input type="text" name="numSections" class="form-control" value="<%= mbomData.numSections %>" id="numSections" hidden="hidden">
                                         <% } %>
-                                        <table id="itemsTable" class="table table-bordered dt-responsive nowrap groupable-table" data-group-col="2" style="border-collapse: collapse; border-spacing: 0; width: 100%;">
+                                        <table id="itemsTable" class="table table-bordered dt-responsive nowrap groupable-table items-table" data-group-col="2" style="border-collapse: collapse; border-spacing: 0; width: 100%;">
                                             <thead>
                                             <tr>
                                                 <th style="display:none;">Sum Item ID</th>
                                                 <th style="display:none;">Com Item ID</th>
                                                 <th style="display:none;">User Item ID</th>
-                                                <th style="width:5%;">Qty</th>
-                                                <th style="width:10%;">Item Type</th>
-                                                <th style="width:10%;">Item Mfg</th>
-                                                <th style="width:15%;">Item Description</th>
-                                                <th style="width:10%;">Item P/N</th>
-                                                <th style="width:7%;">Section</th>
-                                                <th style="width:6%;">Ship Loose?</th>
-                                                <th style="width:15%;"></th>
+                                                <th class="qty-col">Qty</th>
+                                                <th class="type-col">Item Type</th>
+                                                <th class="mfg-col">Item Mfg</th>
+                                                <th class="desc-col">Item Description</th>
+                                                <th class="pn-col">Item P/N</th>
+                                                <th class="section-col">Section</th>
+                                                <th class="ship-col">Ship Loose?</th>
+                                                <th class="actions-col"></th>
                                             </tr>
                                             </thead>
                                             <tbody>
@@ -1296,7 +1298,7 @@
                                                                 <td><%= mbomItemData[i].itemQty %></td>
                                                                 <td><%= comItemData[j].itemType %></td>
                                                                 <td><%= comItemData[j].itemMfg %></td>
-                                                                <td><%= comItemData[j].itemDesc %></td>
+                                                                <td><span class="ellipsis" title="<%= comItemData[j].itemDesc %>"><%= comItemData[j].itemDesc %></span></td>
                                                                 <td><%= comItemData[j].itemPN %></td>
                                                                 <td><%= secLabel %></td>
                                                                 <td><%= String(mbomItemData[i].shipLoose).toUpperCase() === 'Y' ? 'Yes' : 'No' %></td>
@@ -1324,7 +1326,7 @@
                                                                 <td><%= mbomItemData[i].itemQty %></td>
                                                                 <td><%= userItemData[j].itemType %></td>
                                                                 <td><%= userItemData[j].itemMfg %></td>
-                                                                <td><%= userItemData[j].itemDesc %></td>
+                                                                <td><span class="ellipsis" title="<%= userItemData[j].itemDesc %>"><%= userItemData[j].itemDesc %></span></td>
                                                                 <td><%= userItemData[j].itemPN %></td>
                                                                 <td><%= secLabel %></td>
                                                                 <td><%= String(mbomItemData[i].shipLoose).toUpperCase() === 'Y' ? 'Yes' : 'No' %></td>
