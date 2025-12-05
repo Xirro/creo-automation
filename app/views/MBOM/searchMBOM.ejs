@@ -821,9 +821,25 @@
                                         </div>
                                     </div>
                                     <hr>
+                                    <div class="row mb-2 border rounded" style="padding-top: 15px; padding-bottom: 10px; margin-left: 0px; margin-right: 0px;">
+                                        <div class="d-flex col-sm-2 text-center" style="min-width: 250px;">
+                                            <h5>Circuit Breaker(s) (<span id="breakerCount"><%= mbomBrkData.length %></span>)</h5>
+                                        </div>
+                                        <div class="d-flex col-sm-2 align-items-center justify-content-between" style="min-width: 155px; max-width: 180px;">
+                                            <button id="copyBreakersBtn" type="button" class="btn btn-md btn-outline-secondary waves-effect waves-light bulk-action-btn copy-breaker-btn" data-action="/copyBreakers" data-target-form="breakerForm" data-toggle="tooltip" title="Copy selected breakers" aria-label="Copy selected breakers">
+                                                <i class="fas fa-clone" aria-hidden="true"></i>
+                                            </button>
+                                            <button id="deleteBreakersBtn" type="button" class="btn btn-md btn-outline-danger waves-effect waves-light bulk-action-btn delete-breaker-btn" data-action="/deleteBreakers" data-target-form="breakerForm" data-toggle="tooltip" title="Delete selected breakers" aria-label="Delete selected breakers">
+                                                <i class="fas fa-trash" aria-hidden="true"></i>
+                                            </button>
+                                            <button id="filterBreakerBtn" type="button" class="btn btn-md btn-outline-info waves-effect waves-light filter-breaker-btn" title="Show Breaker Filters" aria-pressed="false" aria-label="Show or hide breaker filter options">
+                                                <i class="fas fa-filter" aria-hidden="true"></i>
+                                            </button>
+                                        </div>
+                                    </div>
                                     <p class="text-muted m-b-15"></p>
                                         <% if(mbomBrkData.length != 0){ %>
-                                        <div class="row mb-2">
+                                        <div class="row mb-2" id="filterBreakerRow" style="display: none;">
                                             <div class="col-sm-4">
                                                 <input type="text" id="brkFilter" class="form-control" placeholder="Filter breakers (any column)..." />
                                             </div>
@@ -854,6 +870,7 @@
                                         <table id="breakersTable" class="table table-bordered dt-responsive nowrap groupable-table breakers-table" data-group-col="none" style="border-collapse: collapse; border-spacing: 0; width: 100%;">
                                             <thead>
                                             <tr>
+                                                <th class="select-col"><input type="checkbox" id="breakers-select-all" aria-label="Select all breakers" /></th>
                                                 <th style="display: none;">ID</th>
                                                 <th style="display: none;">MBOM ID</th>
                                                 <th class="device-col">Device Designation</th>
@@ -899,7 +916,10 @@
                                                                 <% } %>
                                                             <% } %>
                                                         <% } %>
-                                                        <tr data-toggle="collapse" data-target="#breaker<%=currentBrk%>" class="accordion-toggle">
+                                                            <tr data-toggle="collapse" data-target="#breaker<%=currentBrk%>" class="accordion-toggle">
+                                                            <td style="text-align:center;">
+                                                                <input type="checkbox" name="selectedBreakerIDs[]" value="<%= mbomBrkData[i].idDev %>" class="breaker-row-select" data-id="<%= mbomBrkData[i].idDev %>" aria-label="Select breaker row" />
+                                                            </td>
                                                             <td style="display: none;"><%= mbomBrkData[i].idDev %></td>
                                                             <td style="display: none;"><%= mbomBrkData[i].mbomID %></td>
                                                             <td>
@@ -926,7 +946,7 @@
                                                         </tr>
                                                         <% if(idDevs.has(currentBrk)){ %>
                                                         <tr>
-                                                            <td id="brkAccTD" colspan="8" class="hiddenRow">
+                                                            <td id="brkAccTD" colspan="9" class="hiddenRow">
                                                                 <div class="accordion-body collapse in no-transition" id="breaker<%=currentBrk%>">
                                                                     <h6>Accessories</h6>
                                                                     <table id="brkAccTable" align="center">
@@ -1225,7 +1245,23 @@
                                     <% if(mbomItemData.length != 0){ %>
                                         <p class="text-muted m-b-30"></p>
                                         <hr>
-                                        <div class="row mb-2">
+                                        <div class="row mb-2 border rounded" style="padding-top: 15px; padding-bottom: 10px; margin-left: 0px; margin-right: 0px;">
+                                            <div class="d-flex col-sm-2 text-center" style="min-width: 160px;">
+                                                <h5>Item(s) (<span id="itemCount"><%= mbomItemData.length %></span>)</h5>
+                                            </div>
+                                            <div class="d-flex col-sm-2 align-items-center justify-content-between" style="min-width: 155px; max-width: 180px;">
+                                                <button id="copyItemsBtn" type="button" class="btn btn-md btn-outline-secondary waves-effect waves-light bulk-action-btn copy-item-btn" data-action="/copyItems" data-target-form="itemForm" data-toggle="tooltip" title="Copy selected items" aria-label="Copy selected items">
+                                                    <i class="fas fa-clone" aria-hidden="true"></i>
+                                                </button>
+                                                <button id="deleteItemsBtn" type="button" class="btn btn-md btn-outline-danger waves-effect waves-light bulk-action-btn delete-item-btn" data-action="/deleteItems" data-target-form="itemForm" data-toggle="tooltip" title="Delete selected items" aria-label="Delete selected items">
+                                                    <i class="fas fa-trash" aria-hidden="true"></i>
+                                                </button>
+                                                <button id="filterItemBtn" type="button" class="btn btn-md btn-outline-info waves-effect waves-light filter-item-btn" data-toggle="tooltip" title="Show Filter Options" aria-pressed="false" aria-label="Show or hide filter options">
+                                                    <i class="fas fa-filter" aria-hidden="true"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <div id="filterItemRow" class="row mb-2" style="display: none;">
                                             <div class="col-sm-4">
                                                 <input type="text" id="itemFilter" class="form-control" placeholder="Filter items (any column)..." />
                                             </div>
@@ -1256,6 +1292,7 @@
                                         <table id="itemsTable" class="table table-bordered dt-responsive nowrap groupable-table items-table" data-group-col="2" style="border-collapse: collapse; border-spacing: 0; width: 100%;">
                                             <thead>
                                             <tr>
+                                                <th class="select-col"><input type="checkbox" id="items-select-all" aria-label="Select all items" /></th>
                                                 <th style="display:none;">Sum Item ID</th>
                                                 <th style="display:none;">Com Item ID</th>
                                                 <th style="display:none;">User Item ID</th>
@@ -1292,6 +1329,9 @@
                                                         <%for(var j = 0; j < comItemData.length; j++){ %>
                                                         <%if(mbomItemData[i].comItemID == comItemData[j].comItemID){ %>
                                                             <tr>
+                                                                <td style="text-align:center;">
+                                                                    <input type="checkbox" name="selectedItemIDs[]" value="<%= mbomItemData[i].itemSumID %>" class="item-row-select" data-id="<%= mbomItemData[i].itemSumID %>" aria-label="Select item row" />
+                                                                </td>
                                                                 <td style="display: none;"><%= mbomItemData[i].itemSumID %></td>
                                                                 <td style="display: none;"><%= mbomItemData[i].comItemID %></td>
                                                                 <td style="display: none;"><%= mbomItemData[i].userItemID %></td>
@@ -1320,6 +1360,9 @@
                                                         <%for(let j = 0; j < userItemData.length; j++){ %>
                                                         <%if(mbomItemData[i].userItemID == userItemData[j].userItemID){ %>
                                                             <tr>
+                                                                <td style="text-align:center;">
+                                                                    <input type="checkbox" name="selectedItemIDs[]" value="<%= mbomItemData[i].itemSumID %>" class="item-row-select" data-id="<%= mbomItemData[i].itemSumID %>" aria-label="Select item row" />
+                                                                </td>
                                                                 <td style="display: none;"><%= mbomItemData[i].itemSumID %></td>
                                                                 <td style="display: none;"><%= mbomItemData[i].comItemID %></td>
                                                                 <td style="display: none;"><%= mbomItemData[i].userItemID %></td>
@@ -1383,7 +1426,7 @@
                 clearFilterId: 'brkClearFilter',
                 groupSelectId: 'brkGroupSelect',
                 defaultGroup: 'none',
-                groupMap: { device: 2, brkPN: 4, cradlePN: 5, section: 6 }
+                groupMap: { device: 3, brkPN: 5, cradlePN: 6, section: 7 }
             },
             {
                 tableId: 'itemsTable',
@@ -1391,7 +1434,7 @@
                 clearFilterId: 'itemClearFilter',
                 groupSelectId: 'itemGroupSelect',
                 defaultGroup: 'none',
-                groupMap: { itemType: 4, itemMfg: 5, itemPN: 7, section: 8, shipLoose: 9 }
+                groupMap: { itemType: 5, itemMfg: 6, itemPN: 8, section: 9, shipLoose: 10 }
             }
         ];
         if(window.mbomInit) mbomInit(configs);
@@ -1425,6 +1468,119 @@
                 }
             });
         });
+    });
+</script>
+<script>
+    // Bulk action button handler: collect selected IDs and submit the specified form to data-action
+    document.addEventListener('DOMContentLoaded', function () {
+        function handleBulkActionClick(ev){
+            const btn = ev.currentTarget;
+            const action = btn.getAttribute('data-action');
+            const targetFormId = btn.getAttribute('data-target-form');
+            if(!targetFormId){ console.warn('bulk-action-btn missing data-target-form'); return; }
+            const form = document.getElementById(targetFormId);
+            if(!form){ alert('Form not found: ' + targetFormId); return; }
+
+            // determine which row checkboxes to collect based on form id
+            let selector = 'input.item-row-select:checked';
+            if(targetFormId === 'brkForm') selector = 'input.breaker-row-select:checked';
+            // collect checked inputs inside the form first, fallback to document
+            let checked = Array.from(form.querySelectorAll(selector));
+            if(checked.length === 0) checked = Array.from(document.querySelectorAll(selector));
+
+            if(checked.length === 0){ alert('Please select one or more rows first.'); return; }
+
+            // remove any previously-inserted hidden selection inputs to avoid duplicates
+            const nameMap = {
+                'itemForm': 'selectedItemIDs[]',
+                'brkForm': 'selectedBreakerIDs[]'
+            };
+            const hiddenName = nameMap[targetFormId] || 'selectedIDs[]';
+            Array.from(form.querySelectorAll('input[type="hidden"][name="' + hiddenName + '"]')).forEach(h=>h.remove());
+
+            // append hidden inputs for each selected id
+            checked.forEach(cb => {
+                const val = cb.value || cb.getAttribute('data-id');
+                if(!val) return;
+                const h = document.createElement('input');
+                h.type = 'hidden';
+                h.name = hiddenName;
+                h.value = val;
+                form.appendChild(h);
+            });
+
+            // set form action and submit
+            if(action) form.action = action;
+            form.method = 'post';
+            form.submit();
+        }
+
+        document.querySelectorAll('.bulk-action-btn').forEach(function(b){ b.addEventListener('click', handleBulkActionClick); });
+    });
+</script>
+<script src="/assets/js/rowToggle.js"></script>
+<script>
+    // Lightweight initializer: use the shared `setupFilterToggle` from filterToggle.js
+    document.addEventListener('DOMContentLoaded', function () {
+        if (window.setupFilterToggle) {
+            try { setupFilterToggle('filterItemBtn', 'filterItemRow', { initialHidden: true }); } catch (e) { /* ignore */ }
+            try { setupFilterToggle('filterBreakerBtn', 'filterBreakerRow', { initialHidden: true }); } catch (e) { /* ignore */ }
+        }
+    });
+</script>
+<script>
+    // Header -> row checkbox wiring for breakers and items
+    document.addEventListener('DOMContentLoaded', function () {
+        function wireSelectAll(headerSelector, rowSelector) {
+            const header = document.querySelector(headerSelector);
+            if (!header) return;
+            const rows = () => Array.from(document.querySelectorAll(rowSelector));
+
+            header.addEventListener('change', function () {
+                const checked = !!this.checked;
+                rows().forEach(function (cb) { cb.checked = checked; });
+            });
+
+            // keep header checkbox state in sync with row checkboxes
+            function updateHeader() {
+                const r = rows();
+                if (r.length === 0) { header.checked = false; header.indeterminate = false; return; }
+                const allChecked = r.every(c => c.checked);
+                const anyChecked = r.some(c => c.checked);
+                header.checked = allChecked;
+                header.indeterminate = !allChecked && anyChecked;
+            }
+
+            // attach listeners to current rows
+            rows().forEach(function (cb) {
+                cb.addEventListener('change', updateHeader);
+            });
+
+            // if rows may be added/removed dynamically, observe table body for changes
+            const table = header.closest('table');
+            if (table) {
+                const tbody = table.querySelector('tbody');
+                if (tbody && window.MutationObserver) {
+                    const mo = new MutationObserver(function () {
+                        // reattach listeners and update header
+                        rows().forEach(function (cb) {
+                            if (!cb._selectWired) {
+                                cb.addEventListener('change', updateHeader);
+                                cb._selectWired = true;
+                            }
+                        });
+                        updateHeader();
+                    });
+                    mo.observe(tbody, { childList: true, subtree: true });
+                }
+            }
+
+            // initial state
+            updateHeader();
+        }
+
+        wireSelectAll('#breakers-select-all', '#breakersTable tbody input.breaker-row-select[type="checkbox"]');
+        wireSelectAll('#items-select-all', '#itemsTable tbody input.item-row-select[type="checkbox"]');
     });
 </script>
 <script src="/public/assets/js/characterLimit.js"></script>

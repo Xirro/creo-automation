@@ -3,7 +3,6 @@
 /* Truncate long table cell content with an ellipsis (responsive fallbacks) */
 .ellipsis {
     display: inline-block;
-    max-width: 300px;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -20,13 +19,13 @@
 .items-table .actions-col { width: 155px; min-width: 155px; max-width: 155px; white-space: nowrap; }
 
 /* Default proportional widths (these are percentages of the full table width) */
-.items-table .qty-col      { width: 6%; }
-.items-table .type-col     { width: 12%; }
-.items-table .mfg-col      { width: 12%; }
-.items-table .desc-col     { width: 32%; }
-.items-table .pn-col       { width: 14%; }
-.items-table .section-col  { width: 8%; }
-.items-table .ship-col     { width: 6%; }
+.items-table .qty-col      { width: 7%; }
+.items-table .type-col     { width: 13%; }
+.items-table .mfg-col      { width: 15%; }
+.items-table .desc-col     { width: 30%; }
+.items-table .pn-col       { width: 18%; }
+.items-table .section-col  { width: 9%; }
+.items-table .ship-col     { width: 9%; }
 
 /* Small screens: give more room to description and allow columns to reflow */
 @media (max-width: 575.98px) {
@@ -74,6 +73,66 @@
     overflow: hidden;
     text-overflow: ellipsis;
     max-width: 100%;
+}
+
+/* Table header styling: gray background, bold white text for both tables */
+.items-table thead th,
+.breakers-table thead th {
+    background-color: #6c757d; /* Bootstrap secondary / medium gray */
+    color: #ffffff;
+    font-weight: 700;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    vertical-align: middle;
+    text-align: left;
+}
+
+/* Ensure interactive elements in headers inherit the white color */
+.items-table thead th *,
+.breakers-table thead th * {
+    color: inherit;
+}
+
+/* Small select column for row checkboxes */
+.select-col { width: 44px; text-align: center; }
+.items-table td input[type="checkbox"],
+.breakers-table td input[type="checkbox"] {
+    vertical-align: middle;
+    margin: 0;
+}
+
+/* Make select-column checkboxes slightly larger and centered */
+.items-table thead th.select-col input[type="checkbox"],
+.breakers-table thead th.select-col input[type="checkbox"],
+.items-table tbody td:first-child input[type="checkbox"],
+.breakers-table tbody td:first-child input[type="checkbox"] {
+    transform: scale(1.05);
+    transform-origin: center;
+    margin: 0 2px;
+    /* width/height are best-effort; browsers may ignore these for native checkboxes */
+    width: 18px;
+    height: 18px;
+}
+
+/* Don't truncate the select column (header and first cell) so checkboxes remain fully visible */
+.items-table thead th.select-col,
+.breakers-table thead th.select-col,
+.items-table tbody td:first-child,
+.breakers-table tbody td:first-child {
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+}
+
+/* Reduce vertical padding in table body rows for MBOM tables only.
+   Override global table padding so rows use 5px top/bottom (keep horizontal padding). */
+.items-table > tbody > tr > td,
+.items-table > tbody > tr > th,
+.breakers-table > tbody > tr > td,
+.breakers-table > tbody > tr > th {
+    padding-top: 7px;
+    padding-bottom: 7px;
+    padding-left: 12px; /* keep horizontal spacing similar to global rules */
+    padding-right: 12px;
 }
 
 /* Ensure inner ellipsis spans behave correctly and can use full cell width */

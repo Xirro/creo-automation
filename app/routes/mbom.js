@@ -105,6 +105,10 @@ app.post('/copyItem', mbomController.copyItem);
 
 //post request to /deleteItem url => deleteItem()
 app.post('/deleteItem', mbomController.deleteItem);
+//post request to /copyItems url => copyItems() (bulk)
+app.post('/copyItems', mbomController.copyItems);
+//post request to /deleteItems url => deleteItems() (bulk)
+app.post('/deleteItems', mbomController.deleteItems);
 
 
 /***********************************************
@@ -124,6 +128,10 @@ app.post('/editBreakerSave', mbomController.editBreakerSave);
 
 //post request to /deleteBreaker url => deleteBreaker()
 app.post('/deleteBreaker', mbomController.deleteBreaker);
+//post request to /copyBreakers url => copyBreakers() (bulk)
+app.post('/copyBreakers', mbomController.copyBreakers);
+//post request to /deleteBreakers url => deleteBreakers() (bulk)
+app.post('/deleteBreakers', mbomController.deleteBreakers);
 
 
 /***********************************************

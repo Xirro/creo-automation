@@ -364,6 +364,9 @@ function makeHeadersSortable(tableId, opts){
     if(!thead) return;
     let sortState = {};
     Array.from(thead.querySelectorAll('th')).forEach(function(th){
+        // Skip sortable wiring for columns that should not be sorted (select/action columns)
+        const skipSort = (th.classList && (th.classList.contains('no-sort') || th.classList.contains('select-col') || th.classList.contains('actions-col'))) || th.dataset && th.dataset.orderable === 'false';
+        if(skipSort) return;
         th.style.cursor = 'pointer';
         let ind = th.querySelector('.sort-indicator');
         if(!ind){

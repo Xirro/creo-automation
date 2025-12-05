@@ -4264,3 +4264,247 @@ exports.updateItemSection = function(req, res) {
             res.json({ success: false, error: String(err) });
         });
 };
+
+
+// Bulk delete items (transactional)
+exports.deleteItems = async function(req, res) {
+    req.setTimeout(0);
+    // normalize selected IDs from form (could be single value or array)
+    let selected = req.body.selectedItemIDs || req.body['selectedItemIDs[]'] || [];
+    if (!Array.isArray(selected)) selected = [selected];
+    // normalize and dedupe IDs to avoid duplicate processing from duplicate form inputs
+    selected = selected.map(String).filter(v => v && v.trim() !== '');
+    selected = Array.from(new Set(selected));
+
+    const mbomData = {
+        mbomID: req.body.mbomID,
+        jobNum: req.body.jobNum,
+        releaseNum: req.body.releaseNum
+    };
+
+    if (!selected || selected.length === 0) {
+        res.locals.title = 'Delete Items';
+        return res.redirect('../searchMBOM/?bomID=' + (mbomData.jobNum || '') + (mbomData.releaseNum || '') + "_" + (mbomData.mbomID || ''));
+    }
+
+    try {
+        const conn = await DB.getSqlConnection();
+        try {
+            await conn.beginTransaction();
+
+            for (let itemSumID of selected) {
+                // determine userItemID for potential cleanup
+                const [userRows] = await conn.query("SELECT userItemID FROM " + database + "." + dbConfig.MBOM_item_table + " WHERE itemSumID = ?", [itemSumID]);
+                const userItemID = (userRows && userRows[0]) ? userRows[0].userItemID : null;
+
+                // delete the itemSum row
+                await conn.query("DELETE FROM " + database + "." + dbConfig.MBOM_item_table + " WHERE itemSumID = ?", [itemSumID]);
+
+                // if there was a userItemID, ensure no other rows reference it before deleting the MBOM_user_items row
+                if (userItemID) {
+                    const [refCountRows] = await conn.query("SELECT COUNT(*) AS cnt FROM " + database + "." + dbConfig.MBOM_item_table + " WHERE userItemID = ?", [userItemID]);
+                    const cnt = (refCountRows && refCountRows[0]) ? refCountRows[0].cnt : 0;
+                    if (cnt === 0) {
+                        await conn.query("DELETE FROM " + database + "." + dbConfig.MBOM_user_items + " WHERE userItemID = ?", [userItemID]);
+                    }
+                }
+            }
+
+            await conn.commit();
+            conn.release();
+
+            res.locals.title = 'Delete Items';
+            return res.redirect('../searchMBOM/?bomID=' + mbomData.jobNum + mbomData.releaseNum + "_" + mbomData.mbomID);
+        } catch (err) {
+            try { await conn.rollback(); } catch (e) { /* ignore */ }
+            try { conn.release(); } catch (e) { /* ignore */ }
+            throw err;
+        }
+    } catch (err) {
+        console.log('deleteItems - error:', err);
+        return res.status(500).send('Error deleting items');
+    }
+};
+
+
+// Bulk copy items (transactional)
+exports.copyItems = async function(req, res) {
+    req.setTimeout(0);
+    let selected = req.body.selectedItemIDs || req.body['selectedItemIDs[]'] || [];
+    if (!Array.isArray(selected)) selected = [selected];
+    // normalize and dedupe
+    selected = selected.map(String).filter(v => v && v.trim() !== '');
+    selected = Array.from(new Set(selected));
+
+    const mbomData = {
+        mbomID: req.body.mbomID,
+        jobNum: req.body.jobNum,
+        releaseNum: req.body.releaseNum
+    };
+
+    if (!selected || selected.length === 0) {
+        res.locals.title = 'Copy Items';
+        return res.redirect('../searchMBOM/?bomID=' + (mbomData.jobNum || '') + (mbomData.releaseNum || '') + "_" + (mbomData.mbomID || ''));
+    }
+
+    try {
+        const conn = await DB.getSqlConnection();
+        try {
+            await conn.beginTransaction();
+
+            for (let itemSumID of selected) {
+                // fetch the source row
+                const [rows] = await conn.query("SELECT comItemID, userItemID, itemQty, shipLoose FROM " + database + "." + dbConfig.MBOM_item_table + " WHERE itemSumID = ?", [itemSumID]);
+                if (rows && rows[0]) {
+                    const itemData = {
+                        comItemID: rows[0].comItemID,
+                        userItemID: rows[0].userItemID,
+                        mbomID: mbomData.mbomID,
+                        itemQty: rows[0].itemQty,
+                        shipLoose: rows[0].shipLoose
+                    };
+                    await conn.query("INSERT INTO " + database + "." + dbConfig.MBOM_item_table + " SET ?", itemData);
+                }
+            }
+
+            await conn.commit();
+            conn.release();
+
+            res.locals.title = 'Copy Items';
+            return res.redirect('../searchMBOM/?bomID=' + mbomData.jobNum + mbomData.releaseNum + "_" + mbomData.mbomID);
+        } catch (err) {
+            try { await conn.rollback(); } catch (e) { /* ignore */ }
+            try { conn.release(); } catch (e) { /* ignore */ }
+            throw err;
+        }
+    } catch (err) {
+        console.log('copyItems - error:', err);
+        return res.status(500).send('Error copying items');
+    }
+};
+
+
+// Bulk delete breakers (transactional)
+exports.deleteBreakers = async function(req, res) {
+    req.setTimeout(0);
+    let selected = req.body.selectedBreakerIDs || req.body['selectedBreakerIDs[]'] || [];
+    if (!Array.isArray(selected)) selected = [selected];
+    // normalize and dedupe
+    selected = selected.map(String).filter(v => v && v.trim() !== '');
+    selected = Array.from(new Set(selected));
+
+    const mbomData = {
+        mbomID: req.body.mbomID,
+        jobNum: req.body.jobNum,
+        releaseNum: req.body.releaseNum
+    };
+
+    if (!selected || selected.length === 0) {
+        res.locals.title = 'Delete Breakers';
+        return res.redirect('../searchMBOM/?bomID=' + (mbomData.jobNum || '') + (mbomData.releaseNum || '') + "_" + (mbomData.mbomID || ''));
+    }
+
+    try {
+        const conn = await DB.getSqlConnection();
+        try {
+            await conn.beginTransaction();
+
+            for (let idDev of selected) {
+                await conn.query("DELETE FROM " + database + "." + dbConfig.MBOM_breaker_table + " WHERE idDev = ?", [idDev]);
+                await conn.query("DELETE FROM " + database + "." + dbConfig.MBOM_brkAcc_table + " WHERE idDev = ?", [idDev]);
+            }
+
+            await conn.commit();
+            conn.release();
+
+            res.locals.title = 'Delete Breakers';
+            return res.redirect('../searchMBOM/?bomID=' + mbomData.jobNum + mbomData.releaseNum + "_" + mbomData.mbomID);
+        } catch (err) {
+            try { await conn.rollback(); } catch (e) { /* ignore */ }
+            try { conn.release(); } catch (e) { /* ignore */ }
+            throw err;
+        }
+    } catch (err) {
+        console.log('deleteBreakers - error:', err);
+        return res.status(500).send('Error deleting breakers');
+    }
+};
+
+
+// Bulk copy breakers (transactional)
+exports.copyBreakers = async function(req, res) {
+    req.setTimeout(0);
+    let selected = req.body.selectedBreakerIDs || req.body['selectedBreakerIDs[]'] || [];
+    if (!Array.isArray(selected)) selected = [selected];
+    // normalize and dedupe
+    selected = selected.map(String).filter(v => v && v.trim() !== '');
+    selected = Array.from(new Set(selected));
+
+    const mbomData = {
+        mbomID: req.body.mbomID,
+        jobNum: req.body.jobNum,
+        releaseNum: req.body.releaseNum
+    };
+
+    if (!selected || selected.length === 0) {
+        res.locals.title = 'Copy Breakers';
+        return res.redirect('../searchMBOM/?bomID=' + (mbomData.jobNum || '') + (mbomData.releaseNum || '') + "_" + (mbomData.mbomID || ''));
+    }
+
+    try {
+        const conn = await DB.getSqlConnection();
+        try {
+            await conn.beginTransaction();
+
+            for (let idDev of selected) {
+                // fetch breaker and its accessories
+                const [brkRows] = await conn.query("SELECT devLayout, devDesignation, unitOfIssue, catCode, class, brkPN, cradlePN, devMfg FROM " + database + "." + dbConfig.MBOM_breaker_table + " WHERE idDev = ?", [idDev]);
+                if (!(brkRows && brkRows[0])) continue;
+                const brk = brkRows[0];
+                const brkData = {
+                    mbomID: mbomData.mbomID,
+                    devLayout: brk.devLayout,
+                    devDesignation: brk.devDesignation,
+                    unitOfIssue: brk.unitOfIssue,
+                    catCode: brk.catCode,
+                    class: brk.class,
+                    brkPN: brk.brkPN,
+                    cradlePN: brk.cradlePN,
+                    devMfg: brk.devMfg
+                };
+
+                const [insertRes] = await conn.query("INSERT INTO " + database + "." + dbConfig.MBOM_breaker_table + " SET ?", brkData);
+                const newDevID = (insertRes && insertRes.insertId) ? insertRes.insertId : null;
+
+                if (newDevID) {
+                    const [accRows] = await conn.query("SELECT brkAccQty, brkAccType, brkAccMfg, brkAccDesc, brkAccPN FROM " + database + "." + dbConfig.MBOM_brkAcc_table + " WHERE idDev = ?", [idDev]);
+                    for (let acc of accRows) {
+                        const accData = {
+                            mbomID: mbomData.mbomID,
+                            idDev: newDevID,
+                            brkAccQty: acc.brkAccQty,
+                            brkAccType: acc.brkAccType,
+                            brkAccMfg: acc.brkAccMfg,
+                            brkAccDesc: acc.brkAccDesc,
+                            brkAccPN: acc.brkAccPN
+                        };
+                        await conn.query("INSERT INTO " + database + "." + dbConfig.MBOM_brkAcc_table + " SET ?", accData);
+                    }
+                }
+            }
+
+            await conn.commit();
+            conn.release();
+
+            res.locals.title = 'Copy Breakers';
+            return res.redirect('../searchMBOM/?bomID=' + mbomData.jobNum + mbomData.releaseNum + "_" + mbomData.mbomID);
+        } catch (err) {
+            try { await conn.rollback(); } catch (e) { /* ignore */ }
+            try { conn.release(); } catch (e) { /* ignore */ }
+            throw err;
+        }
+    } catch (err) {
+        console.log('copyBreakers - error:', err);
+        return res.status(500).send('Error copying breakers');
+    }
+};
