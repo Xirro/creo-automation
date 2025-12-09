@@ -464,6 +464,49 @@
 			if (hiddenType || hiddenMfg || hiddenDesc || hiddenPN) {
 				try { $t.trigger('change'); $mfg.trigger('change'); $desc.trigger('change'); } catch (e) {}
 			}
+
+			// Also attempt to initialize uncommon selects/inputs from canonical hidden fields
+			try {
+				var hiddenUnit = ($form.find('.unitOfIssueHidden').length ? String($form.find('.unitOfIssueHidden').val() || '') : '');
+				var hiddenCat = ($form.find('.catCodeHidden').length ? String($form.find('.catCodeHidden').val() || '') : '');
+				var hiddenClass = ($form.find('.classHidden').length ? String($form.find('.classHidden').val() || '') : '');
+				var hiddenQty = ($form.find('.itemQtyHidden').length ? String($form.find('.itemQtyHidden').val() || '') : '');
+				var hiddenShip = ($form.find('.shipLooseHidden').length ? String($form.find('.shipLooseHidden').val() || '') : '');
+				var hiddenSec = ($form.find('.secIDHidden').length ? String($form.find('.secIDHidden').val() || '') : '');
+
+				// unitOfIssue select
+				var $unit = $form.find('.unitOfIssueSelect');
+				if (hiddenUnit && $unit.length) {
+					try { prefillSelectWithRetry($unit, hiddenUnit); } catch (e) {}
+				}
+				// catCode select
+				var $cat = $form.find('.catCodeSelect');
+				if (hiddenCat && $cat.length) {
+					try { prefillSelectWithRetry($cat, hiddenCat); } catch (e) {}
+				}
+				// class select
+				var $cls = $form.find('.classSelect');
+				if (hiddenClass && $cls.length) {
+					try { prefillSelectWithRetry($cls, hiddenClass); } catch (e) {}
+				}
+				// qty input
+				var $qty = $form.find('.itemQtyInput');
+				if (hiddenQty && $qty.length) {
+					try { $qty.val(hiddenQty); } catch (e) {}
+				}
+				// ship loose checkbox
+				var $ship = $form.find('input[name="shipLoose"]');
+				if (hiddenShip && $ship.length) {
+					try { $ship.prop('checked', String(hiddenShip).toUpperCase() === 'Y'); } catch (e) {}
+				}
+				// secID select
+				var $sec = $form.find('.itemSectionSelect');
+				if (hiddenSec && $sec.length) {
+					try { prefillSelectWithRetry($sec, hiddenSec); } catch (e) {}
+				}
+				// ensure UI updates
+				try { if ($unit.length) triggerSelect2($unit); if ($cat.length) triggerSelect2($cat); if ($cls.length) triggerSelect2($cls); } catch (e) {}
+			} catch(e) {}
 		});
 
 		// Add minimal CSS if page doesn't define it — makes disabled selects look grayed

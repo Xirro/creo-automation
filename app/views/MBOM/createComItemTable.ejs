@@ -54,98 +54,170 @@
                                                 Fill out the following for each layout, and click "Save" afterwards
                                             </p>
                                             <p class="text-muted m-b-30"></p>
-                                            <h6>Commonly Used</h6>
-                                            <form id="createComItemTableForm" class="createComItemTableForm" action="/createComItem" method="POST">
+                                                          <% // ensure these locals exist so early template code can reference them safely
+                                                              var formValues = (typeof formValues !== 'undefined') ? formValues : {};
+                                                              var errorField = (typeof errorField !== 'undefined') ? errorField : null;
+                                                              // safe message copies (avoid referencing undeclared `message` directly)
+                                                              var __msg = (typeof message !== 'undefined') ? message : '';
+                                                              var __errField = (typeof errorField !== 'undefined') ? errorField : '';
+                                                          %>
+                                                <form id="itemForm" class="itemForm" action="/createComItemTable" method="POST">
                                                 <div class="form-group">
                                                     <div class="row">
                                                         <div class="col-sm-3">
                                                             <label for="example-text-input" class="col-form-label">Item Type</label>
-                                                            <select class="form-control select2" id="itemSelect2" name="itemSelect2" required>
+                                                            <select class="form-control select2<%= (errorField === 'itemType') ? ' is-invalid' : '' %>" id="itemSelect2" name="itemSelect2" required>
                                                                 <option value="">Select</option>
-                                                                <% let userItemTypes = new Set();%>
-                                                                <% for(let el of comItemData){
-                                                                    userItemTypes.add(el.itemType);
-                                                                } %>
-                                                                <% for(let el of userItemTypes){ %>
-                                                                    <option value="<%= el%>"><%=el%></option>
+                                                                <% 
+                                                                    // collect, dedupe and sort item types
+                                                                    let userItemTypes = new Set();
+                                                                    if (Array.isArray(comItemData)){
+                                                                        for(let el of comItemData){ if(el && el.itemType) userItemTypes.add(String(el.itemType).trim()); }
+                                                                    } else if (typeof mfgMap !== 'undefined'){
+                                                                        for (var el of mfgMap.keys()) userItemTypes.add(String(el).trim());
+                                                                    }
+                                                                    const sortedTypes = Array.from(userItemTypes).filter(Boolean).sort(function(a,b){ return a.localeCompare(b,'en',{sensitivity:'base'}); });
+                                                                %>
+                                                                <% for(const t of sortedTypes){ %>
+                                                                    <option value="<%= t %>" <%= (typeof formValues !== 'undefined' && String(formValues.itemSelect2||'') === String(t)) ? 'selected' : '' %>><%= t %></option>
                                                                 <% } %>
-                                                                <option>OTHER</option>
+                                                                <option value="OTHER" <%= (typeof formValues !== 'undefined' && String(formValues.itemSelect2||'') === 'OTHER') ? 'selected' : '' %>>OTHER</option>
                                                             </select>
-                                                            <input type="text" name="otherItemType" class="form-control" id="otherItemType" value="" placeholder="Type Item Type Here" style="display:none;" autocomplete="off"/>
+                                                            <input type="text" name="otherItemType" class="form-control<%= (errorField === 'itemType') ? ' is-invalid' : '' %>" id="otherItemType" value="<%= (formValues && formValues.otherItemType) ? formValues.otherItemType : '' %>" placeholder="Item Type Here" style="display:none;" autocomplete="off"/>
                                                         </div>
                                                         <div class="col-sm-3">
                                                             <label for="example-text-input" class="col-form-label">Item Mfg.</label>
-                                                            <select class="form-control select2" id="mfgSelect2" name="mfgSelect2">
+                                                            <% /* Single dropdown for manufacturer: option VALUE is manufacturer only; data-parent keeps itemType for client filtering */ %>
+                                                            <select class="form-control select2<%= (errorField === 'itemMfg') ? ' is-invalid' : '' %>" id="mfgSelect2" name="mfgSelect2" required>
                                                                 <option value="">Select</option>
-                                                                <% let userItemMfg = new Set();%>
-                                                                <% let other = new Set()%>
-                                                                <% for(let el of comItemData){
-                                                                    userItemMfg.add(el.itemType + "|" + el.itemMfg);
-                                                                } %>
-                                                                <% for(let el of comItemData){
-                                                                    other.add(el.itemType + "|" + "OTHER");
-                                                                } %>
-                                                                <% for(let el of userItemMfg){ %>
-                                                                <option data-parent="<%=el.split('|')[0]%>" value="<%= el%>"><%= el.split('|')[1]%></option>
-                                                                <% } %>
-                                                                <% for(let el of other){ %>
-                                                                <option data-parent="<%=el.split('|')[0]%>"><%=el.split('|')[1]%></option>
-                                                                <% } %>
+                                                                    <% 
+                                                                        // Build unique manufacturers (dedupe by manufacturer name).
+                                                                        // Option `value` will be manufacturer only; we keep `itemType` in `data-parent` for filtering.
+                                                                        let mfgMapUnique = new Map();
+                                                                        if (Array.isArray(comItemData)){
+                                                                            for (let el of comItemData){
+                                                                                if(el && el.itemType){
+                                                                                    const itemType = String(el.itemType||'').trim();
+                                                                                    const mfg = String(el.itemMfg||'').trim();
+                                                                                    if(!mfg) continue;
+                                                                                    const key = mfg.toUpperCase();
+                                                                                    if(!mfgMapUnique.has(key)){
+                                                                                        mfgMapUnique.set(key, { value: mfg, itemType: itemType, mfg: mfg });
+                                                                                    }
+                                                                                }
+                                                                            }
+                                                                        } else if (typeof mfgMap !== 'undefined'){
+                                                                            for (var k of mfgMap.keys()){
+                                                                                var itemMfg = String(mfgMap.get(k)||'').split('|');
+                                                                                for (var i = 0; i < itemMfg.length; i++){
+                                                                                    const itemType = String(k||'').trim();
+                                                                                    const mfg = String(itemMfg[i]||'').trim();
+                                                                                    if(!mfg) continue;
+                                                                                    const key = mfg.toUpperCase();
+                                                                                    if(!mfgMapUnique.has(key)){
+                                                                                        mfgMapUnique.set(key, { value: mfg, itemType: itemType, mfg: mfg });
+                                                                                    }
+                                                                                }
+                                                                            }
+                                                                        }
+                                                                        const pairArr = Array.from(mfgMapUnique.values()).sort(function(a,b){ return a.mfg.localeCompare(b.mfg,'en',{sensitivity:'base'}); });
+                                                                    %>
+                                                                    <% for (const rec of pairArr){ %>
+                                                                        <% 
+                                                                            // When restoring formValues we may receive either the old pipe-format or the new mfg-only value.
+                                                                            var _fv = (formValues && typeof formValues.mfgSelect2 !== 'undefined') ? String(formValues.mfgSelect2||'') : '';
+                                                                            var _selected = (_fv === String(rec.mfg) || (_fv.indexOf('|') !== -1 && _fv.split('|').pop() === String(rec.mfg))) ? 'selected' : '';
+                                                                        %>
+                                                                        <option data-parent="<%= rec.itemType %>" value="<%= rec.mfg %>" <%= _selected %>><%= rec.mfg %></option>
+                                                                    <% } %>
+                                                                    <option value="OTHER" <%= (formValues && String(formValues.mfgSelect2||'') === 'OTHER') ? 'selected' : '' %>>OTHER</option>
                                                             </select>
-                                                            <select class="form-control select2" id="mfgList" name="mfgList">
-                                                                <option value="">Select</option>
-                                                                <% let userItemMfg2 = new Set();%>
-                                                                <% for(let el of comItemData){
-                                                                    userItemMfg2.add(el.itemMfg);
-                                                                } %>
-                                                                <% for(let el of userItemMfg2){ %>
-                                                                    <option value="<%= el%>"><%= el%></option>
-                                                                <% } %>
-                                                                <option>OTHER</option>
-                                                            </select>
-                                                            <input type="text" name="otherMfgType" class="form-control" id="otherMfgType" value="" placeholder="Type Mfg. Here" style="display:none;" autocomplete="off"/>
+                                                                <input type="text" name="otherMfgType" class="form-control<%= (errorField === 'itemMfg') ? ' is-invalid' : '' %>" id="otherMfgType" value="<%= (formValues && formValues.otherMfgType) ? formValues.otherMfgType : '' %>" placeholder="Type Mfg. Here" style="display:none;" autocomplete="off"/>
                                                         </div>
                                                         <div class="col-sm-6">
                                                             <label for="example-text-input" class="col-form-label">Description</label>
-                                                            <input type="text" name="itemDesc" maxlength="160" class="form-control" value="" placeholder="Type Description Here" autocomplete="off"/>
+                                                                <input type="text" name="itemDesc" maxlength="160" class="form-control<%= (errorField === 'itemDesc') ? ' is-invalid' : '' %>" value="<%= (formValues && formValues.itemDesc) ? formValues.itemDesc : '' %>" placeholder="Type Description Here" autocomplete="off" required/>
                                                         </div>
                                                     </div>
                                                     <div class="row">
                                                         <div class="col-sm-6">
                                                             <label for="example-text-input" class="col-form-label">P/N</label>
-                                                            <input type="text" name="itemPN" class="form-control" value="" placeholder="Type P/N Here" autocomplete="off"/>
+                                                                <input type="text" name="itemPN" class="form-control<%= (errorField === 'itemPN') ? ' is-invalid' : '' %>" id="itemPN" value="<%= (formValues && formValues.itemPN) ? formValues.itemPN : '' %>" placeholder="Type P/N Here" autocomplete="off" required/>
+                                                                <% if (typeof message !== 'undefined' && message && typeof errorField !== 'undefined' && errorField === 'itemPN') { %>
+                                                                    <div class="small text-danger mt-1" id="itemPNError"><%= message %></div>
+                                                                <% } %>
                                                         </div>
                                                         <div class="col-sm-2">
                                                             <label for="example-text-input" class="col-form-label">Unit Of Issue</label>
-                                                            <select class="form-control select2" name="unitOfIssue">
-                                                                <option value="Select">Select</option>
-                                                                <option value="EA">EA</option>
-                                                                <option value="FT">FT</option>
-                                                                <option value="LBS">LBS</option>
+                                                            <select class="form-control select2<%= (errorField === 'unitOfIssue') ? ' is-invalid' : '' %>" name="unitOfIssue" required>
+                                                                    <option value="" <%= (formValues && !formValues.unitOfIssue) ? 'selected' : '' %>>Select</option>
+                                                                    <option value="EA" <%= (formValues && formValues.unitOfIssue === 'EA') ? 'selected' : '' %>>EA</option>
+                                                                    <option value="FT" <%= (formValues && formValues.unitOfIssue === 'FT') ? 'selected' : '' %>>FT</option>
+                                                                    <option value="LBS" <%= (formValues && formValues.unitOfIssue === 'LBS') ? 'selected' : '' %>>LBS</option>
                                                             </select>
                                                         </div>
                                                         <div class="col-sm-2">
                                                             <label for="example-text-input" class="col-form-label">Cat. Code</label>
-                                                            <select class="form-control select2" name="catCode">
-                                                                <option value="Select">Select</option>
-                                                                <% for (let i = 0; i < catCodeData.length; i++) { %>
-                                                                    <option value="<%= catCodeData[i].catCode%>"><%= catCodeData[i].catCode%></option>
-                                                                <% } %>
+                                                            <select class="form-control select2<%= (errorField === 'catCode') ? ' is-invalid' : '' %>" name="catCode" required>
+                                                                    <option value="" <%= (formValues && !formValues.catCode) ? 'selected' : '' %>>Select</option>
+                                                                <% 
+                                                                    const catSet = new Set();
+                                                                    for (let i = 0; i < (catCodeData||[]).length; i++){
+                                                                        const val = (catCodeData[i] && catCodeData[i].catCode) ? String(catCodeData[i].catCode).trim() : String(catCodeData[i] || '').trim();
+                                                                        if(val) catSet.add(val);
+                                                                    }
+                                                                    const catArr = Array.from(catSet).sort(function(a,b){ return a.localeCompare(b,'en',{sensitivity:'base'}); });
+                                                                %>
+                                                                    <% for (const code of catArr){ %>
+                                                                        <option value="<%= code %>" <%= (formValues && String(formValues.catCode||'') === String(code)) ? 'selected' : '' %>><%= code %></option>
+                                                                    <% } %>
                                                             </select>
                                                         </div>
                                                         <div class="col-sm-2">
-                                                            <label for="example-text-input" class="col-form-label">Class</label>
-                                                            <select class="form-control select2" name="class">
-                                                                <option value="Select">Select</option>
-                                                                <% for (let i = 0; i < classCodeData.length; i++) { %>
-                                                                    <option value="<%= classCodeData[i].classCode%>"><%=classCodeData[i].classCode%></option>
-                                                                <% } %>
+                                                            <label for="classSelect" class="col-form-label">Class</label>
+                                                            <select class="form-control select2<%= (errorField === 'class') ? ' is-invalid' : '' %>" name="class" required>
+                                                                    <option value="" <%= (formValues && !formValues.class) ? 'selected' : '' %>>Select</option>
+                                                                <% 
+                                                                    const classSet = new Set();
+                                                                    for (let i = 0; i < (classCodeData||[]).length; i++){
+                                                                        const val = (classCodeData[i] && classCodeData[i].classCode) ? String(classCodeData[i].classCode).trim() : String(classCodeData[i] || '').trim();
+                                                                        if(val) classSet.add(val);
+                                                                    }
+                                                                    const classArr = Array.from(classSet).sort(function(a,b){ return a.localeCompare(b,'en',{sensitivity:'base'}); });
+                                                                %>
+                                                                    <% for (const cl of classArr){ %>
+                                                                        <option value="<%= cl %>" <%= (formValues && String(formValues.class||'') === String(cl)) ? 'selected' : '' %>><%= cl %></option>
+                                                                    <% } %>
                                                             </select>
                                                         </div>
+                                                        <div class="col-sm-2">
+                                                            <label for="statusSelect" class="col-form-label">Status</label>
+                                                                <select class="form-control select2" id="statusSelect" name="status" required>
+                                                                    <option value="" <%= (formValues && !formValues.status) ? 'selected' : '' %>>Select</option>
+                                                                    <option value="Common" <%= (formValues && String(formValues.status||'') === 'Common') ? 'selected' : '' %>>Common</option>
+                                                                    <option value="Uncommon" <%= (formValues && String(formValues.status||'') === 'Uncommon') ? 'selected' : '' %>>Uncommon</option>
+                                                                    <option value="OBSOLETE" <%= (formValues && String(formValues.status||'') === 'OBSOLETE') ? 'selected' : '' %>>OBSOLETE</option>
+                                                                </select>
+                                                        </div>
                                                     </div>
+                                                    <p class="text-muted m-b-30"></p>
+                                                        <% 
+                                                            // Ensure formValues and errorField are defined so template can safely reference them
+                                                            formValues = (typeof formValues !== 'undefined') ? formValues : {};
+                                                            errorField = (typeof errorField !== 'undefined') ? errorField : null;
+                                                        %>
+                                                        <% if (typeof message !== 'undefined' && message) { %>
+                                                            <div class="alert alert-danger alert-dismissible fade show text-center" role="alert">
+                                                                <%= message %>
+                                                                <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                                                            </div>
+                                                        <% } %>
                                                     <div class="row justify-content-center">
-                                                        <div class="col-2" style="padding-top:5%;">
-                                                            <input id="uploadBtn" type="submit" value="Save" class="btn-block btn-lg btn-outline-success waves-effect waves-light" onclick=""/>
+                                                        <div class="col-2" style="padding-top:10px;">
+                                                            <input id="uploadBtn" type="submit" value="Save" class="btn btn-block btn-lg btn-success waves-effect waves-light" />
+                                                        </div>
+                                                        <div class="col-2" style="padding-top:10px;">
+                                                            <a id="cancelBtn" href="../MBOM" class="btn btn-block btn-lg btn-secondary waves-effect waves-light">Cancel</a>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -162,8 +234,12 @@
     </div> <!-- content-page -->
     <%- include('../partials/footer') %>
 </div> <!-- wrapper -->
-
 <%- include('../partials/scripts') %>
+
+<!-- Server-passed data for client scripts (keeps EJS out of inline JS expressions) -->
+<div id="__createComItem_data" style="display:none;"
+    data-pn-msg="<%= (typeof __msg !== 'undefined') ? __msg : '' %>"
+    data-err-field="<%= (typeof __errField !== 'undefined') ? __errField : '' %>"></div>
 
 <script>
     $(function() {
@@ -173,12 +249,71 @@
     });
 </script>
 
-<!-- User developed scripts -->
-<script src="/public/assets/js/breakerDragDrop.js"></script>
-<script src="/public/assets/js/mbomFilterDropdown.js"></script>
+<script>
+    (function($){
+        function setItemTypeState(){
+            var v = $('#itemSelect2').val();
+            if (v === 'OTHER') {
+                $('#otherItemType').show().prop('disabled', false).prop('required', true);
+            } else {
+                $('#otherItemType').hide().prop('disabled', true).prop('required', false);
+            }
+        }
+        function setMfgState(){
+            var v = $('#mfgSelect2').val() || '';
+            // If value is exactly 'OTHER' or ends with '|OTHER'
+            if (v === 'OTHER' || v.toUpperCase().endsWith('|OTHER')) {
+                $('#otherMfgType').show().prop('disabled', false).prop('required', true);
+            } else {
+                $('#otherMfgType').hide().prop('disabled', true).prop('required', false);
+            }
+        }
+        $(function(){
+            setItemTypeState();
+            setMfgState();
+            $('#itemSelect2').on('change', setItemTypeState);
+            $('#mfgSelect2').on('change', setMfgState);
 
-<!-- Creoson -->
-<script src="/creoson/creoConnect.js"></script>
+            // Warn on OBSOLETE
+            $('#itemForm').on('submit', function(e){
+                var status = ($('#statusSelect').val() || '').toUpperCase();
+                if (status === 'OBSOLETE'){
+                    var ok = window.confirm('This item will be marked OBSOLETE and will be hidden from normal selection lists. Continue?');
+                    if (!ok) {
+                        e.preventDefault();
+                        return false;
+                    }
+                }
+                return true;
+            });
+        });
+    })(jQuery);
+</script>
+
+<script>
+    (function($){
+        $(function(){
+            var _dataEl = document.getElementById('__createComItem_data');
+            var pnMsg = '';
+            var errField = '';
+            if (_dataEl) {
+                pnMsg = _dataEl.getAttribute('data-pn-msg') || '';
+                errField = _dataEl.getAttribute('data-err-field') || '';
+            }
+            if (errField === 'itemPN' && pnMsg){
+                try{
+                    var $pn = $('#itemPN');
+                    $pn.focus();
+                    $pn.attr('title', pnMsg).tooltip({trigger:'manual', placement:'right'}).tooltip('show');
+                    $pn.on('input change', function(){ $pn.tooltip('dispose'); });
+                } catch(e){ console.warn('Could not show PN tooltip', e); }
+            }
+        });
+    })(jQuery);
+</script>
+
+<!-- User developed scripts -->
+<script src="/public/assets/js/mbomFilterDropdown.js"></script>
 
 </body>
 </html>

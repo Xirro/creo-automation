@@ -16,7 +16,27 @@ const database = dbConfig.database;
 //second argument params is optional, you only need to include it if you need to insert values into the string
 //querySql returns the result of the sql query
 const DB = require('../config/db.js');
-const querySql = DB.querySql;
+// Wrap the DB.querySql call so we can log queries when DEBUG_MODE enables server logging
+const querySql = function(sql, params){
+    if (DEBUG_SERVER) {
+        try {
+            // capture a stack trace and extract the immediate caller
+            const err = new Error();
+            // exclude this wrapper from the captured stack so the next frame is the caller
+            Error.captureStackTrace(err, querySql);
+            const stack = err.stack || '';
+            const stackLines = stack.split('\n').map(s => s.trim()).filter(Boolean);
+            // stackLines[0] is the 'Error' message, stackLines[1] should be the caller
+            const callerLine = stackLines[1] || stackLines[2] || '';
+            const caller = callerLine.replace(/^at\s+/, '');
+            console.log('SQL QUERY called from:', caller);
+            console.log('SQL QUERY:', sql, params, '\n');
+        } catch(e) {
+            // ignore logging errors
+        }
+    }
+    return DB.querySql(sql, params);
+};
 const Promise = require('bluebird');
 
 // Debug mode controlled by environment variable DEBUG_MODE.
@@ -142,7 +162,7 @@ exports.createMBOM = function(req, res) {
         })
         .catch(err => {
             //if an error occurs at any time or at any point in the above code, then log it to the console
-            console.log('there was an error:' + err);
+            console.log('Error occurred in createMBOM: \n', err, '\n');
         });
 };
 
@@ -477,7 +497,7 @@ exports.editMBOM = function(req, res) {
         })
         .catch(err => {
             //if error occurs at any time at any point in the above, log the error to the console
-            console.log('there was an error:' + err);
+            console.log('Error in editMBOM: \n', err, '\n');
         });
 };
 
@@ -1021,6 +1041,8 @@ exports.searchMBOMGet = function(req, res) {
                 brkAccData: brkAccData,
                 brkData: brkData,
                 mbomBrkAcc: mbomBrkAcc,
+                message: (qs && qs.error) ? qs.error : null,
+                errorField: (qs && qs.errorField) ? qs.errorField : null,
                 debug: DEBUG_CLIENT
             });
 
@@ -1090,7 +1112,7 @@ exports.createComItemTableGET = function(req, res) {
         })
         .catch(err => {
             //if error occurs at anytime at any point in the code above, log it to the console
-            console.log('there was an error:' + err);
+            console.log('Error in createComItemTableGET: \n', err, '\n');
         });
 };
 
@@ -1102,135 +1124,36 @@ exports.createComItemTableGET = function(req, res) {
 
 
 
-//createComItemTablePOST function (handles the POST request to createComItemTable)
-// This endpoint handles two use-cases:
-// 1) Admin creating/updating the common items table (original behavior)
-// 2) The Add-Item form on searchMBOM which should create the comItem if necessary
-//    (status='Uncommon') and then add the item into the MBOM (mbom item table).
+// Helper to normalize values and uppercase where appropriate
+function norm(v){ return (typeof v === 'string') ? v.trim() : v; }
+
+// Helper to convert DB error objects into user-friendly messages
+function dbErrorMsg(err){
+    if(!err) return 'Database error';
+    // mysql error codes: ER_DUP_ENTRY (1062), ER_BAD_NULL_ERROR (1048)
+    try{
+        if(err.code === 'ER_DUP_ENTRY' || err.errno === 1062) {
+            return 'Duplicate entry. This P/N already exists. Please check your input and try again.';
+        }
+        if(err.code === 'ER_BAD_NULL_ERROR' || err.errno === 1048) {
+            return 'A required field was missing (NOT NULL). Please provide all required values and try again.';
+        }
+    } catch(e) {}
+    // fallback to the original message where helpful
+    return (err && (err.sqlMessage || err.message)) ? String(err.sqlMessage || err.message) : 'Database error';
+}
+
 exports.createComItemTablePOST = function(req, res) {
     req.setTimeout(0); //no timeout (this is needed to prevent error due to page taking a long time to load)
 
-    // Helper to normalize values and uppercase where appropriate
-    function norm(v){ return (typeof v === 'string') ? v.trim() : v; }
-
-    // If this request includes an MBOM context (mbomID) we'll treat it as an Add-Item submission
-    if (req.body && req.body.mbomID) {
-        // Map fields from the add-item form
-        let itemType = norm(req.body.itemType) || '';
-        if (itemType === 'OTHER') itemType = (norm(req.body.itemTypeOther) || '').toUpperCase();
-
-        let itemMfg = norm(req.body.itemMfg) || '';
-        if (itemMfg === 'OTHER') itemMfg = (norm(req.body.itemMfgOther) || '').toUpperCase();
-
-        let itemDesc = norm(req.body.itemDesc) || '';
-        if (itemDesc === 'OTHER') itemDesc = (norm(req.body.itemDescOther) || '').toUpperCase();
-
-        let itemPN = norm(req.body.itemPN) || '';
-        if (itemPN === 'OTHER') itemPN = (norm(req.body.itemPNOther) || '');
-
-        // Build comItem data; mark status 'Uncommon' when inserted from the Add-Item flow
-        let comData = {
-            itemType: (itemType || '').toUpperCase(),
-            itemMfg: (itemMfg || '').toUpperCase(),
-            itemDesc: (itemDesc || '').toUpperCase(),
-            itemPN: itemPN,
-            status: 'Uncommon',
-            unitOfIssue: (norm(req.body.unitOfIssue) || '') || null,
-            catCode: (norm(req.body.catCode) || '') || null,
-            class: (norm(req.body.class) || '') || null
-        };
-
-        // Lookup existing common item
-        querySql("SELECT * FROM " + database + "." + dbConfig.MBOM_common_items + " WHERE itemType = ? AND itemMfg = ? AND itemDesc = ? AND itemPN = ?", [comData.itemType, comData.itemMfg, comData.itemDesc, comData.itemPN])
-            .then(rows => {
-                if (rows && rows.length > 0) {
-                    // Use existing comItemID
-                    return Promise.resolve(rows[0].comItemID);
-                }
-                // Insert new common item and return the insertId
-                return querySql("INSERT INTO " + database + "." + dbConfig.MBOM_common_items + " SET ?", comData)
-                    .then(result => {
-                        // mysql2 returns an OkPacket for inserts; insertId should be available
-                        return (result && result.insertId) ? result.insertId : null;
-                    });
-            })
-            .then(comItemID => {
-                if (!comItemID) throw new Error('Failed to resolve comItemID');
-
-                // Prepare mbom item insertion(s)
-                const shipLoose = req.body.shipLoose ? 'Y' : 'N';
-
-                // Helper to perform insert for a single secID (can be null)
-                function insertForSec(secID){
-                    const itemSumData = {
-                        comItemID: comItemID,
-                        mbomID: req.body.mbomID,
-                        itemQty: req.body.itemQty || 1,
-                        shipLoose: shipLoose,
-                        secID: secID || null
-                    };
-                    return querySql("INSERT INTO " + database + "." + dbConfig.MBOM_item_table + " SET ?", itemSumData);
-                }
-
-                // If the Section select asked to 'assign', insert one row per checked assignSecIDs[]
-                if (String(req.body.secID || '') === 'assign'){
-                    let assigns = req.body.assignSecIDs || [];
-                    // normalize single value to array
-                    if (!Array.isArray(assigns)) assigns = [assigns];
-
-                    if (assigns.length === 0){
-                        // Nothing checked — fallback to single insert with no secID
-                        return insertForSec(null).then(() => {
-                            res.locals.title = 'Add Com Item';
-                            const redirectUrl = 'searchMBOM/?bomID=' + (req.body.jobNum || '') + (req.body.releaseNum || '') + '_' + req.body.mbomID;
-                            res.redirect(redirectUrl);
-                            return null;
-                        });
-                    }
-
-                    // insert for each checked section in sequence
-                    return assigns.reduce((p, sec) => {
-                        return p.then(() => insertForSec(sec));
-                    }, Promise.resolve()).then(() => {
-                        res.locals.title = 'Add Com Item';
-                        const redirectUrl = 'searchMBOM/?bomID=' + (req.body.jobNum || '') + (req.body.releaseNum || '') + '_' + req.body.mbomID;
-                        res.redirect(redirectUrl);
-                        return null;
-                    });
-                }
-
-                // Otherwise, insert a single row; if a specific secID was provided, include it
-                const specificSec = (req.body.secID && String(req.body.secID).trim() !== '') ? req.body.secID : null;
-                return insertForSec(specificSec).then(() => {
-                    res.locals.title = 'Add Com Item';
-                    const redirectUrl = 'searchMBOM/?bomID=' + (req.body.jobNum || '') + (req.body.releaseNum || '') + '_' + req.body.mbomID;
-                    res.redirect(redirectUrl);
-                    return null;
-                });
-            })
-            .catch(err => {
-                console.log('there was an error:' + err);
-                res.status(500).send('Server error');
-            });
-
-        return;
-    }
-
-    // FALLBACK: original create-common-item-table behavior (admin flow)
-    //Initialize variables (existing behavior)
+    //Initialize variables
     let itemType = req.body.itemSelect2;
     if (itemType == 'OTHER')
         itemType = (req.body.otherItemType).toUpperCase();
 
-    let itemMfg;
-    let otherMfgDropdown = req.body.mfgList;
-    let mfgSelect = req.body.mfgSelect2;
-    if (mfgSelect == 'OTHER' || otherMfgDropdown == 'OTHER')
-        itemMfg = req.body.otherMfgType.toUpperCase();
-    else if (mfgSelect)
-        itemMfg = mfgSelect.split('|')[1];
-    else
-        itemMfg = otherMfgDropdown;
+    let itemMfg = req.body.mfgSelect2;
+    if (itemMfg == 'OTHER')
+        itemMfg = (req.body.otherMfgType).toUpperCase();
 
     let data = {
         itemType: itemType,
@@ -1239,20 +1162,24 @@ exports.createComItemTablePOST = function(req, res) {
         itemPN: req.body.itemPN,
         unitOfIssue: req.body.unitOfIssue,
         catCode: req.body.catCode,
-        class: req.body.class
+        class: req.body.class,
+        status: req.body.status
     };
 
-    //Initial db query - lookup the mbomComItem table rows that match the itemType, itemMfg, itemDesc, and itemPN
-    querySql("SELECT * FROM " + database + " . " + dbConfig.MBOM_common_items + " WHERE itemType = ? AND itemMfg = ? " +
-        "AND itemDesc = ? AND itemPN = ?", [data.itemType, data.itemMfg, data.itemDesc, data.itemPN])
+    //Initial db query - lookup the mbomComItem table rows that match the itemPN
+    querySql("SELECT * FROM " + database + " . " + dbConfig.MBOM_common_items + " WHERE itemPN = ?", [data.itemPN])
         .then(rows => {
-            //insert a new row in the mbomComItem table with data from
-            if(rows.length == 0){
-                // preserve existing admin-provided fields; do not force status here
-                return querySql("INSERT INTO " + database + " . " + dbConfig.MBOM_common_items + " SET ?", data);
+            // If a row already exists with this P/N, treat it as a duplicate and surface a friendly error
+            if (rows && rows.length > 0) {
+                const err = new Error('Duplicate P/N');
+                // Give dbErrorMsg enough shape to detect a duplicate entry
+                err.code = 'ER_DUP_ENTRY';
+                err.errno = 1062;
+                throw err;
             }
 
-            return null;
+            // insert a new row in the mbomComItem table with data from the form
+            return querySql("INSERT INTO " + database + " . " + dbConfig.MBOM_common_items + " SET ?", data);
         })
         .then(() => {
             res.locals.title = 'Create Com Item';
@@ -1260,7 +1187,44 @@ exports.createComItemTablePOST = function(req, res) {
         })
         .catch(err => {
             //if error occurs at anytime at any point in the code above, log it to the console
-            console.log('there was an error:' + err);
+            console.log('Error in createComItemTablePOST: \n', err, '\n');
+            const msg = dbErrorMsg(err);
+
+            // MBOM-specific rendering removed: this POST handler is admin-only.
+            // Fall through to the admin fallback below which renders the create page with an error message.
+
+            // Original admin-flow error handling when no MBOM context present
+            // Try to render the create page with the message; fetch the supporting lists first
+            Promise.all([
+                querySql("SELECT * FROM " + database + "." + dbConfig.MBOM_common_items),
+                querySql("SELECT catCode FROM " + database + " . " + dbConfig.jobscope_codes_table),
+                querySql("SELECT classCode FROM " + database + "." + dbConfig.jobscope_classCodes_table)
+            ]).then(([comItems, catCodes, classCodes]) => {
+                const comItemData = [];
+                const catCodeData = [];
+                const classCodeData = [];
+                for(let row of comItems) comItemData.push(row);
+                for(let row of catCodes) catCodeData.push(row);
+                for(let row of classCodes) classCodeData.push(row);
+                // determine which field likely caused the error (prefer itemPN for duplicate P/N)
+                let errorField = null;
+                if (err && (err.code === 'ER_DUP_ENTRY' || err.errno === 1062)) {
+                    errorField = 'itemPN';
+                }
+                res.locals.title = 'Create Com Item';
+                res.render('MBOM/createComItemTable', {
+                    comItemData: comItemData,
+                    catCodeData: catCodeData,
+                    classCodeData: classCodeData,
+                    message: msg,
+                    formValues: req.body,
+                    errorField: errorField
+                });
+            }).catch(renderErr => {
+                console.log('Error while attempting to render createComItemTable with DB error message:', renderErr);
+                // as a last resort, redirect back to MBOM
+                res.redirect('./MBOM');
+            });
         });
 };
 
@@ -1336,7 +1300,7 @@ exports.editComItemTableGET = function(req, res) {
         .then(() => {
             //render editComItem page with editComItemData, comItemData, catCodeData, and classCodeData
             res.locals.title = 'Edit Item';
-            res.render('MBOM/editComItem', {
+            res.render('MBOM/editComItemMBOM', {
                 editComItemData: editComItemData,
                 comItemData: comItemData,
                 catCodeData: catCodeData,
@@ -1345,7 +1309,7 @@ exports.editComItemTableGET = function(req, res) {
         })
         .catch(err => {
             //if error occurs at anytime at any point in the code above, log it to the console
-            console.log('there was an error:' + err);
+            console.log('Error in editComItemTableGET: \n', err, '\n');
         });
 };
 
@@ -1399,7 +1363,7 @@ exports.editComItemTablePOST = function(req, res) {
         })
         .catch(err => {
             //if error occurs at anytime at any point in the code above, log it to the console
-            console.log('there was an error:' + err);
+            console.log('Error in editComItemTablePOST: \n', err, '\n');
         });
 };
 
@@ -1413,63 +1377,174 @@ exports.editComItemTablePOST = function(req, res) {
 /***********************************************
  COM ITEM IN MBOM
  ***********************************************/
-//addComItem function
-exports.addComItem = function(req, res) {
-    req.setTimeout(0); //no timeout (this is needed to prevent error due to page taking a long time to load)
-    //Initialize variables
-    let comItemID, itemSumID;
-    let itemMfg = req.body.itemMfg.split('|')[1];
-    let itemDesc = req.body.itemDesc.split('|')[2];
-    let itemPN = req.body.itemPN.split('|')[3];
-    let shipLooseCheck;
-    let mbomData = {
-        mbomID: req.body.mbomID,
-        jobNum: req.body.jobNum,
-        releaseNum: req.body.releaseNum,
-    };
-    let data = {
-        itemType: req.body.itemType,
+// addComItemMBOM: handles Add-Item submissions originating from searchMBOM
+exports.addComItemMBOM = function(req, res) {
+    req.setTimeout(0);
+
+    // Map fields from the add-item form
+    let itemType = norm(req.body.itemType) || '';
+    if (itemType === 'OTHER') itemType = (norm(req.body.itemTypeOther) || '').toUpperCase();
+
+    let itemMfg = norm(req.body.itemMfg) || '';
+    if (itemMfg === 'OTHER') itemMfg = (norm(req.body.itemMfgOther) || '').toUpperCase();
+
+    let itemDesc = norm(req.body.itemDesc) || '';
+    if (itemDesc === 'OTHER') itemDesc = (norm(req.body.itemDescOther) || '').toUpperCase();
+
+    let itemPN = norm(req.body.itemPN) || '';
+    if (itemPN === 'OTHER') itemPN = (norm(req.body.itemPNOther) || '').toUpperCase();
+
+    // Build comItem data; prefer the submitted status if provided, otherwise default to 'Uncommon'
+    let comData = {
+        itemType: itemType,
         itemMfg: itemMfg,
         itemDesc: itemDesc,
         itemPN: itemPN,
+        status: (typeof req.body.status !== 'undefined' && req.body.status) ? String(req.body.status) : 'Uncommon',
+        unitOfIssue: (norm(req.body.unitOfIssue) || '') || null,
+        catCode: (norm(req.body.catCode) || '') || null,
+        class: (norm(req.body.class) || '') || null
     };
 
-    if (req.body.shipLoose)
-        shipLooseCheck = 'Y';
-    else
-        shipLooseCheck = 'N';
+    // Determine whether the submitted P/N was the manual "OTHER" entry
+    const submittedPNWasOther = (norm(req.body.itemPN) === 'OTHER');
 
-    //Initial db query - lookup mbomComItem row where itemType, itemMfg, itemDesc, and itemPN match
-    querySql("SELECT * FROM " + database + "." + dbConfig.MBOM_common_items + " WHERE itemType = ? AND itemMfg = ? " +
-        "AND itemDesc = ? AND itemPN = ?", [data.itemType, data.itemMfg, data.itemDesc, data.itemPN])
+    // Lookup existing common itemPN
+    querySql("SELECT * FROM " + database + " . " + dbConfig.MBOM_common_items + " WHERE itemPN = ?", [comData.itemPN])
         .then(rows => {
-            //write result id to comItemID
-            comItemID = rows[0].comItemID;
-
-            //create itemSumData varaible needed for sql query
-            let itemSumData = {
-                comItemID: comItemID,
-                itemSumID: itemSumID,
-                mbomID: mbomData.mbomID,
-                itemQty: req.body.itemQty,
-                shipLoose: shipLooseCheck
-            };
-
-            //insert new row to mbomItemSum table with itemSumData
-            querySql("INSERT INTO " + database + "." + dbConfig.MBOM_item_table + " SET ?", itemSumData);
-
-            return null;
+            if (rows && rows.length > 0) {
+                // If the user explicitly entered a manual P/N (selected OTHER),
+                // treat a matching DB row as a duplicate error so we re-render
+                // and preserve form values for correction. Otherwise (user
+                // selected an existing P/N from the dropdown), reuse the
+                // existing comItemID and proceed to insert into the MBOM.
+                if (submittedPNWasOther) {
+                    const dupErr = new Error('Duplicate P/N exists');
+                    dupErr.code = 'ER_DUP_ENTRY';
+                    dupErr.errno = 1062;
+                    throw dupErr;
+                }
+                // Use existing comItemID (reuse)
+                return Promise.resolve(rows[0].comItemID);
+            }
+            // No existing row found — insert new common item and return the insertId
+            return querySql("INSERT INTO " + database + "." + dbConfig.MBOM_common_items + " SET ?", comData)
+                .then(result => {
+                    return (result && result.insertId) ? result.insertId : null;
+                });
         })
-        .then(() => {
-            //redirect to searchMBOM page
-            res.locals.title = 'Add Com Item';
-            res.redirect('searchMBOM/?bomID=' + mbomData.jobNum + mbomData.releaseNum + "_" + mbomData.mbomID);
+        .then(comItemID => {
+            if (!comItemID) throw new Error('Failed to resolve comItemID');
+
+            // Prepare mbom item insertion(s)
+            const shipLoose = req.body.shipLoose ? 'Y' : 'N';
+
+            // Helper to perform insert for a single secID (can be null)
+            function insertForSec(secID){
+                const itemSumData = {
+                    comItemID: comItemID,
+                    mbomID: req.body.mbomID,
+                    itemQty: req.body.itemQty || 1,
+                    shipLoose: shipLoose,
+                    secID: secID || null
+                };
+                return querySql("INSERT INTO " + database + "." + dbConfig.MBOM_item_table + " SET ?", itemSumData);
+            }
+
+            // If the Section select asked to 'assign', insert one row per checked assignSecIDs[]
+            if (String(req.body.secID || '') === 'assign'){
+                let assigns = req.body.assignSecIDs || [];
+                // normalize single value to array
+                if (!Array.isArray(assigns)) assigns = [assigns];
+
+                if (assigns.length === 0){
+                    // Nothing checked — fallback to single insert with no secID
+                    return insertForSec(null).then(() => {
+                        res.locals.title = 'Add Com Item';
+                        const redirectUrl = 'searchMBOM/?bomID=' + (req.body.jobNum || '') + (req.body.releaseNum || '') + '_' + req.body.mbomID;
+                        res.redirect(redirectUrl);
+                        return null;
+                    });
+                }
+
+                // insert for each checked section in sequence
+                return assigns.reduce((p, sec) => {
+                    return p.then(() => insertForSec(sec));
+                }, Promise.resolve()).then(() => {
+                    res.locals.title = 'Add Com Item';
+                    const redirectUrl = 'searchMBOM/?bomID=' + (req.body.jobNum || '') + (req.body.releaseNum || '') + '_' + req.body.mbomID;
+                    res.redirect(redirectUrl);
+                    return null;
+                });
+            }
+
+            // Otherwise, insert a single row; if a specific secID was provided, include it
+            const specificSec = (req.body.secID && String(req.body.secID).trim() !== '') ? req.body.secID : null;
+            return insertForSec(specificSec).then(() => {
+                res.locals.title = 'Add Com Item';
+                const redirectUrl = 'searchMBOM/?bomID=' + (req.body.jobNum || '') + (req.body.releaseNum || '') + '_' + req.body.mbomID;
+                res.redirect(redirectUrl);
+                return null;
+            });
         })
         .catch(err => {
-            //if error occurs at anytime at any point in the code above, log it to the console
-            console.log('there was an error:' + err);
+            console.log('Error in addComItemMBOM: \n', err, '\n');
+            const msg = dbErrorMsg(err);
+            // Instead of redirecting, re-render the MBOM search page preserving input values so the user can correct them
+            const mbomID = req.body.mbomID;
+            // fetch the data used by searchMBOMGet to render the page
+            Promise.all([
+                querySql("SELECT * FROM " + database + "." + dbConfig.MBOM_summary_table + " WHERE mbomID = ?", [mbomID]),
+                querySql("SELECT * FROM " + database + "." + dbConfig.MBOM_common_items),
+                querySql("SELECT * FROM " + database + " . " + dbConfig.MBOM_user_items),
+                querySql("SELECT * FROM " + database + " . " + dbConfig.MBOM_breaker_table + " WHERE mbomID = ?", [mbomID]),
+                querySql("SELECT * FROM " + database + " . " + dbConfig.MBOM_item_table + " WHERE mbomID = ?", [mbomID]),
+                querySql("SELECT * FROM " + database + " . " + dbConfig.MBOM_new_section_sum + " WHERE mbomID = ?", [mbomID]),
+                querySql("SELECT * FROM " + database + "." + dbConfig.jobscope_codes_table),
+                querySql("SELECT * FROM " + database + "." + dbConfig.jobscope_classCodes_table),
+                querySql("SELECT * FROM " + database + "." + dbConfig.MBOM_brkAcc_table + " WHERE mbomID = ?", [mbomID])
+            ]).then(([mbomRows, comItems, userItems, brkSum, itemSum, secSum, catCodeSum, classCodeSum, brkAccessories]) => {
+                const mbomData = mbomRows[0] || {};
+                const comItemData = []; const userItemData = []; const mbomBrkData = []; const mbomItemData = []; const mbomSecData = []; const catCodeData = []; const classCodeData = []; const mbomBrkAcc = []; const brkAccData = [];
+                for(let row of comItems) comItemData.push(row);
+                for(let row of userItems) userItemData.push(row);
+                for(let row of brkSum) mbomBrkData.push(row);
+                for(let row of itemSum) mbomItemData.push(row);
+                for(let row of secSum) mbomSecData.push({ secID: row.secID, sectionNum: row.sectionNum, mbomID: row.mbomID });
+                for(let row of catCodeSum) catCodeData.push(row.catCode);
+                for(let row of classCodeSum) classCodeData.push(row.classCode);
+                for(let row of brkAccessories) mbomBrkAcc.push(row);
+
+                // if brkAccArr was populated for this mbomID, preserve it
+                if(brkAccArr.length != 0 && brkAccArr[0] && String(brkAccArr[0].mbomID) === String(mbomID)) brkAccData.push(...brkAccArr);
+
+                res.locals.title = 'Search MBOM';
+                res.render('MBOM/searchMBOM', {
+                    mbomID: mbomID,
+                    mbomData: mbomData,
+                    mbomBrkData: mbomBrkData,
+                    mbomSecData: mbomSecData,
+                    mbomItemData: mbomItemData,
+                    comItemData: comItemData,
+                    userItemData: userItemData,
+                    catCodeData: catCodeData,
+                    classCodeData: classCodeData,
+                    brkAccData: brkAccData,
+                    brkData: brkDataObj || {},
+                    mbomBrkAcc: mbomBrkAcc,
+                    message: msg,
+                    formValues: req.body,
+                    errorField: (err && (err.code === 'ER_DUP_ENTRY' || err.errno === 1062)) ? 'itemPN' : null,
+                    debug: DEBUG_CLIENT
+                });
+            }).catch(renderErr => {
+                console.log('Error while attempting to render searchMBOM with DB error message:', renderErr);
+                // fallback to redirect with encoded error
+                const redirectUrl = 'searchMBOM/?bomID=' + (req.body.jobNum || '') + (req.body.releaseNum || '') + '_' + mbomID + '&error=' + encodeURIComponent(msg) + '&errorField=' + encodeURIComponent((err && (err.code === 'ER_DUP_ENTRY' || err.errno === 1062)) ? 'itemPN' : '');
+                res.redirect(redirectUrl);
+            });
         });
-};
+    };
 
 
 
@@ -1477,7 +1552,7 @@ exports.addComItem = function(req, res) {
 
 
 //editComItem function
-exports.editComItem = function(req, res) {
+exports.editComItemMBOM = function(req, res) {
     req.setTimeout(0); //no timeout (this is needed to prevent error due to page taking a long time to load)
     //Initialize variables
     let urlObj = url.parse(req.originalUrl);
@@ -1587,7 +1662,7 @@ exports.editComItem = function(req, res) {
         })
         .catch(err => {
             //if error occurs at anytime at any point in the code above, log it to the console
-            console.log('there was an error:' + err);
+            console.log('Error in editComItemSave: \n', err, '\n');
         });
 };
 
@@ -1680,7 +1755,7 @@ exports.editComItemSave = function(req, res) {
         })
         .catch(err => {
             //if error occurs at anytime at any point in the code above, log it to the console
-            console.log('there was an error:' + err);
+            console.log('Error in editCommonItemSave: \n', err, '\n');
         });
 };
 
@@ -1774,7 +1849,7 @@ exports.createUserItem = function(req, res) {
                     })
                     .catch(err => {
                         //if error occurs at anytime at any point in the code above, log it to the console
-                        console.log('there was an error:' + err);
+                        console.log('Error in createUserItem: \n', err, '\n');
                     });
             } else {
             // if it does exist
@@ -1800,7 +1875,7 @@ exports.createUserItem = function(req, res) {
         })
         .catch(err => {
             //if error occurs at anytime at any point in the code above, log it to the console
-            console.log('there was an error:' + err);
+            console.log('Error in createUserItem: \n', err, '\n');
         });
 };
 
@@ -1899,7 +1974,7 @@ exports.editUserItem = function(req, res) {
         })
         .catch(err => {
             //if error occurs at anytime at any point in the code above, log it to the console
-            console.log('there was an error:' + err);
+            console.log('Error in editUserItem: \n', err, '\n');
         });
 };
 
@@ -2093,7 +2168,7 @@ exports.editUserItemSave = function(req, res) {
         })
         .catch(err => {
             //if error occurs at anytime at any point in the code above, log it to the console
-            console.log('there was an error:' + err);
+            console.log('Error in editUserItemSave: \n', err, '\n');
         });
 };
 
@@ -2143,7 +2218,7 @@ exports.copyItem = function(req, res) {
         })
         .catch(err => {
             //if error occurs at anytime at any point in the code above, log it to the console
-            console.log('there was an error:' + err);
+            console.log('Error in copyItem: \n', err, '\n');
         });
 };
 
@@ -2187,7 +2262,7 @@ exports.deleteItem = function(req, res) {
                 })
                 .catch(err => {
                     //if error occurs at anytime at any point in the code above, log it to the console
-                    console.log('there was an error:' + err);
+                    console.log('Error in deleteItem: \n', err, '\n');
                 });
 
             //delete row from mbomItemSum referenced by itemSumID
@@ -2202,7 +2277,7 @@ exports.deleteItem = function(req, res) {
         })
         .catch(err => {
             //if error occurs at anytime at any point in the code above, log it to the console
-            console.log('there was an error:' + err);
+            console.log('Error in deleteItem: \n', err, '\n');
         });
 };
 
@@ -2470,7 +2545,7 @@ exports.editBreaker = function(req, res) {
         })
         .catch(err => {
             //if error occurs at anytime at any point in the code above, log it to the console
-            console.log('there was an error:' + err);
+            console.log('Error in editBreaker: \n', err, '\n');
         });
 };
 
@@ -2514,7 +2589,7 @@ exports.editBreakerSave = function(req, res) {
         })
         .catch(err => {
             //if error occurs at anytime at any point in the code above, log it to the console
-            console.log('there was an error:' + err);
+            console.log('Error in editBreakerSave: \n', err, '\n');
         });
 };
 
@@ -2558,7 +2633,7 @@ exports.deleteBreaker = function(req, res) {
         })
         .catch(err => {
             //if error occurs at anytime at any point in the code above, log it to the console
-            console.log('there was an error:' + err);
+            console.log('Error in deleteBreaker: \n', err, '\n');
         });
 };
 
@@ -2638,7 +2713,7 @@ exports.mbomAddSection = async function(req, res) {
             throw e;
         }
     } catch (err) {
-        console.log('there was an error:' + err);
+        console.log('Error in mbomAddSection: \n', err, '\n');
         return res.status(500).send('Error adding section');
     }
 };
@@ -2711,7 +2786,7 @@ exports.mbomResetSection = async function(req, res) {
             throw e;
         }
     } catch (err) {
-        console.log('mbomResetSection - error:', err);
+        console.log('Error in mbomResetSection: \n', err, '\n');
         return res.status(500).send('Error resetting sections');
     }
 };
@@ -2821,7 +2896,7 @@ exports.mbomDeleteSection = async function(req, res) {
             throw e;
         }
     } catch (err) {
-        console.log('there was an error:' + err);
+        console.log('Error in mbomDeleteSection: \n', err, '\n');
         return res.status(500).send('Error deleting section');
     }
 };
@@ -2946,7 +3021,7 @@ exports.sectionConfigure = function(req, res) {
                         return null
                     })
                     .catch(err => {
-                        console.log('there was an error:' + err);
+                        console.log('Error in sectionConfigure: \n', err, '\n');
                     });
             }
             return null
@@ -2958,7 +3033,7 @@ exports.sectionConfigure = function(req, res) {
         })
         .catch(err => {
             //if error occurs at anytime at any point in the code above, log it to the console
-            console.log('there was an error:' + err);
+            console.log('Error in sectionConfigure: \n', err, '\n');
         });
 };
 
@@ -4239,7 +4314,7 @@ exports.generateMBOM = function (req, res) {
         })
         .catch(err => {
             //if error occurs at anytime at any point in the code above, log it to the console
-            console.log('there was an error:' + err);
+            console.log('Error in generateMBOM: \n', err, '\n');
         });
 };
 
@@ -4321,7 +4396,7 @@ exports.deleteItems = async function(req, res) {
             throw err;
         }
     } catch (err) {
-        console.log('deleteItems - error:', err);
+        console.log('Error in deleteItems: \n', err, '\n');
         return res.status(500).send('Error deleting items');
     }
 };
@@ -4378,7 +4453,7 @@ exports.copyItems = async function(req, res) {
             throw err;
         }
     } catch (err) {
-        console.log('copyItems - error:', err);
+        console.log('Error in copyItems: \n', err, '\n');
         return res.status(500).send('Error copying items');
     }
 };
@@ -4425,7 +4500,7 @@ exports.deleteBreakers = async function(req, res) {
             throw err;
         }
     } catch (err) {
-        console.log('deleteBreakers - error:', err);
+        console.log('Error in deleteBreakers: \n', err, '\n');
         return res.status(500).send('Error deleting breakers');
     }
 };
@@ -4504,7 +4579,7 @@ exports.copyBreakers = async function(req, res) {
             throw err;
         }
     } catch (err) {
-        console.log('copyBreakers - error:', err);
+        console.log('Error in copyBreakers: \n', err, '\n');
         return res.status(500).send('Error copying breakers');
     }
 };

@@ -39,6 +39,13 @@
         // expose debug flag to client (read from html `data-debug` attribute)
         // window.__DEBUG = document.documentElement.getAttribute('data-debug') === 'true';
     </script>
+    <div id="__searchMBOM_data" style="display:none;"
+         data-form-values='<%= JSON.stringify(typeof formValues !== 'undefined' ? formValues : {}) .replace(/</g, "\\u003c") %>'
+         data-message="<%= (typeof message !== 'undefined' ? message : '') %>"
+         data-error-field="<%= (typeof errorField !== 'undefined' ? errorField : '') %>"
+         data-mbom-id="<%= (typeof mbomID !== 'undefined' ? mbomID : '') %>"></div>
+
+    <!-- Inline jQuery-dependent restore removed; client-side restore uses a vanilla script later in the page. -->
     <style>
         div{
             overflow: visible !important;
@@ -993,7 +1000,7 @@
                                 <div class="card-body">
                                     <h4 class="mt-0 header-title">Item Summary</h4>
                                     <div class="card-body">
-                                        <form id="addItemForm" class="g-2 needs-validation" action="/createComItem" method="POST" novalidate>
+                                        <form id="addItemForm" class="g-2 needs-validation" action="/addComItemMBOM" method="POST" novalidate>
                                             <% // Build distinct item types and manufacturer lists from available data,
                                                // excluding items marked OBSOLETE so dropdowns don't show them %>
                                             <% 
@@ -1064,6 +1071,21 @@
                                             <div id="desc-data" style="display:none;" data-desc='<%= safeDescJson %>'></div>
                                             <div id="pn-data" style="display:none;" data-pn='<%= safePnJson %>'></div>
 
+                                            <%# Canonical hidden inputs for robust restore initialization. %>
+                                            <% if (typeof formValues !== 'undefined' && formValues) { %>
+                                                <input type="hidden" class="itemTypeHidden" value="<%= formValues.itemType || formValues.itemSelect2 || '' %>" />
+                                                <input type="hidden" class="itemMfgHidden" value="<%= formValues.itemMfg || formValues.mfgSelect2 || '' %>" />
+                                                <input type="hidden" class="itemDescHidden" value="<%= formValues.itemDesc || '' %>" />
+                                                <input type="hidden" class="itemPNHidden" value="<%= formValues.itemPN || '' %>" />
+                                                <input type="hidden" class="itemPNOtherHidden" value="<%= formValues.itemPNOther || '' %>" />
+                                                <input type="hidden" class="unitOfIssueHidden" value="<%= formValues.unitOfIssue || '' %>" />
+                                                <input type="hidden" class="catCodeHidden" value="<%= formValues.catCode || '' %>" />
+                                                <input type="hidden" class="classHidden" value="<%= formValues.class || formValues.classCode || '' %>" />
+                                                <input type="hidden" class="itemQtyHidden" value="<%= formValues.itemQty || '' %>" />
+                                                <input type="hidden" class="shipLooseHidden" value="<%= formValues.shipLoose || '' %>" />
+                                                <input type="hidden" class="secIDHidden" value="<%= formValues.secID || '' %>" />
+                                            <% } %>
+
                                             <div class="row">
                                                 <div class="col-md-3">
                                                     <label class="col-form-label">Item Type</label>
@@ -1088,7 +1110,7 @@
                                                 <div class="col-md-3">
                                                     <label class="col-form-label">Item Mfg.</label>
                                                     <div class="relative-input">
-                                                        <select name="itemMfg" class="form-control itemMfgSelect">
+                                                        <select name="itemMfg" class="form-control itemMfgSelect" required>
                                                             <option value="">Select Manufacturer</option>
                                                             <% for (let m of mfgList) { %>
                                                                 <option value="<%= m %>"><%= m %></option>
@@ -1108,7 +1130,7 @@
                                                 <div class="col-md-3">
                                                     <label class="col-form-label">Description</label>
                                                     <div class="relative-input">
-                                                        <select name="itemDesc" class="form-control itemDescSelect">
+                                                        <select name="itemDesc" class="form-control itemDescSelect" required>
                                                             <option value="">Select Description</option>
                                                         </select>
                                                         <input type="text" name="itemDescOther" class="form-control mt-2 itemDescOther manual-input" maxlength="255" placeholder="Enter description" disabled="disabled" />
@@ -1124,7 +1146,7 @@
                                                 <div class="col-md-3">
                                                     <label class="col-form-label">Item P/N</label>
                                                     <div class="relative-input">
-                                                        <select name="itemPN" class="form-control itemPNSelect">
+                                                        <select name="itemPN" class="form-control itemPNSelect" required>
                                                             <option value="">Select P/N</option>
                                                         </select>
                                                         <input type="text" name="itemPNOther" class="form-control mt-2 itemPNOther manual-input" placeholder="Type P/N here" disabled="disabled" />
@@ -1143,32 +1165,50 @@
                                             <div id="uncommonRow" class="row" style="display:none;">
                                                 <div class="col-md-4">
                                                     <label class="col-form-label">Unit Of Issue</label>
-                                                    <select name="unitOfIssue" class="form-control unitOfIssueSelect">
+                                                    <select name="unitOfIssue" class="form-control unitOfIssueSelect" required>
                                                         <option value="">Select Unit</option>
                                                         <% for (let u of unitList) { %>
                                                             <option value="<%= u %>"><%= u %></option>
                                                         <% } %>
                                                     </select>
+                                                        <div class="invalid-feedback">
+                                                            Please select a Unit of Issue.
+                                                        </div>
+                                                        <div class="valid-feedback">
+                                                            Looks good!
+                                                        </div>
                                                 </div>
 
                                                 <div class="col-md-4">
                                                     <label class="col-form-label">Cat. Code</label>
-                                                    <select name="catCode" class="form-control catCodeSelect">
+                                                    <select name="catCode" class="form-control catCodeSelect" required>
                                                         <option value="">Select Cat. Code</option>
                                                         <% for (let c of (catCodeData || [])) { %>
                                                             <option value="<%= c %>"><%= c %></option>
                                                         <% } %>
                                                     </select>
+                                                        <div class="invalid-feedback">
+                                                            Please select a Cat. Code.
+                                                        </div>
+                                                        <div class="valid-feedback">
+                                                            Looks good!
+                                                        </div>
                                                 </div>
                                                 
                                                 <div class="col-md-4">
                                                     <label class="col-form-label">Class</label>
-                                                    <select name="class" class="form-control classSelect">
+                                                    <select name="class" class="form-control classSelect" required>
                                                         <option value="">Select Class</option>
                                                         <% for (let cl of (classCodeData || [])) { %>
                                                             <option value="<%= cl %>"><%= cl %></option>
                                                         <% } %>
                                                     </select>
+                                                        <div class="invalid-feedback">
+                                                            Please select a Class.
+                                                        </div>
+                                                        <div class="valid-feedback">
+                                                            Looks good!
+                                                        </div>
                                                 </div>
                                             </div>
 
@@ -1216,6 +1256,18 @@
                                                 <% } %>
                                             </div>
 
+                                            <p class="text-muted m-b-30"></p>
+                                            <% if (typeof message !== 'undefined' && message) { %>
+                                                <div class="row">
+                                                    <div class="col-sm-12">
+                                                        <div class="alert alert-danger alert-dismissible fade show text-center" role="alert">
+                                                            <%= message %>
+                                                            <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            <% } %>
+
                                             <div class="row">
                                                 <div class="col text-center p-2">
                                                     <div>
@@ -1229,11 +1281,12 @@
 
                                             <div class="row justify-content-center">
                                                 <div class="col-2 text-center">
-                                                    <button type="submit" class="btn-block btn-lg btn-success waves-effect waves-light" formaction="/createComItem">
+                                                    <button type="submit" class="btn-block btn-lg btn-success waves-effect waves-light" formaction="/addComItemMBOM">
                                                         Add Item
                                                     </button>
                                                 </div>
                                             </div>
+
                                             <% // Hidden job/context fields: keep as name-only to avoid duplicate id collisions elsewhere %>
                                             <% if (mbomData) { %>
                                                 <input type="hidden" name="jobNum" value="<%= mbomData.jobNum %>" />
@@ -1241,6 +1294,105 @@
                                                 <input type="hidden" name="mbomID" value="<%= mbomData.mbomID %>" />
                                             <% } %>
                                         </form>
+
+                                        <!-- Persisted form values and message for client-side restore -->
+                                        <div id="__searchMBOM_data" style="display:none;"
+                                            data-form-values='<%= JSON.stringify((typeof formValues !== "undefined" ? formValues : {})) .replace(/</g, "\\u003c").replace(/'/g, "&#39;") %>'
+                                             data-message='<%= (typeof message !== "undefined" && message) ? String(message).replace(/</g, "\\u003c").replace(/'/g, "&#39;") : "" %>'
+                                             data-error-field='<%= (errorField || "") %>'
+                                        ></div>
+
+                                        <script>
+                                        // Defer restoring form values until window.load so dependent dropdown
+                                        // population (mbomFilterDropdown.js) has finished running.
+                                        (function(){
+                                            function restore() {
+                                                try{
+                                                    var container = document.getElementById('__searchMBOM_data');
+                                                    if(!container) return;
+                                                    var raw = container.getAttribute('data-form-values');
+                                                    if(!raw) return;
+                                                    var fv = {};
+                                                    try{ fv = JSON.parse(raw); } catch(e){ fv = {}; }
+
+                                                    function setControl(name, value){
+                                                        if(typeof value === 'undefined' || value === null) return;
+                                                        var el = document.querySelector('[name="'+name+'"]');
+                                                        if(!el) return;
+                                                        if(el.type === 'checkbox'){
+                                                            el.checked = (value === 'Y' || value === 'true' || value === true);
+                                                        } else {
+                                                            try { el.value = value; } catch (e) {}
+                                                        }
+                                                        var ev;
+                                                        try{ ev = new Event('change', { bubbles: true }); } catch(e){ ev = document.createEvent('HTMLEvents'); ev.initEvent('change', true, false); }
+                                                        try { el.dispatchEvent(ev); } catch(e){}
+                                                    }
+
+                                                    // Restore itemType first (this will populate mfg via page wiring)
+                                                    setControl('itemType', fv.itemType || fv.itemSelect2 || '');
+                                                    setControl('itemTypeOther', fv.itemTypeOther || '');
+
+                                                    // Wait a short moment to allow dependent population to run, then set downstream fields
+                                                    setTimeout(function(){
+                                                        setControl('itemMfg', fv.itemMfg || fv.mfgSelect2 || '');
+                                                        setControl('itemMfgOther', fv.itemMfgOther || '');
+                                                        // another short delay before desc/pn
+                                                        setTimeout(function(){
+                                                            setControl('itemDesc', fv.itemDesc || '');
+                                                            setControl('itemDescOther', fv.itemDescOther || '');
+                                                            setTimeout(function(){
+                                                                // For PN, prefer selecting option if present else set OTHER input
+                                                                var pnVal = fv.itemPN || '';
+                                                                if(pnVal){
+                                                                    var pnSel = document.querySelector('[name="itemPN"]');
+                                                                    if(pnSel){
+                                                                        var opt = pnSel.querySelector('option[value="'+pnVal+'"]');
+                                                                        if(opt){ setControl('itemPN', pnVal); }
+                                                                        else { setControl('itemPNOther', pnVal); }
+                                                                    }
+                                                                }
+                                                                setControl('itemPNOther', fv.itemPNOther || '');
+                                                            }, 60);
+                                                        }, 60);
+                                                    }, 80);
+
+                                                    // Uncommon/selects
+                                                    setControl('unitOfIssue', fv.unitOfIssue || '');
+                                                    setControl('catCode', fv.catCode || '');
+                                                    setControl('class', fv.class || fv.classCode || '');
+                                                    setControl('itemQty', fv.itemQty || 1);
+
+                                                    // Sections: secID or assignSecIDs[] checkboxes
+                                                    if(fv.secID){ setControl('secID', fv.secID); }
+                                                    if(fv.assignSecIDs){
+                                                        var assigns = fv.assignSecIDs;
+                                                        if(!Array.isArray(assigns)) assigns = [assigns];
+                                                        assigns.forEach(function(a){
+                                                            var cb = document.querySelector('[name="assignSecIDs[]"][value="'+a+'"]');
+                                                            if(cb) cb.checked = true;
+                                                        });
+                                                    }
+
+                                                    // shipLoose
+                                                    if(fv.shipLoose){
+                                                        var sl = document.querySelector('[name="shipLoose"]');
+                                                        if(sl) sl.checked = (fv.shipLoose === 'Y' || fv.shipLoose === 'true' || fv.shipLoose === true);
+                                                    }
+
+                                                    // If server flagged PN as error, mark it invalid and focus
+                                                    var errField = container.getAttribute('data-error-field');
+                                                    var msg = container.getAttribute('data-message') || '';
+                                                    if(errField === 'itemPN'){
+                                                        var pnEl = document.querySelector('[name="itemPN"]');
+                                                        if(pnEl){ pnEl.classList.add('is-invalid'); if(msg) pnEl.setAttribute('title', msg); try{ pnEl.focus(); }catch(e){} }
+                                                    }
+                                                }catch(e){ console.error('restore form values error', e); }
+                                            }
+
+                                            if (document.readyState === 'complete') restore(); else window.addEventListener('load', restore);
+                                        })();
+                                        </script>
                                     </div>
                                     <% if(mbomItemData.length != 0){ %>
                                         <hr>
@@ -1278,7 +1430,7 @@
                                                 <button id="itemClearFilter" type="button" class="btn btn-outline-danger" style="height:38px; padding: .375rem .75rem;">Clear Filter</button>
                                             </div>
                                         </div>
-                                        <form id="itemForm" class="itemForm" action="" method="POST">
+                                        <form id="itemForm" class="itemForm" action="/addComItemMBOM" method="POST">
                                         <% if(mbomData) { %>
                                             <input type="text" name="jobNum" class="form-control" value="<%= mbomData.jobNum %>" id="jobNum" hidden="hidden">
                                             <input type="text" name="releaseNum" class="form-control" value="<%= mbomData.releaseNum %>" id="releaseNum" hidden="hidden">
@@ -1345,7 +1497,7 @@
                                                                     <button id="copyButton" type="submit" class="btn btn-md btn-outline-secondary waves-effect waves-light copy-item-btn" formaction="../copyItem/?itemSumID=<%= mbomItemData[i].itemSumID%>" data-toggle="tooltip" title="Clone" aria-label="Clone">
                                                                             <i class="fas fa-clone" aria-hidden="true"></i>
                                                                     </button>
-                                                                    <button id="editButton" type="submit" class="btn btn-md btn-outline-warning waves-effect waves-light edit-item-btn" formaction="../editComItem/?itemSumID=<%= mbomItemData[i].itemSumID%>&comItemID=<%=mbomItemData[i].comItemID%>" data-toggle="tooltip" title="Edit" aria-label="Edit">
+                                                                    <button id="editButton" type="submit" class="btn btn-md btn-outline-warning waves-effect waves-light edit-item-btn" formaction="../editComItemMBOM/?itemSumID=<%= mbomItemData[i].itemSumID%>&comItemID=<%=mbomItemData[i].comItemID%>" data-toggle="tooltip" title="Edit" aria-label="Edit">
                                                                         <i class="fas fa-pencil-alt" aria-hidden="true"></i>
                                                                     </button>
                                                                     <button id="deleteButton" type="submit" class="btn btn-md btn-outline-danger waves-effect waves-light delete-item-btn" formaction="../deleteItem/?itemSumID=<%= mbomItemData[i].itemSumID %>" data-toggle="tooltip" title="Delete" aria-label="Delete">
@@ -1381,7 +1533,7 @@
                                                                             <i class="fas fa-pencil-alt" aria-hidden="true"></i>
                                                                         </button>
                                                                     <% }else{ %>
-                                                                        <button id="editButton" type="submit" class="btn btn-md btn-outline-warning waves-effect waves-light edit-item-btn" formaction="../editComItem/?itemSumID=<%= mbomItemData[i].itemSumID%>&comItemID=<%=mbomItemData[i].comItemID%>" data-toggle="tooltip" title="Edit" aria-label="Edit">
+                                                                        <button id="editButton" type="submit" class="btn btn-md btn-outline-warning waves-effect waves-light edit-item-btn" formaction="../editComItemMBOM/?itemSumID=<%= mbomItemData[i].itemSumID%>&comItemID=<%=mbomItemData[i].comItemID%>" data-toggle="tooltip" title="Edit" aria-label="Edit">
                                                                             <i class="fas fa-pencil-alt" aria-hidden="true"></i>
                                                                         </button>
                                                                     <% } %>

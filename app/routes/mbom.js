@@ -55,11 +55,11 @@ app.post('/deleteBreakerAccFromEdit', mbomController.deleteBrkAccFromEdit);
 /***********************************************
  COM ITEM TABLE
  ***********************************************/
-//get request to /createComItem url => createComItemTableGET()
-app.get('/createComItem', mbomController.createComItemTableGET);
+//get request to /createComItemTable url => createComItemTableGET()
+app.get('/createComItemTable', mbomController.createComItemTableGET);
 
-//post request to /createComItem url => createComItemTablePOST()
-app.post('/createComItem', mbomController.createComItemTablePOST);
+//post request to /createComItemTable url => createComItemTablePOST()
+app.post('/createComItemTable', mbomController.createComItemTablePOST);
 
 //get request to /editComItemTableGET url => editComItemTableGET()
 app.get('/editComItemTableGET', mbomController.editComItemTableGET);
@@ -72,10 +72,10 @@ app.post('/editComItemTablePOST', mbomController.editComItemTablePOST);
  COM ITEM IN MBOM
  ***********************************************/
 //post request to /addComItem url => addComItem()
-app.post('/addComItem', mbomController.addComItem);
+app.post('/addComItemMBOM', mbomController.addComItemMBOM);
 
 //post request to /editComItem url => editComItem()
-app.post('/editComItem', mbomController.editComItem);
+app.post('/editComItemMBOM', mbomController.editComItemMBOM);
 
 //post request to /editComItemSave url => editComItemSave()
 app.post('/editComItemSave', mbomController.editComItemSave);

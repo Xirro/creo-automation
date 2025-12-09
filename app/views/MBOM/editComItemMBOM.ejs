@@ -57,11 +57,15 @@
                                                             <label for="example-text-input" class="col-form-label">Item Type</label>
                                                             <select class="form-control select2" id="itemSelect2" name="itemSelect2" required>
                                                                 <option value="">Select</option>
-                                                                <% let userItemTypes = new Set();%>
-                                                                <% for(let el of comItemData){
-                                                                    userItemTypes.add(el.itemType);
-                                                                } %>
-                                                                <% for(let el of userItemTypes){ %>
+                                                                <% 
+                                                                    // collect, dedupe and sort item types
+                                                                    let userItemTypes = new Set();
+                                                                    for(let el of (comItemData||[])){
+                                                                        if(el && el.itemType) userItemTypes.add(String(el.itemType).trim());
+                                                                    }
+                                                                    const sortedTypes = Array.from(userItemTypes).filter(Boolean).sort(function(a,b){ return a.localeCompare(b,'en',{sensitivity:'base'}); });
+                                                                %>
+                                                                <% for(const el of sortedTypes){ %>
                                                                     <% if(el == editComItemData.itemType){ %>
                                                                         <option value="<%= el%>" selected><%=el%></option>
                                                                         <% var notOther = true; %>
@@ -82,16 +86,29 @@
                                                             <% // Single dropdown for manufacturer: values keep the itemType|itemMfg format for server compatibility %>
                                                             <select class="form-control select2" id="mfgSelect2" name="mfgSelect2">
                                                                 <option value="">Select</option>
-                                                                <% let userItemMfg = new Set(); %>
-                                                                <% for (let el of comItemData) { if (el && el.itemType) userItemMfg.add(el.itemType + '|' + (el.itemMfg || '')); } %>
-                                                                <% for (let el of Array.from(userItemMfg).sort()) { %>
-                                                                    <% const parts = String(el).split('|'); const mfg = parts[1] || ''; %>
-                                                                    <% if (mfg == editComItemData.itemMfg) { %>
-                                                                        <option data-parent="<%= parts[0] %>" value="<%= el %>" selected><%= mfg %></option>
-                                                                    <% } else { %>
-                                                                        <option data-parent="<%= parts[0] %>" value="<%= el %>"><%= mfg %></option>
+                                                                    <% 
+                                                                        // collect and dedupe manufacturers by name; pick first itemType as representative
+                                                                        let userMfgUnique = new Map();
+                                                                        for (let el of (comItemData||[])){
+                                                                            if(el && el.itemType){
+                                                                                const itemType = String(el.itemType||'').trim();
+                                                                                const mfg = String(el.itemMfg||'').trim();
+                                                                                if(!mfg) continue;
+                                                                                const key = mfg.toUpperCase();
+                                                                                if(!userMfgUnique.has(key)){
+                                                                                    userMfgUnique.set(key, { value: itemType + '|' + mfg, itemType: itemType, mfg: mfg });
+                                                                                }
+                                                                            }
+                                                                        }
+                                                                        const userItemMfg = Array.from(userMfgUnique.values()).sort(function(a,b){ return a.mfg.localeCompare(b.mfg,'en',{sensitivity:'base'}); });
+                                                                    %>
+                                                                    <% for (const rec of userItemMfg) { %>
+                                                                        <% if (rec.mfg == editComItemData.itemMfg) { %>
+                                                                            <option data-parent="<%= rec.itemType %>" value="<%= rec.value %>" selected><%= rec.mfg %></option>
+                                                                        <% } else { %>
+                                                                            <option data-parent="<%= rec.itemType %>" value="<%= rec.value %>"><%= rec.mfg %></option>
+                                                                        <% } %>
                                                                     <% } %>
-                                                                <% } %>
                                                                 <option value="OTHER">OTHER</option>
                                                             </select>
                                                             <input type="text" name="otherMfgType" class="form-control" id="otherMfgType" value="<%= editComItemData.itemMfg %>" placeholder="Type Mfg. Here" style="display:none;" autocomplete="off"/>
@@ -131,11 +148,20 @@
                                                             <label for="example-text-input" class="col-form-label">Cat. Code</label>
                                                             <select class="form-control select2" name="catCode">
                                                                 <option value="Select">Select</option>
-                                                                <% for (let i = 0; i < catCodeData.length; i++) { %>
-                                                                    <% if(catCodeData[i].catCode == editComItemData.catCode){ %>
-                                                                        <option value="<%= catCodeData[i].catCode%>" selected><%= catCodeData[i].catCode%></option>
+                                                                <% 
+                                                                    // dedupe and sort cat codes
+                                                                    const catSet = new Set();
+                                                                    for (let i = 0; i < (catCodeData||[]).length; i++){
+                                                                        const val = (catCodeData[i] && catCodeData[i].catCode) ? String(catCodeData[i].catCode).trim() : String(catCodeData[i] || '').trim();
+                                                                        if(val) catSet.add(val);
+                                                                    }
+                                                                    const catArr = Array.from(catSet).sort(function(a,b){ return a.localeCompare(b,'en',{sensitivity:'base'}); });
+                                                                %>
+                                                                <% for (const code of catArr){ %>
+                                                                    <% if(code == editComItemData.catCode){ %>
+                                                                        <option value="<%= code %>" selected><%= code %></option>
                                                                     <% } else { %>
-                                                                        <option value="<%= catCodeData[i].catCode%>"><%= catCodeData[i].catCode%></option>
+                                                                        <option value="<%= code %>"><%= code %></option>
                                                                     <% } %>
                                                                 <% } %>
                                                             </select>
@@ -144,12 +170,20 @@
                                                             <label for="example-text-input" class="col-form-label">Class</label>
                                                             <select class="form-control select2" name="class">
                                                                 <option value="Select">Select</option>
-                                                                <% for (let i = 0; i < classCodeData.length; i++) { %>
-                                                                    <% if (classCodeData[i].classCode == editComItemData.classCode) { %>
-                                                                        <option value="<%= classCodeData[i].classCode%>" selected><%= classCodeData[i].classCode  %></option>
+                                                                <% 
+                                                                    const classSet = new Set();
+                                                                    for (let i = 0; i < (classCodeData||[]).length; i++){
+                                                                        const val = (classCodeData[i] && classCodeData[i].classCode) ? String(classCodeData[i].classCode).trim() : String(classCodeData[i] || '').trim();
+                                                                        if(val) classSet.add(val);
+                                                                    }
+                                                                    const classArr = Array.from(classSet).sort(function(a,b){ return a.localeCompare(b,'en',{sensitivity:'base'}); });
+                                                                %>
+                                                                <% for (const cl of classArr){ %>
+                                                                    <% if(cl == editComItemData.classCode){ %>
+                                                                        <option value="<%= cl %>" selected><%= cl %></option>
                                                                     <% } else { %>
-                                                                        <option value="<%= classCodeData[i].classCode%>"><%= classCodeData[i].classCode  %></option>
-                                                                        <% } %>
+                                                                        <option value="<%= cl %>"><%= cl %></option>
+                                                                    <% } %>
                                                                 <% } %>
                                                             </select>
                                                         </div>
@@ -165,10 +199,10 @@
                                                     </div>
                                                     <div class="row justify-content-center">
                                                         <div class="col-2" style="padding-top:5%;">
-                                                            <input id="uploadBtn" type="submit" value="Save" class="btn-block btn-lg btn-outline-success waves-effect waves-light" />
+                                                            <input id="uploadBtn" type="submit" value="Save" class="btn btn-block btn-lg btn-success waves-effect waves-light" />
                                                         </div>
                                                         <div class="col-2" style="padding-top:5%;">
-                                                            <a id="cancelBtn" href="../MBOM" class="btn-block btn-lg btn-outline-secondary waves-effect waves-light">Cancel</a>
+                                                            <a id="cancelBtn" href="../MBOM" class="btn btn-block btn-lg btn-secondary waves-effect waves-light">Cancel</a>
                                                         </div>
                                                     </div>
                                                 </div>
