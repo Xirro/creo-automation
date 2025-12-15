@@ -667,6 +667,17 @@
             element5.name = "totalSection";
             form.appendChild(element5);
 
+            // include projectId when present (project-scoped pages)
+            try {
+                var projEl = document.getElementById('projectId') || (document.getElementsByName && document.getElementsByName('projectId') && document.getElementsByName('projectId')[0]) || document.getElementById('confirm_projectId');
+                if (projEl && projEl.value) {
+                    var projInput = document.createElement('input');
+                    projInput.name = 'projectId';
+                    projInput.value = projEl.value;
+                    form.appendChild(projInput);
+                }
+            } catch(e){}
+
             document.body.appendChild(form);
             form.submit();
         }

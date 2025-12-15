@@ -249,6 +249,8 @@ let repoConfig = {
 
     //Mechanical Eng MBOM Tables
     'MBOM_summary_table': 'mbomSum',
+    // Indicates we track project membership on the MBOM summary table.
+    'MBOM_projectId': 'projectId',
     'MBOM_breaker_table': 'mbomBrkSum',
     'MBOM_brkAcc_table': 'mbomBrkAccSum',
     'MBOM_item_table': 'mbomItemSum',

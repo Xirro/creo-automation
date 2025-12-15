@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=0, minimal-ui">
+    <title><%= title || 'Projects' %></title>
+    <link rel="shortcut icon" href="/public/assets/images/SAI-Logo.JPG">
+    <link href="/public/assets/css/bootstrap.min.css" rel="stylesheet" type="text/css">
+    <link href="/public/assets/css/style.css" rel="stylesheet" type="text/css">
+    <link href="/public/assets/css/icons.css" rel="stylesheet" type="text/css">
+    <style>
+        .projects-hero { margin: 1.25rem 0; padding-top: 25px;}
+        .projects-actions { margin-bottom: 1rem; }
+        .table-sm td, .table-sm th { padding: .45rem .5rem; }
+        /* Projects table: fixed layout and ellipsis for long text */
+        #projectsTable { table-layout: fixed; width: 100%; }
+        #projectsTable th, #projectsTable td { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    </style>
+</head>
+
+<body>
+<div id="wrapper">
+    <%- include('../partials/header') %>
+    <%- include('../partials/sidebar') %>
+
+    <div class="content-page">
+        <div class="content">
+            <div class="container-fluid">
+                <div class="row projects-hero">
+                    <div class="col-sm-8">
+                        <h3 class="page-title">Projects</h3>
+                        <p class="text-muted">Create and manage MBOM projects and layouts.</p>
+                    </div>
+                    <div class="col-sm-4 text-right align-self-center">
+                        <a href="/Projects/create" class="btn btn-success btn-lg">Create Project</a>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-body">
+                        <div class="projects-actions d-flex justify-content-between align-items-center">
+                            <div>
+                                <form id="projectSearchForm" method="get" action="/projects" class="form-inline">
+                                    <input type="hidden" name="limit" id="limitInput" value="<%= typeof limit !== 'undefined' ? limit : 25 %>" />
+                                    <input type="hidden" name="page" id="pageInput" value="<%= typeof page !== 'undefined' ? page : 1 %>" />
+                                    <input id="projectSearch" name="q" type="search" value="<%= typeof q !== 'undefined' ? q : '' %>" class="form-control form-control-sm" placeholder="Search projects across all pages..." style="min-width:500px;" />
+                                    <button type="submit" class="btn btn-sm btn-primary ml-2">Search</button>
+                                    <a href="/projects" class="btn btn-sm btn-outline-secondary ml-1">Clear</a>
+                                    <button id="searchHelpToggle" type="button" class="btn btn-sm btn-outline-info ml-2" title="Search help">?</button>
+                                </form>
+
+                                <div id="searchHelp" class="search-help mt-2" style="display:none; max-width:720px;">
+                                    <strong>Search syntax</strong>
+                                    <ul style="margin:6px 0 0 18px; padding:0;">
+                                        <li><strong>Plain token</strong>: matches across jobNum, jobTitle, projectManager, billCode, customerName (e.g. <code>electrical</code>).</li>
+                                        <li><strong>Phrase</strong>: use quotes for exact phrase (e.g. <code>"Final Build"</code>).</li>
+                                        <li><strong>Fielded</strong>: <code>key:value</code> to search a specific field (keys: <code>job, title, pm, bill, cust</code>). Example: <code>job:12345 bill:ABC</code>.</li>
+                                        <li><strong>Negation</strong>: prefix with <code>-</code> to exclude matches (e.g. <code>-cust:Acme</code>).</li>
+                                    </ul>
+                                    <div style="margin-top:6px; font-size:0.9em; color:#555;">Examples: <code>job:12345 -bill:OLD "final build"</code></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center mt-2">
+                            <div class="text-muted">
+                                Page <%= typeof page !== 'undefined' ? page : 1 %> of <%= typeof totalPages !== 'undefined' ? totalPages : 1 %> —
+                                Limit
+                                <select id="pageSizeSelect" class="form-control form-control-sm d-inline-block ml-2" style="width:auto;">
+                                    <% var curLimit = typeof limit !== 'undefined' ? limit : 25; %>
+                                    <option value="10" <%= Number(curLimit)===10 ? 'selected' : '' %>>10</option>
+                                    <option value="25" <%= Number(curLimit)===25 ? 'selected' : '' %>>25</option>
+                                    <option value="50" <%= Number(curLimit)===50 ? 'selected' : '' %>>50</option>
+                                    <option value="100" <%= Number(curLimit)===100 ? 'selected' : '' %>>100</option>
+                                </select>
+                            </div>
+                            <div>
+                                <% var curPage = typeof page !== 'undefined' ? page : 1; var totalPagesLocal = typeof totalPages !== 'undefined' ? totalPages : 1; %>
+                                <% if (curPage > 1) { %>
+                                    <a href="?page=<%= curPage-1 %>&limit=<%= curLimit %><%= typeof q !== 'undefined' && q ? ('&q=' + encodeURIComponent(q)) : '' %>" class="btn btn-sm btn-outline-secondary mr-1">Prev</a>
+                                <% } else { %>
+                                    <a class="btn btn-sm btn-outline-secondary mr-1 disabled" tabindex="-1" aria-disabled="true">Prev</a>
+                                <% } %>
+                                <% if (curPage < totalPagesLocal) { %>
+                                    <a href="?page=<%= curPage+1 %>&limit=<%= curLimit %><%= typeof q !== 'undefined' && q ? ('&q=' + encodeURIComponent(q)) : '' %>" class="btn btn-sm btn-outline-secondary">Next</a>
+                                <% } else { %>
+                                    <a class="btn btn-sm btn-outline-secondary disabled" tabindex="-1" aria-disabled="true">Next</a>
+                                <% } %>
+                            </div>
+                        </div>
+
+                        <div class="table-responsive" style="margin-top: 5px;">
+                            <table id="projectsTable" class="table table-hover table-sm">
+                                <colgroup>
+                                    <col style="width:10%" /> <!-- Job # -->
+                                    <col style="width:35%" /> <!-- Job Title -->
+                                    <col style="width:20%" /> <!-- Cust Name -->
+                                    <col style="width:20%" /> <!-- Project Manager -->
+                                    <col style="width:10%" /> <!-- Bill Code -->
+                                    <col style="width:5%" />  <!-- Actions -->
+                                </colgroup>
+                                <thead>
+                                    <tr>
+                                        <th>Job #</th>
+                                        <th>Job Title</th>
+                                        <th>Cust Name</th>
+                                        <th>Project Manager</th>
+                                        <th>Bill Code</th>
+                                        <th></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <% if (Array.isArray(projects) && projects.length) { %>
+                                        <% for (var i = 0; i < projects.length; i++) { var p = projects[i]; %>
+                                            <tr>
+                                                <td><%= p.jobNum %></td>
+                                                <td><%= p.jobTitle %></td>
+                                                <td><%= p.custName %></td>
+                                                <td><%= p.projectManager %></td>
+                                                <td><%= p.billCode %></td>
+                                                <td class="text-right">
+                                                    <a href="/projects/<%= p.id %>" class="btn btn-sm btn-primary">Open</a>
+                                                </td>
+                                            </tr>
+                                        <% } %>
+                                    <% } else { %>
+                                        <tr>
+                                            <td colspan="6" class="text-center text-muted">No projects found. Use "Create Project" to add one.</td>
+                                        </tr>
+                                    <% } %>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <%- include('../partials/footer') %>
+</div>
+
+<%- include('../partials/scripts') %>
+
+<script src="/public/assets/js/mbomTableGroupSort.js"></script>
+<script>
+    // Initialize mbom table group/sort for projects table
+    (function(){
+        if(typeof window.mbomInit === 'function'){
+            try{
+                // Initialize table without a client-side filterId so typing won't live-filter the table.
+                window.mbomInit([
+                    { tableId: 'projectsTable', defaultGroup: 'none' }
+                ]);
+            }catch(e){ if(window.__DEBUG) console.error('mbomInit failed', e); }
+        }
+    })();
+</script>
+<script>
+    // Toggle the search help panel
+    (function(){
+        var btn = document.getElementById('searchHelpToggle');
+        var panel = document.getElementById('searchHelp');
+        if(!btn || !panel) return;
+        btn.addEventListener('click', function(){
+            if(panel.style.display === 'none' || panel.style.display === ''){
+                panel.style.display = 'block';
+                btn.classList.add('active');
+            } else {
+                panel.style.display = 'none';
+                btn.classList.remove('active');
+            }
+        });
+    })();
+</script>
+
+<script>
+    (function(){
+        // When the page-size select changes, update hidden inputs and submit the search form.
+        var pageSize = document.getElementById('pageSizeSelect');
+        var limitInput = document.getElementById('limitInput');
+        var pageInput = document.getElementById('pageInput');
+        var form = document.getElementById('projectSearchForm');
+        if(!pageSize || !limitInput || !pageInput || !form) return;
+        pageSize.addEventListener('change', function(){
+            limitInput.value = this.value;
+            pageInput.value = 1; // reset to first page when page size changes
+            form.submit();
+        });
+    })();
+</script>
+
+</body>
+</html>
+

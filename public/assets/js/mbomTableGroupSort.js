@@ -468,17 +468,36 @@ function setupFilter(inputId, tableId, opts){
     }catch(e){ if(window.__DEBUG) console.warn('setupFilter: additional listeners failed', e); }
     const clearBtn = opts && opts.clearFilterId ? document.getElementById(opts.clearFilterId) : null;
     if(clearBtn){
-        clearBtn.addEventListener('click', function(){
-            input.value = '';
-            input.dispatchEvent(new Event('input'));
-            if(opts && opts.groupSelectId){
-                const sel = document.getElementById(opts.groupSelectId);
-                if(sel){ sel.value = 'none'; if(typeof opts.applyGrouping === 'function') opts.applyGrouping(); }
-                if(opts && opts.groupStorageKey){
-                    try{ localStorage.setItem(opts.groupStorageKey, 'none'); }catch(e){}
+            clearBtn.addEventListener('click', function(){
+                input.value = '';
+                input.dispatchEvent(new Event('input'));
+                if(opts && opts.groupSelectId){
+                    const sel = document.getElementById(opts.groupSelectId);
+                    if(sel){ sel.value = 'none'; if(typeof opts.applyGrouping === 'function') opts.applyGrouping(); }
+                    if(opts && opts.groupStorageKey){
+                        try{
+                            // Remove persisted grouping keys both base and per-mbom (if present)
+                            var baseKey = opts.groupStorageKey;
+                            try{ localStorage.removeItem(baseKey); }catch(e){}
+                            var mbomEl = document.getElementById('mbomID');
+                            if(mbomEl && mbomEl.value){
+                                try{ localStorage.removeItem(baseKey + '.' + String(mbomEl.value)); }catch(e){}
+                            }
+                            // Also remove any other keys that start with the baseKey + '.' prefix
+                            try{
+                                var prefix = baseKey + '.';
+                                for(var i = localStorage.length - 1; i >= 0; i--){
+                                    var k = localStorage.key(i);
+                                    if(!k) continue;
+                                    if(k.indexOf(prefix) === 0){
+                                        try{ localStorage.removeItem(k); }catch(e){}
+                                    }
+                                }
+                            }catch(e){}
+                        }catch(e){}
+                    }
                 }
-            }
-        });
+            });
     }
 }
 

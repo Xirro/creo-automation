@@ -1,0 +1,1809 @@
+<!DOCTYPE html>
+<html lang="en" data-debug="<%= debug ? 'true' : 'false' %>">
+    <head>
+        <meta charset="utf-8" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=0, minimal-ui">
+        <title><%= title %></title>
+        <meta content="Quote Detail" name="SAI-APS-Portal" />
+        <link rel="shortcut icon" href="/public/assets/images/SAI-Logo.JPG">
+        <link rel="stylesheet" href="/public/plugins/morris/morris.css">
+
+        <link href="/public/plugins/RWD-Table-Patterns/dist/css/rwd-table.min.css" rel="stylesheet" type="text/css" media="screen" />
+        <link href="/public/plugins/bootstrap-colorpicker/css/bootstrap-colorpicker.min.css" rel="stylesheet" />
+        <link href="/public/plugins/bootstrap-datepicker/dist/css/bootstrap-datepicker.min.css" rel="stylesheet" />
+        <link href="/public/plugins/select2/css/select2.min.css" rel="stylesheet" type="text/css" />
+        <link href="/public/plugins/bootstrap-touchspin/css/jquery.bootstrap-touchspin.min.css" rel="stylesheet" />
+        
+        <link href="/public/assets/css/breakerDragDrop.css" rel="stylesheet" type="text/css" />
+        <link href="/public/plugins/jquery-ui/jquery-ui.min.css" rel="stylesheet" type="text/css" />
+        <!-- ION Slider -->
+        <link href="/public/plugins/ion-rangeslider/ion.rangeSlider.css" rel="stylesheet" type="text/css"/>
+        <link href="/public/plugins/ion-rangeslider/ion.rangeSlider.skinModern.css" rel="stylesheet" type="text/css"/>
+
+        <link href="/public/assets/css/metismenu.min.css" rel="stylesheet" type="text/css">
+        <link href="/public/assets/css/icons.css" rel="stylesheet" type="text/css">
+        <link href="/public/assets/css/bootstrap.min.css" rel="stylesheet" type="text/css">
+        <link href="/public/assets/css/style.css" rel="stylesheet" type="text/css">
+        <link href="/public/assets/css/mbomTable.css" rel="stylesheet" type="text/css">
+        <link href="/public/assets/css/mbomShipLoose.css" rel="stylesheet" type="text/css">
+        <script>
+            document.addEventListener("DOMContentLoaded", function(event) {
+                let scrollpos = localStorage.getItem('scrollpos');
+                if (scrollpos) window.scrollTo(0, scrollpos);
+            });
+
+            window.onbeforeunload = function(e) {
+                localStorage.setItem('scrollpos', window.scrollY);
+            };
+            // expose debug flag to client (read from html `data-debug` attribute)
+            // window.__DEBUG = document.documentElement.getAttribute('data-debug') === 'true';
+        </script>
+
+        <div id="__searchMBOM_data" style="display:none;"
+                data-form-values='<%= JSON.stringify(typeof formValues !== 'undefined' ? formValues : {}) .replace(/</g, "\\u003c") %>'
+                data-message="<%= (typeof message !== 'undefined' ? message : '') %>"
+                data-error-field="<%= (typeof errorField !== 'undefined' ? errorField : '') %>"
+                data-mbom-id="<%= (typeof mbomID !== 'undefined' ? mbomID : '') %>">
+        </div>
+
+        <% 
+            const jmJobNum = (typeof jobMaster !== 'undefined' && jobMaster && jobMaster.jobNum) ? jobMaster.jobNum : ((typeof mbomData !== 'undefined' && mbomData && mbomData.jobNum) ? mbomData.jobNum : '');
+            const jmJobName = (typeof jobMaster !== 'undefined' && jobMaster && jobMaster.jobTitle) ? jobMaster.jobTitle : ((typeof mbomData !== 'undefined' && mbomData && mbomData.jobName) ? mbomData.jobName : '');
+            const jmCustomer = (typeof jobMaster !== 'undefined' && jobMaster && jobMaster.customer) ? jobMaster.customer : ((typeof mbomData !== 'undefined' && mbomData && mbomData.customer) ? mbomData.customer : '');
+            const mbomRelease = (typeof mbomData !== 'undefined' && mbomData && (typeof mbomData.releaseNum !== 'undefined')) ? mbomData.releaseNum : '';
+            const mbomBoardDesignation = (typeof mbomData !== 'undefined' && mbomData && (typeof mbomData.boardDesignation !== 'undefined')) ? mbomData.boardDesignation : '';
+        %>
+
+        <!-- Inline jQuery-dependent restore removed; client-side restore uses a vanilla script later in the page. -->
+        <style>
+            div{
+                overflow: visible !important;
+            }
+            /* MBOM table styles moved to external stylesheet: /public/assets/css/mbomTable.css */
+            /* Hide visual sort indicators when table has .sort-hidden, but keep aria-sort for accessibility */
+            table.sort-hidden .sort-indicator { visibility: hidden !important; }
+            /* Keep the primary selects aligned on one row; manual 'OTHER' inputs are visible
+                at all times but disabled until their corresponding select equals 'OTHER'. */
+            .relative-input { position: relative; }
+            /* Manual inputs remain in the normal flow (not absolutely positioned) so layout
+                doesn't jump when they become enabled. Add a utility class `manual-input` so
+                JS can toggle disabled state and CSS can gray them out. */
+            .manual-input { display: block; margin-top: .5rem; }
+            .manual-input[disabled], .manual-input.disabled { opacity: .65; background-color: #f8f9fa; }
+            /* Keep selects visually aligned */
+            .relative-input .form-control, .relative-input .select2-container { min-height: 38px; }
+            /* No automatic shifting of the P/N row is required because manual inputs occupy space */
+            .pn-row.shifted { margin-top: 0; }
+        </style>
+    </head>
+
+    <body>
+        <div id="wrapper">
+            <%- include('../../partials/header') %>
+            <%- include('../../partials/sidebar') %>
+            <div class="content-page">
+                <!-- Content Start -->
+                <div class="content">
+                    <div class="container-fluid">
+                        <div class="row"> <!-- main-page row -->
+                            <div class="col-sm-12"> <!-- main-page col -->
+                                <div class="page-title-box"> <!-- page-title-box -->
+                                    <h4 class="page-title">Mechanical Engineering - BOM Configure</h4>
+                                    <div class="row">
+                                        <div class="col-sm-12">
+                                            <!--< % include ../Partials/TinyCharts % >-->
+                                        </div>
+                                    </div>
+
+                                    <div class="row justify-content-center"> <!-- main current-job row -->
+                                        <div class="col-sm-12"> <!-- main current-job col -->
+                                            <div class="card m-b-20"> <!-- current-job card -->
+                                                <div class="card-body"> <!-- current-job card-body -->
+                                                    <h4 class="mt-0 header-title">Current Job</h4>
+                                                    <form id="jobSelectForm" class="jobSelectForm" action="" method="POST">
+                                                        <div class="form-group">
+                                                            <% if(mbomData) { %>
+                                                                <div class="row">
+                                                                    <div class="col-sm-1">
+                                                                        <label for="jobNum" class="col-form-label">Job #</label>
+                                                                        <input type="text" id="jobNum" name="jobNum" class="form-control" value="<%= jmJobNum %>" placeholder="Type Number Here" readonly="readonly">
+                                                                    </div>
+                                                                    <div class="col-sm-1">
+                                                                        <label for="releaseNum" class="col-form-label">Release</label>
+                                                                        <input type="text" id="releaseNum" name="releaseNum" class="form-control" value="<%= mbomRelease %>" placeholder="Type Release Here" readonly="readonly">
+                                                                    </div>
+                                                                    <div class="col-sm-3">
+                                                                        <label for="" class="col-form-label">Job Name</label>
+                                                                        <input type="text" name="jobName" class="form-control" value="<%= jmJobName %>" placeholder="Type Name Here" id="jobName" readonly="readonly">
+                                                                    </div>
+                                                                    <div class="col-sm-3">
+                                                                        <label for="" class="col-form-label">Customer</label>
+                                                                        <input type="text" name="customer" class="form-control" value="<%= jmCustomer %>" placeholder="Type Customer Here" id="customer" readonly="readonly">
+                                                                    </div>
+                                                                    <div class="col-sm-4">
+                                                                        <label for="" class="col-form-label">Board Designation</label>
+                                                                        <input type="text" name="boardDesignation" class="form-control" value="<%= mbomBoardDesignation %>" placeholder="Type Designation Here" id="boardDesignation" readonly="readonly">
+                                                                    </div>
+                                                                </div>
+                                                                <div class="row justify-content-center">
+                                                                    <div class="col-sm-1" style="margin-top: 1%;">
+                                                                        <% if (mbomData.noSectionMBOM == 'N') { %>
+                                                                            <input class="form-check-input" type="checkbox" value="true" name="noSectionMBOM" id="noSectionMBOM" disabled="disabled">
+                                                                            <label for="noSectionMBOM" class="form-check-label">No Section MBOM</label>
+                                                                        <% } else { %>
+                                                                            <input class="form-check-input" type="checkbox" value="true" name="noSectionMBOM" id="noSectionMBOM" checked="checked" disabled="disabled">
+                                                                            <label for="noSectionMBOM" class="form-check-label">No Section MBOM</label>
+                                                                        <% } %>
+                                                                    </div>
+                                                                </div>
+                                                            <% } %>
+                                                        </div>
+                                                    </form>
+
+                                                    <div class="row justify-content-center">
+                                                        <div class="col-2">
+                                                            <input id="editMbomButton" type="button" value="Edit" class="btn-block btn-lg btn-outline-warning waves-effect waves-light" data-toggle="modal" data-target="#editMbomModal"/>
+                                                            <!-- Modal -->
+                                                            <div class="modal fade" id="editMbomModal" tabindex="-1" role="dialog" aria-labelledby="editMbomModalTitle" aria-hidden="true">
+                                                                <div class="modal-dialog modal-dialog-centered" role="document">
+                                                                    <div class="modal-content">
+                                                                        <div class="modal-header">
+                                                                            <h5 class="modal-title" id="editMbomModalTitle">Edit MBOM</h5>
+                                                                            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                                                                <span aria-hidden="true">&times;</span>
+                                                                            </button>
+                                                                        </div>
+
+                                                                        <div class="modal-body">
+                                                                            <form id="editMbomForm" class="editMbomForm" action="../editMBOM/?mbomID=<%= mbomID %>" method="POST">
+                                                                                <div class="form-group">
+                                                                                    <p class="mb-0">Please fill out the following and click "Save" afterwards</p>
+                                                                                    <p class="text-muted m-b-5"></p>
+                                                                                    <div class="row">
+                                                                                        <div class="col-sm-8">
+                                                                                            <label for="" class="col-form-label">Job #</label>
+                                                                                            <input type="text" name="boardDesignation" class="form-control" value="<%= mbomBoardDesignation %>" placeholder="Type Designation Here" id="boardDesignation" readonly="readonly">
+                                                                                        </div>
+                                                                                        <div class="col-sm-4">
+                                                                                            <label for="" class="col-form-label">Release</label>
+                                                                                            <input type="text" name="releaseNum" class="form-control" value="<%= mbomData.releaseNum %>" placeholder="Type Release Here" id="">
+                                                                                        </div>
+                                                                                    </div>
+                                                                                    <div class="row">
+                                                                                        <div class="col-sm-12">
+                                                                                            <label for="" class="col-form-label">Job Name</label>
+                                                                                            <input type="text" class="form-control" value="<%= jmJobName %>" placeholder="Type Name Here" id="" readonly="readonly">
+                                                                                        </div>
+                                                                                    </div>
+                                                                                    <div class="row">
+                                                                                        <div class="col-sm-12">
+                                                                                            <label for="" class="col-form-label">Customer</label>
+                                                                                            <input type="text" class="form-control" value="<%= jmCustomer %>" placeholder="Type Customer Here" id="" readonly="readonly">
+                                                                                        </div>
+                                                                                    </div>
+                                                                                    <div class="row">
+                                                                                        <div class="col-sm-12">
+                                                                                            <label for="" class="col-form-label">Board Designation</label>
+                                                                                            <input type="text" name="boardDesignation" class="form-control" value="<%= mbomData.boardDesignation %>" placeholder="Type Designation Here" id="">
+                                                                                        </div>
+                                                                                    </div>
+                                                                                    <div class="row justify-content-center">
+                                                                                        <div class="col-sm-4" style="margin-top:2%;">
+                                                                                            <% if (mbomData.noSectionMBOM == 'N') { %>
+                                                                                                <input class="form-check-input" type="checkbox" value="true" name="noSectionMBOM" id="noSectionMBOM">
+                                                                                                <label for="noSectionMBOM" class="form-check-label">No Section MBOM</label>
+                                                                                            <% } else { %>
+                                                                                                <input class="form-check-input" type="checkbox" value="true" name="noSectionMBOM" id="noSectionMBOM" checked="checked">
+                                                                                                <label for="noSectionMBOM" class="form-check-label">No Section MBOM</label>
+                                                                                            <% } %>
+                                                                                        </div>
+                                                                                    </div>
+                                                                                </div>
+
+                                                                                <div class="modal-footer justify-content-center">
+                                                                                    <div class="w-50">
+                                                                                        <% if(mbomData) { %>
+                                                                                            <% if (typeof projectId !== 'undefined' && projectId) { %>
+                                                                                                <input type="hidden" name="projectId" value="<%= projectId %>">
+                                                                                            <% } %>
+                                                                                            <input id="editMbomModalButton" type="submit" value="Save" class="btn-block btn-lg btn-info" />
+                                                                                        <% } %>
+                                                                                    </div>
+                                                                                </div>
+                                                                            </form>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                            <!-- END MODAL -->
+                                                        </div>
+                                                    </div>
+                                                </div> <!-- current-job card-body -->
+                                            </div> <!-- current-job card -->
+                                        </div> <!-- main current-job col -->
+                                    </div> <!-- main current-job row -->
+                                    
+                                    <div class="row"> <!-- view options card row -->
+                                        <div class="col-sm-12">
+                                            <div class="card m-b-20" id="viewOptionsCard">
+                                                <div class="card-body">
+                                                    <h4 class="mt-0 header-title">View Options</h4>
+                                                    <div class="form-group">
+                                                        <input type="checkbox" id="hideSectionCardCheckbox" />
+                                                        <label for="hideSectionCardCheckbox" class="ml-1">Hide Section Summary</label>
+                                                        &nbsp;&nbsp;
+                                                        <input type="checkbox" id="hideBreakerCardCheckbox" />
+                                                        <label for="hideBreakerCardCheckbox" class="ml-1">Hide Breaker Summary</label>
+                                                        &nbsp;&nbsp;
+                                                        <input type="checkbox" id="hideItemCardCheckbox" />
+                                                        <label for="hideItemCardCheckbox" class="ml-1">Hide Item Summary</label>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <script>
+                                                (function(){
+                                                    const keys = {
+                                                        section: 'mbom_hideSection',
+                                                        breaker: 'mbom_hideBreakerTable',
+                                                        item: 'mbom_hideItem'
+                                                    };
+                                                    const checkboxSection = document.getElementById('hideSectionCardCheckbox');
+                                                    const checkboxBreaker = document.getElementById('hideBreakerCardCheckbox');
+                                                    const checkboxItem = document.getElementById('hideItemCardCheckbox');
+
+                                                    function applyState(){
+                                                        const sectionCard = document.getElementById('sectionCard');
+                                                        const breakerCard = document.getElementById('breakerCard');
+                                                        const itemCard = document.getElementById('itemCard');
+
+                                                        const hideSection = localStorage.getItem(keys.section) === '1';
+                                                        const hideBreaker = localStorage.getItem(keys.breaker) === '1';
+                                                        const hideItem = localStorage.getItem(keys.item) === '1';
+
+                                                        if(sectionCard) sectionCard.style.display = hideSection ? 'none' : '';
+                                                        if(breakerCard) breakerCard.style.display = hideBreaker ? 'none' : '';
+                                                        if(itemCard) itemCard.style.display = hideItem ? 'none' : '';
+
+                                                        if(checkboxSection) checkboxSection.checked = hideSection;
+                                                        if(checkboxBreaker) checkboxBreaker.checked = hideBreaker;
+                                                        if(checkboxItem) checkboxItem.checked = hideItem;
+                                                    }
+
+                                                    function wire(){
+                                                        if(checkboxSection) checkboxSection.addEventListener('change', function(){
+                                                            if(checkboxSection.checked) localStorage.setItem(keys.section,'1'); else localStorage.removeItem(keys.section);
+                                                            applyState();
+                                                        });
+                                                        if(checkboxBreaker) checkboxBreaker.addEventListener('change', function(){
+                                                            if(checkboxBreaker.checked) localStorage.setItem(keys.breaker,'1'); else localStorage.removeItem(keys.breaker);
+                                                            applyState();
+                                                        });
+                                                        if(checkboxItem) checkboxItem.addEventListener('change', function(){
+                                                            if(checkboxItem.checked) localStorage.setItem(keys.item,'1'); else localStorage.removeItem(keys.item);
+                                                            applyState();
+                                                        });
+                                                    }
+
+                                                    if (document.readyState === 'loading') {
+                                                        document.addEventListener('DOMContentLoaded', function(){ applyState(); wire(); });
+                                                    } else { applyState(); wire(); }
+                                                })();
+                                            </script>
+                                        </div>
+                                    </div> <!-- view options card row -->
+
+                                    <div class="row"> <!-- section summary row -->
+                                        <div class="col-sm-12"> <!-- section summary col -->
+                                            <div class="card m-b-20" id="sectionCard">
+                                                <div class="card-body">
+                                                    <h4 class="mt-0 header-title">Section Summary</h4>
+                                                    <form id="mbomAddSection" class="mbomAddSection" action="" method="POST">
+                                                        <div class="row">
+                                                            <% if(mbomData) { %>
+                                                                <div class="col-sm-12">
+                                                                    <input type="text" name="jobNum" class="form-control" value="<%= jmJobNum %>" id="jobNum" hidden="hidden">
+                                                                    <input type="text" name="releaseNum" class="form-control" value="<%= mbomRelease %>" id="releaseNum" hidden="hidden">
+                                                                    <input type="text" name="mbomID" class="form-control" value="<%= mbomData.mbomID %>" id="mbomID" hidden="hidden">
+                                                                    <input type="text" name="jobName" class="form-control" value="<%= jmJobName %>" id="jobName" hidden="hidden">
+                                                                    <input type="text" name="customer" class="form-control" value="<%= jmCustomer %>" id="customer" hidden="hidden">
+                                                                    <input type="text" name="boardDesignation" class="form-control" value="<%= mbomBoardDesignation %>" id="boardDesignation" hidden="hidden">
+                                                                    <input type="text" name="numSections" class="form-control" value="<%= mbomData.numSections %>" id="numSections" hidden="hidden">
+                                                                    <% if (typeof projectId !== 'undefined' && projectId) { %>
+                                                                        <input type="hidden" name="projectId" value="<%= projectId %>">
+                                                                    <% } %>
+                                                                    <input type="text" name="noSectionMBOM" class="form-control" value="<%= mbomData.noSectionMBOM%>" id="noSectionMBOM" hidden="hidden">
+                                                                </div>
+                                                            <% } %>
+
+                                                            <div class="col-sm-4 d-flex align-items-end">
+                                                                <div class="form-group mb-0 mr-2" style="min-width:80px;">
+                                                                    <label for="addCount" class="col-form-label small mb-1">Qty</label>
+                                                                    <input id="addCount" name="addCount" type="number" min="1" max="50" step="1" value="1" class="form-control form-control-sm" style="width:72px;" oninput="if(this.value==='')return; if(parseInt(this.value,10)>50) this.value=50; if(parseInt(this.value,10)<1) this.value=1;" />
+                                                                </div>
+                                                                <div class="form-group mb-0 mr-2">
+                                                                    <button id="addSectionBtn" type="submit" class="btn btn-success btn-lg" formaction="/mbomAddSection">Add Section</button>
+                                                                </div>
+                                                                <div class="form-group mb-0">
+                                                                    <button id="clearAllBtn" type="button" class="btn btn-danger btn-lg" data-toggle="modal" data-target="#resetModal">Clear All</button>
+                                                                </div>
+
+                                                                <!-- MODAL -->
+                                                                <div class="modal fade" id="resetModal" tabindex="-1" role="dialog" aria-labelledby="resetModalTitle" aria-hidden="true">
+                                                                    <div class="modal-dialog modal-dialog-centered" role="document">
+                                                                        <div class="modal-content">
+                                                                            <div class="modal-header">
+                                                                                <h5 class="modal-title" id="exampleModalLongTitle" style="font-size: x-large">Whoa there...</h5>
+                                                                                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                                                                    <span aria-hidden="true">&times;</span>
+                                                                                </button>
+                                                                            </div>
+                                                                            <div class="modal-body text-center" style="font-size: medium">
+                                                                                Are you sure you want to clear all sections? This action cannot be undone.
+                                                                            </div>
+                                                                            <div class="modal-footer justify-content-center">
+                                                                                <div id="confirmResetForm" class="w-100 d-flex justify-content-center">
+                                                                                    <% if(mbomData) { %>
+                                                                                        <input type="hidden" id="confirm_jobNum" value="<%= jmJobNum %>" />
+                                                                                        <input type="hidden" id="confirm_releaseNum" value="<%= mbomRelease %>" />
+                                                                                        <% if (typeof projectId !== 'undefined' && projectId) { %>
+                                                                                            <input type="hidden" id="confirm_projectId" value="<%= projectId %>" />
+                                                                                        <% } %>
+                                                                                        <button id="confirmResetBtn" type="button" class="btn btn-secondary" style="border: 0; min-width:120px; margin-right:12px" onclick="(function(){var f=document.getElementById('mbomAddSection'); if(!f) return; f.action='/mbomResetSection'; f.submit();})();">Yes</button>
+                                                                                    <% } %>
+                                                                                    <button type="button" class="btn btn-danger" data-dismiss="modal" style="min-width:120px">No</button>
+                                                                                </div>
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                                <!-- END MODAL -->
+                                                            </div>
+
+                                                            <%
+                                                                let shipLoose = false;
+                                                                for (let row of (mbomItemData || [])) {
+                                                                    if (row && row.shipLoose == 'Y') { shipLoose = true; break; }
+                                                                }
+                                                            %>
+
+                                                            <% if (shipLoose) { %>
+                                                                <div class="col-sm-3">
+                                                                </div>
+                                                                <div class="col-sm-5 outerShipLooseDiv" style="padding-top: 1.1rem;">
+                                                                    <div class="row">
+                                                                        <div class="col-sm-12 shipLooseHeading">
+                                                                            <h6>Ship Loose Items</h6>
+                                                                        </div>
+                                                                    </div>
+                                                                    <div class="row">
+                                                                        <div class="col-sm-12 shipLooseDiv">
+                                                                            <ul class="shipLooseUL">
+                                                                                <% for(let row of mbomItemData){ %>
+                                                                                    <% if(row.shipLoose == 'Y' && row.userItemID == null){ %>
+                                                                                        <% for(let el of comItemData){ %>
+                                                                                            <% if(el.comItemID == row.comItemID){%>
+                                                                                                <li class="shipLooseLI">
+                                                                                                    <span class="badge badge-light"><%= row.itemQty %></span>
+                                                                                                    <%= el.itemDesc %>
+                                                                                                </li>
+                                                                                            <% } %>
+                                                                                        <% } %>
+                                                                                    <% } else if(row.shipLoose == 'Y' && row.comItemID == null){ %>
+                                                                                        <% for(let el of userItemData){ %>
+                                                                                            <% if(el.userItemID == row.userItemID){ %>
+                                                                                                <li class="shipLooseLI">
+                                                                                                    <span class="badge badge-light"><%= row.itemQty %></span>
+                                                                                                    <%= el.itemDesc %>
+                                                                                                </li>
+                                                                                            <% } %>
+                                                                                        <% } %>
+                                                                                    <% } %>
+                                                                                <% } %>
+                                                                            </ul>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            <% } %>
+                                                        </div>
+
+                                                        <div class="row" style="width: 100%; margin-left: .1rem;">
+                                                            <div class="col-sm-2" style="position: sticky; top: 100px; margin-top: 2rem;">
+                                                                <h6>Item Queue</h6>
+                                                                <ol data-draggable="target" id="itemQueue" class="itemQueue" style="width: 100%;">
+                                                                    <% if(mbomItemData.length != 0){ %>
+                                                                        <% for(let i = 0; i < mbomItemData.length; i++){ %>
+                                                                            <% let currentItem = mbomItemData[i].itemSumID; %>
+                                                                            <% if(mbomSecData.length != 0){ %>
+                                                                                <% let usedItems = []; %>
+                                                                                <% if(mbomItemData[i].secID != null){ %>
+                                                                                    <% usedItems.push(mbomItemData[i].itemSumID); %>
+                                                                                <% } %>
+                                                                                <% if(usedItems.includes(currentItem)){ %>
+                                                                                <% } else { %>
+                                                                                    <% if(userItemData.length != 0){ %>
+                                                                                        <% for(let j = 0; j < userItemData.length; j++){ %>
+                                                                                            <% if(mbomItemData[i].userItemID == userItemData[j].userItemID && mbomItemData[i].shipLoose == 'N'){ %>
+                                                                                                <li id="I<%= mbomItemData[i].itemSumID%>" data-draggable="item" style="background-color: #c5cd98;">
+                                                                                                    <span class="badge badge-light"><%= mbomItemData[i].itemQty %></span>
+                                                                                                    <%= userItemData[j].itemDesc %>
+                                                                                                </li>
+                                                                                            <% } %>
+                                                                                        <% } %>
+                                                                                    <% } %>
+                                                                                    <% if(comItemData.length != 0){%>
+                                                                                        <% for(let j = 0; j < comItemData.length; j++){ %>
+                                                                                            <% if(mbomItemData[i].comItemID == comItemData[j].comItemID && mbomItemData[i].shipLoose == 'N'){ %>
+                                                                                                <li id="I<%= mbomItemData[i].itemSumID%>" data-draggable="item" style="background-color: #c5cd98;">
+                                                                                                    <span class="badge badge-light"><%= mbomItemData[i].itemQty %></span>
+                                                                                                    <%= comItemData[j].itemDesc %>
+                                                                                                </li>
+                                                                                            <% } %>
+                                                                                        <% } %>
+                                                                                    <% } %>
+                                                                                <% } %>
+                                                                            <% } else { %>
+                                                                                <%if(userItemData.length != 0){%>
+                                                                                    <% for(let j = 0; j < userItemData.length; j++){ %>
+                                                                                        <% if(mbomItemData[i].userItemID == userItemData[j].userItemID && mbomItemData[i].shipLoose == 'N'){ %>
+                                                                                            <li id="I<%= mbomItemData[i].itemSumID%>" data-draggable="item" style="background-color: #c5cd98;">
+                                                                                                <span class="badge badge-light"><%= mbomItemData[i].itemQty %></span>
+                                                                                                <%= userItemData[j].itemDesc %>
+                                                                                            </li>
+                                                                                        <% } %>
+                                                                                    <% } %>
+                                                                                <% } %>
+                                                                                <% if(comItemData.length != 0){%>
+                                                                                    <% for(let j = 0; j < comItemData.length; j++){ %>
+                                                                                        <% if(mbomItemData[i].comItemID == comItemData[j].comItemID && mbomItemData[i].shipLoose == 'N'){ %>
+                                                                                            <li id="I<%= mbomItemData[i].itemSumID%>" data-draggable="item" style="background-color: #c5cd98;">
+                                                                                                <span class="badge badge-light"><%= mbomItemData[i].itemQty %></span>
+                                                                                                <%= comItemData[j].itemDesc %>
+                                                                                            </li>
+                                                                                        <% } %>
+                                                                                    <% } %>
+                                                                                <% } %>
+                                                                            <% } %>
+                                                                        <% } %>
+                                                                    <% } %>
+                                                                </ol>
+                                                            </div>
+
+                                                            <div class="col-sm-2" style="position: sticky; top: 100px; margin-top: 2rem;">
+                                                                <h6>MCCB Queue</h6>
+                                                                <ol data-draggable="target" id="mcBrkQueue" class="breakerQueueMC" style="width: 100%;">
+                                                                    <% if(mbomBrkData.length != 0) { %>
+                                                                        <% for (let k=0; k < mbomBrkData.length; k++) { %>
+                                                                            <% let devProduct = (mbomBrkData[k].class).includes("MCCB"); %>
+                                                                            <% if(devProduct){ %>
+                                                                                <% var currentMouldedBrk = mbomBrkData[k].idDev; %>
+                                                                                <% if(mbomSecData.length != 0) { %>
+                                                                                    <% var usedMouldedBrks = []; %>
+                                                                                    <% if(mbomBrkData[k].secID != null){ %>
+                                                                                        <% usedMouldedBrks.push(mbomBrkData[k].idDev); %>
+                                                                                    <% } %>
+                                                                                    <% if (usedMouldedBrks.includes(currentMouldedBrk)) { %>
+                                                                                    <% } else { %>
+                                                                                        <li id="B<%= mbomBrkData[k].idDev%>" data-draggable="item" style="background-color: #fcca9c;">
+                                                                                            <%= mbomBrkData[k].devDesignation %>
+                                                                                        </li>
+                                                                                    <% } %>
+                                                                                <% } else { %>
+                                                                                    <li id="B<%= mbomBrkData[k].idDev%>" data-draggable="item" style="background-color: #fcca9c;">
+                                                                                        <%= mbomBrkData[k].devDesignation %>
+                                                                                    </li>
+                                                                                <% } %>
+                                                                            <% } %>
+                                                                        <% } %>
+                                                                    <% } %>
+                                                                </ol>
+
+                                                                <h6>ICCB Queue</h6>
+                                                                <ol data-draggable="target" id="icBrkQueue" class="breakerQueueIC" style="width: 100%;">
+                                                                    <% if(mbomBrkData.length != 0) { %>
+                                                                        <% for (let k=0; k < mbomBrkData.length; k++) { %>
+                                                                            <% let devProduct = (mbomBrkData[k].class).includes("ICCB"); %>
+                                                                            <% if(devProduct){ %>
+                                                                                <% var currentICBrk = mbomBrkData[k].idDev; %>
+                                                                                <% if(mbomSecData.length != 0) { %>
+                                                                                    <% var usedICBrks = []; %>
+                                                                                    <% if(mbomBrkData[k].secID != null){ %>
+                                                                                        <% usedICBrks.push(mbomBrkData[k].idDev); %>
+                                                                                    <% } %>
+                                                                                    <% if (usedICBrks.includes(currentICBrk)) { %>
+                                                                                    <% } else { %>
+                                                                                        <li id="B<%= mbomBrkData[k].idDev%>" data-draggable="item" style="background-color: #b1e7d5;">
+                                                                                            <%= mbomBrkData[k].devDesignation %>
+                                                                                        </li>
+                                                                                    <% } %>
+                                                                                <% } else { %>
+                                                                                    <li id="B<%= mbomBrkData[k].idDev%>" data-draggable="item" style="background-color: #b1e7d5;">
+                                                                                        <%= mbomBrkData[k].devDesignation %>
+                                                                                    </li>
+                                                                                <% } %>
+                                                                            <% } %>
+                                                                        <% } %>
+                                                                    <% } %>
+                                                                </ol>
+                                                            </div>
+                                                            <div class="row" style="margin-left: 33.5%; width: 100%; margin-top: -22.1rem">
+                                                                <% if(mbomData) { %>
+                                                                    <% for (let i=0; i < mbomData.numSections; i++) { %>
+                                                                        <div class="col-sm-3">
+                                                                            <%if( i < 9){%>
+                                                                                <% let headerSecID = null; for (let sIdx = 0; sIdx < (mbomSecData || []).length; sIdx++) { if (mbomSecData[sIdx].sectionNum == i+1) { headerSecID = mbomSecData[sIdx].secID; break; } } %>
+                                                                                <% let deleteQuery = headerSecID ? ('secID=' + headerSecID) : ('selectedSec=' + (i+1)); %>
+                                                                                <h6>Section 10<%=i+1%>
+                                                                                    <input id="deleteSectionBtn" type="submit" value="&times;" class="close" style="margin: -2px 25px auto 25px; border: white; background: white" formaction="../mbomDeleteSection/?<%= deleteQuery %>&numSections=<%= mbomData.numSections%>" />
+                                                                                </h6>
+                                                                            <% } else{ %>
+                                                                                <% let headerSecID = null; for (let sIdx = 0; sIdx < (mbomSecData || []).length; sIdx++) { if (mbomSecData[sIdx].sectionNum == i+1) { headerSecID = mbomSecData[sIdx].secID; break; } } %>
+                                                                                <% let deleteQuery = headerSecID ? ('secID=' + headerSecID) : ('selectedSec=' + (i+1)); %>
+                                                                                <h6>Section 1<%=i+1%>
+                                                                                    <input id="deleteSectionBtn" type="submit" value="&times;" class="close" style="margin: -2px 25px auto 25px; border: white; background: white" formaction="../mbomDeleteSection/?<%= deleteQuery %>&numSections=<%= mbomData.numSections%>" />
+                                                                                </h6>
+                                                                            <% } %>
+                                                                            <ol data-draggable="target" id="section<%=i+1%>" style="width: 100%;">
+                                                                                <% if(mbomItemData.length != 0){ %>
+                                                                                    <% for(let j = 0; j < mbomItemData.length; j++){ %>
+                                                                                        <% let currentItem = mbomItemData[j].itemSumID; %>
+                                                                                        <% if(mbomItemData[j].secID != null){ %>
+                                                                                            <% for(let k = 0; k < mbomSecData.length; k++){  %>
+                                                                                                <% let usedItems = []; %>
+                                                                                                <% if(mbomSecData[k].secID == mbomItemData[j].secID){ %>
+                                                                                                    <% if(mbomSecData[k].sectionNum == i+1){ %>
+                                                                                                        <% usedItems.push(mbomItemData[j].itemSumID); %>
+                                                                                                    <% } %>
+                                                                                                <% } %>
+                                                                                                <% if(usedItems.includes(currentItem)){ %>
+                                                                                                    <%if(userItemData.length != 0){%>
+                                                                                                        <% for(let k = 0; k < userItemData.length; k++){ %>
+                                                                                                            <% if(mbomItemData[j].userItemID == userItemData[k].userItemID && mbomItemData[j].shipLoose == 'N'){ %>
+                                                                                                                <li id="I<%= mbomItemData[j].itemSumID%>" data-draggable="item" style="background-color: #c5cd98;">
+                                                                                                                    <span class="badge badge-light"><%= mbomItemData[j].itemQty %></span>
+                                                                                                                    <%= userItemData[k].itemDesc %>
+                                                                                                                </li>
+                                                                                                            <% } %>
+                                                                                                        <% } %>
+                                                                                                    <% } %>
+                                                                                                    <% if(comItemData.length != 0){%>
+                                                                                                        <% for(let k = 0; k < comItemData.length; k++){ %>
+                                                                                                            <% if(mbomItemData[j].comItemID == comItemData[k].comItemID && mbomItemData[j].shipLoose == 'N'){ %>
+                                                                                                                <li id="I<%= mbomItemData[j].itemSumID%>" data-draggable="item" style="background-color: #c5cd98;">
+                                                                                                                    <span class="badge badge-light"><%= mbomItemData[j].itemQty %></span>
+                                                                                                                    <%= comItemData[k].itemDesc %>
+                                                                                                                </li>
+                                                                                                            <% } %>
+                                                                                                        <% } %>
+                                                                                                    <% } %>
+                                                                                                <% } %>
+                                                                                            <% } %>
+                                                                                        <% } %>
+                                                                                    <% } %>
+                                                                                <% } %>
+                                                                                <% if(mbomBrkData.length != 0) { %>
+                                                                                    <% for (let j=0; j < mbomBrkData.length; j++) { %>
+                                                                                        <% let currentBrk = mbomBrkData[j].idDev; %>
+                                                                                        <% let brkAcc = []; %>
+                                                                                        <% let brkAccQty = []; %>
+                                                                                        <% if(mbomBrkData[j].secID != null){ %>
+                                                                                            <% for (let k=0; k < mbomSecData.length; k++) { %>
+                                                                                                <% let usedBrks = []; %>
+                                                                                                <% if(mbomSecData[k].secID == mbomBrkData[j].secID){ %>
+                                                                                                    <% if(mbomSecData[k].sectionNum == i+1){ %>
+                                                                                                        <% usedBrks.push(mbomBrkData[j].idDev); %>
+                                                                                                    <% } %>
+                                                                                                <% } %>
+                                                                                                <% if (usedBrks.includes(currentBrk)) { %>
+                                                                                                    <% for (let x = 0; x < mbomBrkAcc.length; x++) { %>
+                                                                                                        <% if (mbomBrkAcc[x].idDev == mbomBrkData[j].idDev) { %>
+                                                                                                            <% brkAcc.push(mbomBrkAcc[x].brkAccDesc); %>
+                                                                                                            <% brkAccQty.push(mbomBrkAcc[x].brkAccQty); %>
+                                                                                                        <% } %>
+                                                                                                    <% } %>
+                                                                                                    <% let title1 = ''; %>
+                                                                                                    <% for (let y = 0; y < brkAcc.length; y++) { %>
+                                                                                                        <% let tempDesc = '('+brkAccQty[y]+')' + ' - ' + brkAcc[y]; %>
+                                                                                                        <% title1 += tempDesc + '<br>'; %>
+                                                                                                    <% } %>
+                                                                                                    <% if(mbomBrkData[j].class.includes('MCCB')){ %>
+                                                                                                        <li id="B<%= mbomBrkData[j].idDev%>" data-draggable="item" data-toggle="tooltip" data-html="true" title="<%- title1 %>" style="background-color: #fcca9c;">
+                                                                                                            <%= mbomBrkData[j].devDesignation %>
+                                                                                                        </li>
+                                                                                                    <% } else { %>
+                                                                                                        <li id="B<%= mbomBrkData[j].idDev%>" data-draggable="item" data-toggle="tooltip" data-html="true" title="<%- title1 %>" style="background-color: #b1e7d5;">
+                                                                                                            <%= mbomBrkData[j].devDesignation %>
+                                                                                                        </li>
+                                                                                                    <% } %>
+                                                                                                <% } %>
+                                                                                            <% } %>
+                                                                                        <% } %>
+                                                                                    <% } %>
+                                                                                <% } %>
+                                                                            </ol>
+                                                                        </div>
+                                                                    <% } %>
+                                                                <% } %>
+                                                            </div>
+                                                        </div>
+                                                    </form>
+
+                                                    <div class="row justify-content-center">
+                                                        <div class="col-sm-3">
+                                                            <label for="" class="col-form-label"></label>
+                                                            <button id="saveSectionBtn" class="btn-block btn-lg btn-outline-success waves-effect waves-light">Save Changes</button>
+                                                        </div>
+
+                                                        <div class="col-sm-3">
+                                                            <form id="mbomAddSection" class="mbomAddSection" action="" method="POST">
+                                                                <% if(mbomData) { %>
+                                                                    <input type="text" name="jobNum" class="form-control" value="<%= jmJobNum %>" placeholder="Type Number Here" id="" readonly="readonly" hidden="hidden">
+                                                                    <input type="text" name="releaseNum" class="form-control" value="<%= mbomRelease %>" placeholder="Type Release Here" id="" readonly="readonly" hidden="hidden">
+                                                                    <input type="text" name="mbomID" class="form-control" value="<%= mbomData.mbomID %>" placeholder="Type Designation Here" id="" readonly="readonly" hidden="hidden">
+                                                                    <% if (typeof projectId !== 'undefined' && projectId) { %>
+                                                                        <input type="hidden" name="projectId" value="<%= projectId %>">
+                                                                    <% } %>
+                                                                    <label for="" class="col-form-label"></label>
+                                                                    <button id="generateMBOMBtn" type="submit" class="btn-block btn-lg btn-outline-secondary waves-effect waves-light add-button" formaction="/generateMBOM">Generate MBOM</button>
+                                                                <% } %>
+                                                            </form>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div> <!-- section summary col -->
+                                    </div> <!-- section summary row -->
+                                    
+                                    <div class="row"> <!-- breaker summary row -->
+                                        <div class="col-sm-12"> <!-- breaker summary col -->
+                                            <div class="card m-b-20" id="breakerCard">
+                                                <div class="card-body">
+                                                    <h4 class="mt-0 header-title">Circuit Breaker Summary</h4>
+                                                    <form id="breakerForm" class="breakerForm" action="<%= (typeof projectId !== 'undefined' && projectId) ? ('/projects/' + projectId + '/addBrk') : '/addBrk' %>" method="POST">
+                                                        <div class="row">
+                                                            <% if(mbomData) { %>
+                                                                <div class="col-sm-12">
+                                                                    <input type="text" name="jobNum" class="form-control" value="<%= jmJobNum %>" id="jobNum" hidden="hidden">
+                                                                    <input type="text" name="releaseNum" class="form-control" value="<%= mbomRelease %>" id="releaseNum" hidden="hidden">
+                                                                    <input type="text" name="mbomID" class="form-control" value="<%= mbomData.mbomID %>" id="mbomID" hidden="hidden">
+                                                                    <input type="text" name="jobName" class="form-control" value="<%= (typeof jobMaster !== 'undefined' && jobMaster && jobMaster.jobTitle) ? jobMaster.jobTitle : (mbomData.jobName || '') %>" id="jobName" hidden="hidden">
+                                                                    <input type="text" name="customer" class="form-control" value="<%= (typeof jobMaster !== 'undefined' && jobMaster && jobMaster.customer) ? jobMaster.customer : (mbomData.customer || '') %>" id="customer" hidden="hidden">
+                                                                    <input type="text" name="boardDesignation" class="form-control" value="<%= mbomData.boardDesignation %>" id="boardDesignation" hidden="hidden">
+                                                                    <input type="text" name="numSections" class="form-control" value="<%= mbomData.numSections %>" id="numSections" hidden="hidden">
+                                                                </div>
+                                                            <% } %>
+                                                            <div class="col-sm-6">
+                                                                <div class="form-group">
+                                                                    <label for="" class="col-form-label">Layout Name</label>
+                                                                    <input type="text" name="devLayout" class="form-control" value="<%=mbomData.boardDesignation%>" placeholder="Layout name here" id="" readonly="readonly" required />
+                                                                </div>
+                                                            </div>
+                                                            <div class="col-sm-6">
+                                                                <div class="form-group">
+                                                                    <label for="devDesLimit" class="col-form-label">Device Designation</label>
+                                                                    <input type="text" id="devDesLimit" maxlength="160" name="devDesignation" class="form-control counter" value="<%=brkData.devDesignation%>" data-toggle="tooltip" data-placement="top" title="To declare multiple breakers (i.e. CB-1A, CB-2A, ..., CB-6A), use the following convention: CB-(1-6)A" placeholder="Type Device Designation Here" autocomplete="off" required />
+                                                                </div>
+                                                            </div>
+                                                        </div>
+
+                                                        <div class="row">
+                                                            <div class="col-sm-3">
+                                                                <div class="form-group">
+                                                                    <label for="brkPN" class="col-form-label">Breaker P/N</label>
+                                                                    <input type="text" name="brkPN" class="form-control" value="<%=brkData.brkPN%>" id="brkPN" placeholder="Type Breaker P/N Here" autocomplete="off" required />
+                                                                </div>
+                                                            </div>
+
+                                                            <div class="col-sm-3">
+                                                                <div class="form-group">
+                                                                    <label for="cradlePN" class="col-form-label">Cradle P/N</label>
+                                                                    <input type="text" name="cradlePN" class="form-control" value="<%=brkData.cradlePN%>" id="cradlePN" placeholder="Type Cradle P/N Here" autocomplete="off" />
+                                                                </div>
+                                                            </div>
+
+                                                            <div class="col-sm-2">
+                                                                <div class="form-group">
+                                                                    <label for="devMfg" class="col-form-label">Manufacturer</label>
+                                                                    <input type="text" name="devMfg" class="form-control" value="<%=brkData.devMfg%>" id="devMfg" placeholder="Type Mfg. Here" autocomplete="off" required />
+                                                                </div>
+                                                            </div>
+
+                                                            <div class="col-sm-2">
+                                                                <div class="form-group">
+                                                                    <label for="devCatCode" class="col-form-label">Cat. Code</label>
+                                                                    <select class="form-control" name="catCode" id="devCatCode" required>
+                                                                        <option value="">Select</option>
+                                                                        <% for (let c = 0; c < (catCodeData || []).length; c++) { %>
+                                                                            <% const code = catCodeData[c]; %>
+                                                                            <option value="<%= code %>" <%= (typeof brkData !== 'undefined' && brkData && (brkData.catCode || '') === code) ? 'selected' : '' %>><%= code %></option>
+                                                                        <% } %>
+                                                                    </select>
+                                                                </div>
+                                                            </div>
+
+                                                            <div class="col-sm-2">
+                                                                <div class="form-group">
+                                                                    <label for="devClassCode" class="col-form-label">Class</label>
+                                                                    <select class="form-control" name="classCode" id="devClassCode" required>
+                                                                        <% if (brkData.class == 'MCCB') { %>
+                                                                            <option value="">Select</option>
+                                                                            <option value="MCCB" selected>MCCB</option>
+                                                                            <option value="ICCB">ICCB</option>
+                                                                        <% } else if (brkData.class == 'ICCB') { %>
+                                                                            <option value="">Select</option>
+                                                                            <option value="MCCB">MCCB</option>
+                                                                            <option value="ICCB" selected>ICCB</option>
+                                                                        <% } else { %>
+                                                                            <option value="">Select</option>
+                                                                            <option value="MCCB">MCCB</option>
+                                                                            <option value="ICCB">ICCB</option>
+                                                                        <% } %>
+                                                                    </select>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+
+                                                        <div class="col-sm-2">
+                                                            <div class="form-group">
+                                                                <label for="" class="col-form-label"></label>
+                                                                <input type="text" id="" name="unitOfIssue" class="form-control" value="EA" hidden="hidden"/>
+                                                            </div>
+                                                        </div>
+
+                                                        <!-- Hidden JSON payload for breaker accessories; populated by client before submit -->
+                                                        <input type="hidden" id="brkAccessoriesJson" name="brkAccessories" value="" />
+
+                                                        <% var __safeBrkAccData = JSON.stringify(Array.isArray(brkAccData) ? brkAccData : []).replace(/</g, '\\u003c'); var __safeBrkAccDataHtml = __safeBrkAccData.replace(/"/g, '&quot;'); %>
+                                                        <input type="hidden" id="brkInitialJson" value="<%- __safeBrkAccDataHtml %>" />
+                                                        <script>
+                                                            (function(){
+                                                                try {
+                                                                    var inp = document.getElementById('brkInitialJson');
+                                                                    var raw = (inp && inp.value) ? inp.value : '[]';
+                                                                    window.__initialBrkAccData = JSON.parse(raw);
+                                                                } catch (e) { window.__initialBrkAccData = []; }
+                                                            })();
+                                                        </script>
+                                                    </form>
+
+                                                    <div class="row" id="breakerAccessoriesDiv" style="display: flex;"> <!-- breaker accessories row -->
+                                                            <div class="col-sm-12">
+                                                                <h6>Loose Breaker Accessories</h6>
+                                                            </div>
+                                                            
+                                                            <div class="col-sm-12">
+                                                                <div class="row" >
+                                                                    <div class="col-sm-1">
+                                                                        <label for="accessoryQty" class="col-form-label">Qty</label>
+                                                                        <input type="number" min="1" id="accessoryQty" name="accessoryQty" class="form-control" value="" placeholder="#" autocomplete="off" />
+                                                                    </div>
+
+                                                                    <div class="col-sm-2">
+                                                                        <label for="accessoryType" class="col-form-label">Accessory Type</label>
+                                                                        <input type="text" id="accessoryType" name="accessoryType" class="form-control" value="" placeholder="Type Accessory Type" autocomplete="off" />
+                                                                    </div>
+
+                                                                    <div class="col-sm-4">
+                                                                        <label for="accessoryDescLimit" class="col-form-label">Description</label>
+                                                                        <input type="text" id="accessoryDescLimit" maxlength="160" name="accessoryDesc" class="form-control" value="" placeholder="Type Accessory Description" autocomplete="off" />
+                                                                    </div>
+
+                                                                    <div class="col-sm-3">
+                                                                        <label for="accessoryPN" class="col-form-label">P/N</label>
+                                                                        <input type="text" id="accessoryPN" name="accessoryPN" class="form-control" value="" placeholder="Type P/N Here" autocomplete="off" />
+                                                                    </div>
+
+                                                                    <div class="col-sm-2 d-flex align-items-center">
+                                                                        <div class="form-group mb-0 w-100">
+                                                                            <label class="col-form-label invisible">&#8203;</label>
+                                                                            <button id="addAccessoryBtn" type="button" class="btn btn-outline-info btn-block waves-effect waves-light">Add Accessory</button>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+
+                                                                <div class="col-sm-3" style="padding-top: 10px;">
+                                                                    <h6>Current Loose Accessories</h6>
+                                                                </div>
+
+                                                                <div class="row mt-2 justify-content-center">
+                                                                    <div class="col-sm-11">
+                                                                        <table id="breakerAccessoriesTable" class="table table-sm table-striped">
+                                                                            <thead>
+                                                                                <tr>
+                                                                                    <th style="width:5%">Qty</th>
+                                                                                    <th style="width:17%">Type</th>
+                                                                                    <th style="width:17%">Mfg.</th>
+                                                                                    <th style="width:25%">Description</th>
+                                                                                    <th style="width:16%">P/N</th>
+                                                                                    <th style="width:20%">Actions</th>
+                                                                                </tr>
+                                                                            </thead>
+                                                                            <tbody></tbody>
+                                                                        </table>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div> <!-- end breaker accessories row -->
+
+                                                    <!-- Add button moved above the horizontal rule so it's closer to the Loose Accessories section -->
+                                                    <div class="row justify-content-center mb-3" style="margin-top: 2rem;">
+                                                        <div class="col-2 text-center">
+                                                            <input id="uploadBtn" type="submit" value="Add" class="btn-block btn-lg btn-success waves-effect waves-light" form="breakerForm"/>
+                                                        </div>
+                                                    </div>
+
+                                                    <div>
+                                                        <hr>
+                                                    </div>
+
+                                                    <div class="row mb-2 border rounded" style="padding-top: 15px; padding-bottom: 10px; margin-left: 0px; margin-right: 0px;">
+                                                        <div class="d-flex col-sm-2 text-center" style="min-width: 260px;">
+                                                            <h5>Circuit Breaker(s) (<span id="breakerCount"><%= mbomBrkData.length %></span>)</h5>
+                                                        </div>
+                                                        
+                                                        <div class="d-flex col-sm-2 align-items-center justify-content-between" style="min-width: 155px; max-width: 180px;">
+                                                            <button id="copyBreakersBtn" type="button" class="btn btn-md btn-outline-secondary waves-effect waves-light bulk-action-btn copy-breaker-btn" data-action="/copyBreakers" data-target-form="brkForm" data-toggle="tooltip" title="Copy selected breakers" aria-label="Copy selected breakers">
+                                                                <i class="fas fa-clone" aria-hidden="true"></i>
+                                                            </button>
+
+                                                            <button id="deleteBreakersBtn" type="button" class="btn btn-md btn-outline-danger waves-effect waves-light bulk-action-btn delete-breaker-btn" data-action="/deleteBreakers" data-target-form="brkForm" data-toggle="tooltip" title="Delete selected breakers" aria-label="Delete selected breakers">
+                                                                <i class="fas fa-trash" aria-hidden="true"></i>
+                                                            </button>
+
+                                                            <button id="filterBreakerBtn" type="button" class="btn btn-md btn-outline-info waves-effect waves-light filter-breaker-btn" title="Show Breaker Filters" aria-pressed="false" aria-label="Show or hide breaker filter options">
+                                                                <i class="fas fa-filter" aria-hidden="true"></i>
+                                                            </button>
+                                                        </div>
+                                                    </div>
+
+                                                    <p class="text-muted m-b-15"></p>
+
+                                                    <% if(mbomBrkData.length != 0){ %>
+                                                        <div class="row mb-2" id="filterBreakerRow" style="display: none;">
+                                                            <div class="col-sm-4">
+                                                                <input type="text" id="brkFilter" class="form-control" placeholder="Filter breakers (any column)..." />
+                                                            </div>
+
+                                                            <div class="col-sm-2">
+                                                                <select id="brkGroupSelect" class="form-control">
+                                                                    <option value="none">No Grouping</option>
+                                                                    <option value="device">Group: Device Designation</option>
+                                                                    <option value="brkPN">Group: Breaker P/N</option>
+                                                                    <option value="cradlePN">Group: Cradle P/N</option>
+                                                                    <option value="section">Group: Section #</option>
+                                                                </select>
+                                                            </div>
+
+                                                            <div class="col-sm-2">
+                                                                <button id="brkClearFilter" type="button" class="btn btn-outline-danger" style="height:38px; padding: .375rem .75rem;">Clear Filter</button>
+                                                            </div>
+                                                        </div>
+
+                                                        <form id="brkForm" class="brkForm" action="" method="POST">
+                                                            <% if(mbomData) { %>
+                                                                <input type="text" name="jobNum" class="form-control" value="<%= jmJobNum %>" id="jobNum" hidden="hidden">
+                                                                <input type="text" name="releaseNum" class="form-control" value="<%= mbomRelease %>" id="releaseNum" hidden="hidden">
+                                                                <input type="text" name="mbomID" class="form-control" value="<%= mbomData.mbomID %>" id="mbomID" hidden="hidden">
+                                                                <input type="text" name="jobName" class="form-control" value="<%= jmJobName %>" id="jobName" hidden="hidden">
+                                                                <input type="text" name="customer" class="form-control" value="<%= jmCustomer %>" id="customer" hidden="hidden">
+                                                                <input type="text" name="boardDesignation" class="form-control" value="<%= mbomBoardDesignation %>" id="boardDesignation" hidden="hidden">
+                                                                <input type="text" name="numSections" class="form-control" value="<%= mbomData.numSections %>" id="numSections" hidden="hidden">
+                                                                <input type="text" name="noSectionMBOM" class="form-control" value="<%= mbomData.noSectionMBOM%>" id="noSectionMBOM" hidden="hidden">
+                                                            <% } %>
+
+                                                            <% /* precompute breaker IDs that have accessories so the set is available outside the tbody */ %>
+                                                            <%  var idDevs = new Set();
+                                                                if (Array.isArray(mbomBrkAcc) && Array.isArray(mbomBrkData)) {
+                                                                    for (var ei = 0; ei < mbomBrkAcc.length; ei++) {
+                                                                        var el = mbomBrkAcc[ei];
+                                                                        for (var ri = 0; ri < mbomBrkData.length; ri++) {
+                                                                            var row = mbomBrkData[ri];
+                                                                            if (el && row && el.idDev == row.idDev) idDevs.add(String(el.idDev));
+                                                                        }
+                                                                    }
+                                                                } 
+                                                            %>
+
+                                                            <table id="breakersTable" class="table table-bordered dt-responsive nowrap groupable-table breakers-table" data-group-col="none" style="border-collapse: collapse; border-spacing: 0; width: 100%;">
+                                                                <thead>
+                                                                    <tr>
+                                                                        <th class="select-col"><input type="checkbox" id="breakers-select-all" aria-label="Select all breakers" /></th>
+                                                                        <th style="display: none;">ID</th>
+                                                                        <th style="display: none;">MBOM ID</th>
+                                                                        <th class="device-col">Device Designation</th>
+                                                                        <th class="mfg-col">Manufacturer</th>
+                                                                        <th class="brkpn-col">Breaker P/N</th>
+                                                                        <th class="cradle-col">Cradle P/N</th>
+                                                                        <th class="brksection-col">Section #</th>
+                                                                        <th class="actions-col"></th>
+                                                                    </tr>
+                                                                </thead>
+
+                                                                <tbody>
+                                                                    <% if (mbomBrkData) { %>
+                                                                        <% if(mbomData) { %>
+                                                                            <div class="col-sm-12">
+                                                                                <!-- hidden fields moved to top-level brkForm -->
+                                                                            </div>
+                                                                        <% } %>
+
+                                                                        <% /* idDevs computed above */ %>
+                                                                        <% for (let i = 0; i < mbomBrkData.length; i++) { %>
+                                                                            <% let currentBrk = mbomBrkData[i].idDev;%>
+                                                                            <% currentBrk = currentBrk.toString(); %>
+                                                                            <% let secLabel = 'Unassigned'; %>
+                                                                            <% if (mbomBrkData[i].secID != null) { %>
+                                                                                <% for (let s = 0; s < (mbomSecData || []).length; s++) { %>
+                                                                                    <% if (mbomSecData[s].secID == mbomBrkData[i].secID) { %>
+                                                                                            <% 
+                                                                                                const sn = parseInt(mbomSecData[s].sectionNum, 10);
+                                                                                                if (!isNaN(sn) && sn < 10) {
+                                                                                                    secLabel = 'Section 10' + sn;
+                                                                                                } else {
+                                                                                                    secLabel = 'Section 1' + (isNaN(sn) ? mbomSecData[s].sectionNum : sn);
+                                                                                                }
+                                                                                            %>
+                                                                                        <% break; %>
+                                                                                    <% } %>
+                                                                                <% } %>
+                                                                            <% } %>
+                                                                            <tr>
+                                                                                <td style="text-align:center;">
+                                                                                    <input type="checkbox" name="selectedBreakerIDs[]" value="<%= mbomBrkData[i].idDev %>" class="breaker-row-select" data-id="<%= mbomBrkData[i].idDev %>" aria-label="Select breaker row" />
+                                                                                </td>
+                                                                                <td style="display: none;"><%= mbomBrkData[i].idDev %></td>
+                                                                                <td style="display: none;"><%= mbomBrkData[i].mbomID %></td>
+                                                                                <td>
+                                                                                    <div style="display:flex;justify-content:space-between;align-items:center;">
+                                                                                        <span><%= mbomBrkData[i].devDesignation%></span>
+                                                                                        <% if(idDevs.has(currentBrk)){ %>
+                                                                                            <button type="button" class="btn btn-sm btn-outline-info waves-effect waves-light acc-brk-btn" data-toggle="modal" data-target="#accModal_<%=currentBrk%>" title="Accessories" aria-label="Accessories">
+                                                                                                Acc
+                                                                                            </button>
+                                                                                        <% } %>
+                                                                                    </div>
+                                                                                </td>
+                                                                                <td><%= mbomBrkData[i].devMfg %></td>
+                                                                                </td>
+                                                                                <!-- Cat. Code column hidden per UI change -->
+                                                                                <td><%= mbomBrkData[i].brkPN %></td>
+                                                                                <td><%= mbomBrkData[i].cradlePN %></td>
+                                                                                <td><%= secLabel %></td>
+                                                                                <td>
+                                                                                    <button id="copyButton" type="submit" class="btn btn-md btn-outline-secondary waves-effect waves-light copy-brk-btn" formaction="../copyBreaker/?idDev=<%= mbomBrkData[i].idDev%>" data-toggle="tooltip" title="Clone" aria-label="Clone">
+                                                                                            <i class="fas fa-clone" aria-hidden="true"></i>
+                                                                                    </button>
+
+                                                                                    <button id="editBrkButton" type="submit" class="btn btn-md btn-outline-warning waves-effect waves-light edit-brk-btn" formaction="../editBreaker/?idDev=<%= mbomBrkData[i].idDev%>" data-toggle="tooltip" title="Edit" aria-label="Edit">
+                                                                                            <i class="fas fa-pencil-alt" aria-hidden="true"></i>
+                                                                                    </button>
+
+                                                                                    <button id="deleteButton" type="submit" class="btn btn-md btn-outline-danger waves-effect waves-light delete-brk-btn" formaction="../deleteBreaker/?idDev=<%= mbomBrkData[i].idDev%>" data-toggle="tooltip" title="Delete" aria-label="Delete">
+                                                                                            <i class="fas fa-trash" aria-hidden="true"></i>
+                                                                                    </button>
+                                                                                </td>
+                                                                            </tr>
+
+                                                                            <% /* modal rendered after table to avoid breaking tbody/table structure */ %>
+                                                                        <% } %>
+                                                                    <% } %>
+                                                                </tbody>
+                                                            </table>
+                                                        </form>
+                                                    <% } %>
+                                                            
+                                                    <% /* Render accessory modals outside the table so Bootstrap markup doesn't break table layout */ %>
+                                                    <% for (let i = 0; i < mbomBrkData.length; i++) { %>
+                                                        <% let currentBrk = mbomBrkData[i].idDev.toString(); %>
+                                                        <% if (idDevs.has(currentBrk)) { %>
+                                                            <div class="modal fade" id="accModal_<%=currentBrk%>" tabindex="-1" role="dialog" aria-labelledby="accModalLabel_<%=currentBrk%>" aria-hidden="true">
+                                                                <div class="modal-dialog modal-lg" role="document">
+                                                                    <div class="modal-content">
+                                                                        <div class="modal-header">
+                                                                            <h5 class="modal-title" id="accModalLabel_<%=currentBrk%>">Accessories for <%= mbomBrkData[i].devDesignation %></h5>
+                                                                            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                                                                <span aria-hidden="true">&times;</span>
+                                                                            </button>
+                                                                        </div>
+
+                                                                        <div class="modal-body">
+                                                                            <table class="table table-sm table-striped">
+                                                                                <thead>
+                                                                                    <tr>
+                                                                                        <th style="width: 10%">Qty</th>
+                                                                                        <th style="width: 15%">Type</th>
+                                                                                        <th style="width: 15%">Mfg.</th>
+                                                                                        <th style="width: 30%">Description</th>
+                                                                                        <th style="width: 30%">P/N</th>
+                                                                                    </tr>
+                                                                                </thead>
+
+                                                                                <tbody>
+                                                                                    <% for (let row of mbomBrkAcc) { %>
+                                                                                        <% if (row.idDev == mbomBrkData[i].idDev) { %>
+                                                                                            <tr>
+                                                                                                <td><%= row.brkAccQty %></td>
+                                                                                                <td><%= row.brkAccType %></td>
+                                                                                                <td><%= row.brkAccMfg %></td>
+                                                                                                <td><%= row.brkAccDesc %></td>
+                                                                                                <td><%= row.brkAccPN %></td>
+                                                                                            </tr>
+                                                                                        <% } %>
+                                                                                    <% } %>
+                                                                                </tbody>
+                                                                            </table>
+                                                                        </div>
+
+                                                                        <div class="modal-footer">
+                                                                            <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        <% } %>
+                                                    <% } %>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-sm-12">
+                                            <div class="card m-b-20" id="itemCard">
+                                                <div class="card-body">
+                                                    <h4 class="mt-0 header-title">Item Summary</h4>
+                                                    <div class="card-body">
+                                                        <form id="addItemForm" class="g-2 needs-validation" action="/addComItemMBOM" method="POST" novalidate>
+                                                            <% if (typeof projectId !== 'undefined' && projectId) { %>
+                                                                <input type="hidden" name="projectId" value="<%= projectId %>">
+                                                            <% } %>
+                                                            <% // Build distinct item types and manufacturer lists from available data,
+                                                            // excluding items marked OBSOLETE so dropdowns don't show them %>
+                                                            <% 
+                                                                // Filter out OBSOLETE common items
+                                                                const filteredCom = (comItemData || []).filter(function(it){
+                                                                    return !(it && it.status && String(it.status).toUpperCase() === 'OBSOLETE');
+                                                                });
+
+                                                                const itemTypeSet = new Set();
+                                                                // Only include item types from the (non-obsolete) common items
+                                                                for (let it of filteredCom) if (it && it.itemType) itemTypeSet.add(it.itemType);
+                                                                const itemTypes = Array.from(itemTypeSet).sort();
+
+                                                                const mfgSet = new Set();
+                                                                // Only include manufacturers from the (non-obsolete) common items
+                                                                for (let it of filteredCom) if (it && it.itemMfg) mfgSet.add(it.itemMfg);
+                                                                const mfgList = Array.from(mfgSet).sort();
+                                                                // Build per-type manufacturer mapping and expose as safe JSON for client-side use
+                                                                const mfgByType = {};
+                                                                for (let it of filteredCom) {
+                                                                    if (!it || !it.itemType) continue;
+                                                                    if (!mfgByType[it.itemType]) mfgByType[it.itemType] = new Set();
+                                                                    if (it.itemMfg && String(it.itemMfg).toUpperCase() !== 'OTHER') mfgByType[it.itemType].add(it.itemMfg);
+                                                                }
+                                                                const mfgByTypeObj = {};
+                                                                for (let t of Object.keys(mfgByType)) mfgByTypeObj[t] = Array.from(mfgByType[t]).sort();
+                                                                const safeMfgJson = JSON.stringify(mfgByTypeObj).replace(/</g, '\u003c').replace(/'/g, '&#39;');
+                                                                // Build description mapping keyed by '<type>||<mfg>' for client-side description population
+                                                                const descByPair = {};
+                                                                const allDescSet = new Set();
+                                                                for (let it of filteredCom) {
+                                                                    if (!it || !it.itemType) continue;
+                                                                    const t = it.itemType;
+                                                                    const m = it.itemMfg || '';
+                                                                    const d = it.itemDesc || '';
+                                                                    if (d) allDescSet.add(d);
+                                                                    const key = t + '||' + m;
+                                                                    if (!descByPair[key]) descByPair[key] = new Set();
+                                                                    if (d && String(d).toUpperCase() !== 'OTHER') descByPair[key].add(d);
+                                                                }
+                                                                const descByPairObj = {};
+                                                                for (let k of Object.keys(descByPair)) descByPairObj[k] = Array.from(descByPair[k]).sort();
+                                                                const allDescList = Array.from(allDescSet).sort();
+                                                                const safeDescJson = JSON.stringify({ byPair: descByPairObj, all: allDescList }).replace(/</g, '\u003c').replace(/'/g, '&#39;');
+                                                                // Build P/N mapping keyed by '<type>||<mfg>||<desc>' for client-side P/N population
+                                                                const pnByTriplet = {};
+                                                                const allPnSet = new Set();
+                                                                for (let it of filteredCom) {
+                                                                    if (!it || !it.itemType) continue;
+                                                                    const t = it.itemType;
+                                                                    const m = it.itemMfg || '';
+                                                                    const d = it.itemDesc || '';
+                                                                    const p = it.itemPN || '';
+                                                                    if (p) allPnSet.add(p);
+                                                                    const key = t + '||' + m + '||' + d;
+                                                                    if (!pnByTriplet[key]) pnByTriplet[key] = new Set();
+                                                                    if (p && String(p).toUpperCase() !== 'OTHER') pnByTriplet[key].add(p);
+                                                                }
+                                                                const pnByTripletObj = {};
+                                                                for (let k of Object.keys(pnByTriplet)) pnByTripletObj[k] = Array.from(pnByTriplet[k]).sort();
+                                                                const allPnList = Array.from(allPnSet).sort();
+                                                                const safePnJson = JSON.stringify({ byTriplet: pnByTripletObj, all: allPnList }).replace(/</g, '\u003c').replace(/'/g, '&#39;');
+                                                            %>
+                                                            <div id="mfg-data" style="display:none;" data-mfg='<%= safeMfgJson %>'></div>
+                                                            <%
+                                                            %>
+
+                                                            <div id="desc-data" style="display:none;" data-desc='<%= safeDescJson %>'></div>
+                                                            <div id="pn-data" style="display:none;" data-pn='<%= safePnJson %>'></div>
+
+                                                            <%# Canonical hidden inputs for robust restore initialization. %>
+                                                            <% if (typeof formValues !== 'undefined' && formValues) { %>
+                                                                <input type="hidden" class="itemTypeHidden" value="<%= formValues.itemType || formValues.itemSelect2 || '' %>" />
+                                                                <input type="hidden" class="itemMfgHidden" value="<%= formValues.itemMfg || formValues.mfgSelect2 || '' %>" />
+                                                                <input type="hidden" class="itemDescHidden" value="<%= formValues.itemDesc || '' %>" />
+                                                                <input type="hidden" class="itemPNHidden" value="<%= formValues.itemPN || '' %>" />
+                                                                <input type="hidden" class="itemPNOtherHidden" value="<%= formValues.itemPNOther || '' %>" />
+                                                                <input type="hidden" class="unitOfIssueHidden" value="<%= formValues.unitOfIssue || '' %>" />
+                                                                <input type="hidden" class="catCodeHidden" value="<%= formValues.catCode || '' %>" />
+                                                                <input type="hidden" class="classHidden" value="<%= formValues.class || formValues.classCode || '' %>" />
+                                                                <input type="hidden" class="itemQtyHidden" value="<%= formValues.itemQty || '' %>" />
+                                                                <input type="hidden" class="shipLooseHidden" value="<%= formValues.shipLoose || '' %>" />
+                                                                <input type="hidden" class="secIDHidden" value="<%= formValues.secID || '' %>" />
+                                                            <% } %>
+
+                                                            <div class="row">
+                                                                <div class="col-md-3">
+                                                                    <label class="col-form-label">Item Type</label>
+                                                                    <div class="relative-input">
+                                                                        <select name="itemType" class="form-control itemTypeSelect" required>
+                                                                            <option value="">Select Item Type</option>
+                                                                            <% for (let t of itemTypes) { %>
+                                                                                <option value="<%= t %>"><%= t %></option>
+                                                                            <% } %>
+                                                                            <option value="OTHER">OTHER</option>
+                                                                        </select>
+                                                                        <input type="text" name="itemTypeOther" class="form-control mt-2 itemTypeOther manual-input" placeholder="Enter item type" disabled="disabled" required/>
+                                                                        <div class="invalid-feedback">
+                                                                            Please select or enter an item type.
+                                                                        </div>
+                                                                        <div class="valid-feedback">
+                                                                            Looks good!
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+
+                                                                <div class="col-md-3">
+                                                                    <label class="col-form-label">Item Mfg.</label>
+                                                                    <div class="relative-input">
+                                                                        <select name="itemMfg" class="form-control itemMfgSelect" required>
+                                                                            <option value="">Select Manufacturer</option>
+                                                                            <% for (let m of mfgList) { %>
+                                                                                <option value="<%= m %>"><%= m %></option>
+                                                                            <% } %>
+                                                                            <option value="OTHER">OTHER</option>
+                                                                        </select>
+                                                                        <input type="text" name="itemMfgOther" class="form-control mt-2 itemMfgOther manual-input" placeholder="Enter manufacturer" disabled="disabled" />
+                                                                        <div class="invalid-feedback">
+                                                                            Please select or enter a manufacturer.
+                                                                        </div>
+                                                                        <div class="valid-feedback">
+                                                                            Looks good!
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+
+                                                                <div class="col-md-3">
+                                                                    <label class="col-form-label">Description</label>
+                                                                    <div class="relative-input">
+                                                                        <select name="itemDesc" class="form-control itemDescSelect" required>
+                                                                            <option value="">Select Description</option>
+                                                                        </select>
+                                                                        <input type="text" name="itemDescOther" class="form-control mt-2 itemDescOther manual-input" maxlength="255" placeholder="Enter description" disabled="disabled" />
+                                                                        <div class="invalid-feedback">
+                                                                            Please select or enter a description.
+                                                                        </div>
+                                                                        <div class="valid-feedback">
+                                                                            Looks good!
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+
+                                                                <div class="col-md-3">
+                                                                    <label class="col-form-label">Item P/N</label>
+                                                                    <div class="relative-input">
+                                                                        <select name="itemPN" class="form-control itemPNSelect" required>
+                                                                            <option value="">Select P/N</option>
+                                                                        </select>
+                                                                        <input type="text" name="itemPNOther" class="form-control mt-2 itemPNOther manual-input" placeholder="Type P/N here" disabled="disabled" />
+                                                                        <div class="invalid-feedback">
+                                                                            Please select or enter an item P/N.
+                                                                        </div>
+                                                                        <div class="valid-feedback">
+                                                                            Looks good!
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+
+                                                            <% // build unit list from existing common items for unit of issue dropdown (exclude OBSOLETE)
+                                                                const unitSet = new Set(); for (let it of (filteredCom || [])) if (it && it.unitOfIssue) unitSet.add(it.unitOfIssue); const unitList = Array.from(unitSet).sort(); %>
+                                                            <div id="uncommonRow" class="row" style="display:none;">
+                                                                <div class="col-md-4">
+                                                                    <label class="col-form-label">Unit Of Issue</label>
+                                                                    <select name="unitOfIssue" class="form-control unitOfIssueSelect" required>
+                                                                        <option value="">Select Unit</option>
+                                                                        <% for (let u of unitList) { %>
+                                                                            <option value="<%= u %>"><%= u %></option>
+                                                                        <% } %>
+                                                                    </select>
+                                                                        <div class="invalid-feedback">
+                                                                            Please select a Unit of Issue.
+                                                                        </div>
+                                                                        <div class="valid-feedback">
+                                                                            Looks good!
+                                                                        </div>
+                                                                </div>
+
+                                                                <div class="col-md-4">
+                                                                    <label class="col-form-label">Cat. Code</label>
+                                                                    <select name="catCode" class="form-control catCodeSelect" required>
+                                                                        <option value="">Select Cat. Code</option>
+                                                                        <% for (let c of (catCodeData || [])) { %>
+                                                                            <option value="<%= c %>"><%= c %></option>
+                                                                        <% } %>
+                                                                    </select>
+                                                                        <div class="invalid-feedback">
+                                                                            Please select a Cat. Code.
+                                                                        </div>
+                                                                        <div class="valid-feedback">
+                                                                            Looks good!
+                                                                        </div>
+                                                                </div>
+                                                                
+                                                                <div class="col-md-4">
+                                                                    <label class="col-form-label">Class</label>
+                                                                    <select name="class" class="form-control classSelect" required>
+                                                                        <option value="">Select Class</option>
+                                                                        <% for (let cl of (classCodeData || [])) { %>
+                                                                            <option value="<%= cl %>"><%= cl %></option>
+                                                                        <% } %>
+                                                                    </select>
+                                                                        <div class="invalid-feedback">
+                                                                            Please select a Class.
+                                                                        </div>
+                                                                        <div class="valid-feedback">
+                                                                            Looks good!
+                                                                        </div>
+                                                                </div>
+                                                            </div>
+
+                                                            <div class="row align-items-end">
+                                                                <div class="col-md-1">
+                                                                    <label for="" class="col-form-label">Qty</label>
+                                                                    <input name="itemQty" type="number" min="1" max="99" step="1" value="1" class="form-control form-control-sm itemQtyInput" style="width:60px; height:38px;" required />
+                                                                </div>
+
+                                                                <div class="col-md-2">
+                                                                    <label class="col-form-label">Section</label>
+                                                                    <select name="secID" class="form-control itemSectionSelect">
+                                                                        <option value="">Unassigned</option>
+                                                                        <option value="assign">Assign</option>
+                                                                    </select>
+                                                                </div>
+
+                                                                <div class="col-md-2" id="checkAllCol" style="display:none;">
+                                                                    <button type="button" id="checkAllBtn" class="btn btn-block btn-lg btn-outline-primary">Check All</button>
+                                                                </div>
+
+                                                                <div class="col-md-2" id="uncheckAllCol" style="display:none;">
+                                                                    <button type="button" id="uncheckAllBtn" class="btn btn-block btn-lg btn-outline-secondary">Uncheck All</button>
+                                                                </div>
+                                                            </div>
+
+                                                            <div id="assignSection" class="row" style="display:none; margin-top: 15px;">
+                                                                <% if ((mbomSecData || []).length === 0) { %>
+                                                                    <div class="col">
+                                                                        No sections available
+                                                                    </div>
+                                                                <% } else { %>
+                                                                    <% for (let s of (mbomSecData || [])) { %>
+                                                                        <% const sNum = parseInt(s.sectionNum, 10); %>
+                                                                        <div class="col-auto">
+                                                                            <div class="text-center">
+                                                                                <label class="" for="assignSec_<%= s.secID %>">Sec<br> <%= (!isNaN(sNum) && sNum < 10) ? ('10' + s.sectionNum) : ('1' + s.sectionNum) %></label>
+                                                                                <br>
+                                                                                <div>
+                                                                                    <input class="" type="checkbox" name="assignSecIDs[]" value="<%= s.secID %>" id="assignSec_<%= s.secID %>" />
+                                                                                </div>
+                                                                            </div>
+                                                                        </div>
+                                                                    <% } %>
+                                                                <% } %>
+                                                            </div>
+
+                                                            <p class="text-muted m-b-30"></p>
+                                                            <% if (typeof message !== 'undefined' && message) { %>
+                                                                <div class="row">
+                                                                    <div class="col-sm-12">
+                                                                        <div class="alert alert-danger alert-dismissible fade show text-center" role="alert">
+                                                                            <%= message %>
+                                                                            <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            <% } %>
+
+                                                            <div class="row">
+                                                                <div class="col text-center p-2">
+                                                                    <div>
+                                                                        <div class="">
+                                                                            <label for="shipLooseCheckbox" class="form-check-label" style="margin-top: 15px;">Ship Loose?</label>
+                                                                            <input type="checkbox" id="shipLooseCheckbox" name="shipLoose" value="Y" />
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+
+                                                            <div class="row justify-content-center">
+                                                                <div class="col-2 text-center">
+                                                                    <button type="submit" class="btn-block btn-lg btn-success waves-effect waves-light" formaction="/addComItemMBOM">
+                                                                        Add Item
+                                                                    </button>
+                                                                </div>
+                                                            </div>
+
+                                                            <% // Hidden job/context fields: keep as name-only to avoid duplicate id collisions elsewhere %>
+                                                            <% if (mbomData) { %>
+                                                                <input type="hidden" name="jobNum" value="<%= jmJobNum %>" />
+                                                                <input type="hidden" name="releaseNum" value="<%= mbomRelease %>" />
+                                                                <input type="hidden" name="mbomID" value="<%= mbomData.mbomID %>" />
+                                                            <% } %>
+                                                        </form>
+
+                                                        <!-- Persisted form values and message for client-side restore -->
+                                                        <div id="__searchMBOM_data" style="display:none;"
+                                                            data-form-values='<%= JSON.stringify((typeof formValues !== "undefined" ? formValues : {})) .replace(/</g, "\\u003c").replace(/'/g, "&#39;") %>'
+                                                            data-message='<%= (typeof message !== "undefined" && message) ? String(message).replace(/</g, "\\u003c").replace(/'/g, "&#39;") : "" %>'
+                                                            data-error-field='<%= (errorField || "") %>'
+                                                        ></div>
+
+                                                        <script>
+                                                        // Defer restoring form values until window.load so dependent dropdown
+                                                        // population (mbomFilterDropdown.js) has finished running.
+                                                        (function(){
+                                                            function restore() {
+                                                                try{
+                                                                    var container = document.getElementById('__searchMBOM_data');
+                                                                    if(!container) return;
+                                                                    var raw = container.getAttribute('data-form-values');
+                                                                    if(!raw) return;
+                                                                    var fv = {};
+                                                                    try{ fv = JSON.parse(raw); } catch(e){ fv = {}; }
+
+                                                                    function setControl(name, value){
+                                                                        if(typeof value === 'undefined' || value === null) return;
+                                                                        var el = document.querySelector('[name="'+name+'"]');
+                                                                        if(!el) return;
+                                                                        if(el.type === 'checkbox'){
+                                                                            el.checked = (value === 'Y' || value === 'true' || value === true);
+                                                                        } else {
+                                                                            try { el.value = value; } catch (e) {}
+                                                                        }
+                                                                        var ev;
+                                                                        try{ ev = new Event('change', { bubbles: true }); } catch(e){ ev = document.createEvent('HTMLEvents'); ev.initEvent('change', true, false); }
+                                                                        try { el.dispatchEvent(ev); } catch(e){}
+                                                                    }
+
+                                                                    // Restore itemType first (this will populate mfg via page wiring)
+                                                                    setControl('itemType', fv.itemType || fv.itemSelect2 || '');
+                                                                    setControl('itemTypeOther', fv.itemTypeOther || '');
+
+                                                                    // Wait a short moment to allow dependent population to run, then set downstream fields
+                                                                    setTimeout(function(){
+                                                                        setControl('itemMfg', fv.itemMfg || fv.mfgSelect2 || '');
+                                                                        setControl('itemMfgOther', fv.itemMfgOther || '');
+                                                                        // another short delay before desc/pn
+                                                                        setTimeout(function(){
+                                                                            setControl('itemDesc', fv.itemDesc || '');
+                                                                            setControl('itemDescOther', fv.itemDescOther || '');
+                                                                            setTimeout(function(){
+                                                                                // For PN, prefer selecting option if present else set OTHER input
+                                                                                var pnVal = fv.itemPN || '';
+                                                                                if(pnVal){
+                                                                                    var pnSel = document.querySelector('[name="itemPN"]');
+                                                                                    if(pnSel){
+                                                                                        var opt = pnSel.querySelector('option[value="'+pnVal+'"]');
+                                                                                        if(opt){ setControl('itemPN', pnVal); }
+                                                                                        else { setControl('itemPNOther', pnVal); }
+                                                                                    }
+                                                                                }
+                                                                                setControl('itemPNOther', fv.itemPNOther || '');
+                                                                            }, 60);
+                                                                        }, 60);
+                                                                    }, 80);
+
+                                                                    // Uncommon/selects
+                                                                    setControl('unitOfIssue', fv.unitOfIssue || '');
+                                                                    // Only restore catCode if the server provided a value for it in formValues
+                                                                    if (Object.prototype.hasOwnProperty.call(fv, 'catCode')) {
+                                                                        setControl('catCode', fv.catCode);
+                                                                    }
+                                                                    // restore class if present in form values
+                                                                    if (Object.prototype.hasOwnProperty.call(fv, 'class') || Object.prototype.hasOwnProperty.call(fv, 'classCode')) {
+                                                                        setControl('class', fv.class || fv.classCode);
+                                                                    }
+                                                                    setControl('itemQty', fv.itemQty || 1);
+
+                                                                    // Sections: secID or assignSecIDs[] checkboxes
+                                                                    if(fv.secID){ setControl('secID', fv.secID); }
+                                                                    if(fv.assignSecIDs){
+                                                                        var assigns = fv.assignSecIDs;
+                                                                        if(!Array.isArray(assigns)) assigns = [assigns];
+                                                                        assigns.forEach(function(a){
+                                                                            var cb = document.querySelector('[name="assignSecIDs[]"][value="'+a+'"]');
+                                                                            if(cb) cb.checked = true;
+                                                                        });
+                                                                    }
+
+                                                                    // shipLoose
+                                                                    if(fv.shipLoose){
+                                                                        var sl = document.querySelector('[name="shipLoose"]');
+                                                                        if(sl) sl.checked = (fv.shipLoose === 'Y' || fv.shipLoose === 'true' || fv.shipLoose === true);
+                                                                    }
+
+                                                                    // If server flagged PN as error, mark it invalid and focus
+                                                                    var errField = container.getAttribute('data-error-field');
+                                                                    var msg = container.getAttribute('data-message') || '';
+                                                                    if(errField === 'itemPN'){
+                                                                        var pnEl = document.querySelector('[name="itemPN"]');
+                                                                        if(pnEl){ pnEl.classList.add('is-invalid'); if(msg) pnEl.setAttribute('title', msg); try{ pnEl.focus(); }catch(e){} }
+                                                                    }
+                                                                }catch(e){ console.error('restore form values error', e); }
+                                                            }
+
+                                                            if (document.readyState === 'complete') restore(); else window.addEventListener('load', restore);
+                                                        })();
+                                                        </script>
+                                                    </div>
+                                                    <% if(mbomItemData.length != 0){ %>
+                                                        <hr>
+                                                        <div class="row mb-2 border rounded" style="padding-top: 15px; padding-bottom: 10px; margin-left: 0px; margin-right: 0px;">
+                                                            <div class="d-flex col-sm-2 text-center" style="min-width: 160px;">
+                                                                <h5>Item(s) (<span id="itemCount"><%= mbomItemData.length %></span>)</h5>
+                                                            </div>
+                                                            <div class="d-flex col-sm-2 align-items-center justify-content-between" style="min-width: 155px; max-width: 180px;">
+                                                                <button id="copyItemsBtn" type="button" class="btn btn-md btn-outline-secondary waves-effect waves-light bulk-action-btn copy-item-btn" data-action="/copyItems" data-target-form="itemForm" data-toggle="tooltip" title="Copy selected items" aria-label="Copy selected items">
+                                                                    <i class="fas fa-clone" aria-hidden="true"></i>
+                                                                </button>
+                                                                <button id="deleteItemsBtn" type="button" class="btn btn-md btn-outline-danger waves-effect waves-light bulk-action-btn delete-item-btn" data-action="/deleteItems" data-target-form="itemForm" data-toggle="tooltip" title="Delete selected items" aria-label="Delete selected items">
+                                                                    <i class="fas fa-trash" aria-hidden="true"></i>
+                                                                </button>
+                                                                <button id="filterItemBtn" type="button" class="btn btn-md btn-outline-info waves-effect waves-light filter-item-btn" data-toggle="tooltip" title="Show Filter Options" aria-pressed="false" aria-label="Show or hide filter options">
+                                                                    <i class="fas fa-filter" aria-hidden="true"></i>
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                        <div id="filterItemRow" class="row mb-2" style="display: none;">
+                                                            <div class="col-sm-4">
+                                                                <input type="text" id="itemFilter" class="form-control" placeholder="Filter items (any column)..." />
+                                                            </div>
+                                                            <div class="col-sm-2">
+                                                                <select id="itemGroupSelect" class="form-control">
+                                                                    <option value="none">No Grouping</option>
+                                                                    <option value="itemType">Item Type</option>
+                                                                    <option value="itemMfg">Item Mfg.</option>
+                                                                    <option value="itemPN">Item P/N</option>
+                                                                    <option value="section">Section</option>
+                                                                    <option value="shipLoose">Ship Loose?</option>
+                                                                </select>
+                                                            </div>
+                                                            <div class="col-sm-2">
+                                                                <button id="itemClearFilter" type="button" class="btn btn-outline-danger" style="height:38px; padding: .375rem .75rem;">Clear Filter</button>
+                                                            </div>
+                                                        </div>
+                                                        <form id="itemForm" class="itemForm" action="/addComItemMBOM" method="POST">
+                                                            <% if (typeof projectId !== 'undefined' && projectId) { %>
+                                                                <input type="hidden" name="projectId" value="<%= projectId %>">
+                                                            <% } %>
+                                                            <% if(mbomData) { %>
+                                                            <input type="text" name="jobNum" class="form-control" value="<%= jmJobNum %>" id="jobNum" hidden="hidden">
+                                                            <input type="text" name="releaseNum" class="form-control" value="<%= mbomData.releaseNum %>" id="releaseNum" hidden="hidden">
+                                                            <input type="text" name="mbomID" class="form-control" value="<%= mbomData.mbomID %>" id="mbomID" hidden="hidden">
+                                                            <input type="text" name="jobName" class="form-control" value="<%= jmJobName %>" id="jobName" hidden="hidden">
+                                                            <input type="text" name="customer" class="form-control" value="<%= jmCustomer %>" id="customer" hidden="hidden">
+                                                            <input type="text" name="boardDesignation" class="form-control" value="<%= mbomBoardDesignation %>" id="boardDesignation" hidden="hidden">
+                                                            <input type="text" name="numSections" class="form-control" value="<%= mbomData.numSections %>" id="numSections" hidden="hidden">
+                                                        <% } %>
+                                                        <table id="itemsTable" class="table table-bordered dt-responsive nowrap groupable-table items-table" data-group-col="2" style="border-collapse: collapse; border-spacing: 0; width: 100%;">
+                                                            <thead>
+                                                            <tr>
+                                                                <th class="select-col"><input type="checkbox" id="items-select-all" aria-label="Select all items" /></th>
+                                                                <th style="display:none;">Sum Item ID</th>
+                                                                <th style="display:none;">Com Item ID</th>
+                                                                <th style="display:none;">User Item ID</th>
+                                                                <th class="qty-col">Qty</th>
+                                                                <th class="type-col">Item Type</th>
+                                                                <th class="mfg-col">Item Mfg</th>
+                                                                <th class="desc-col">Item Description</th>
+                                                                <th class="pn-col">Item P/N</th>
+                                                                <th class="section-col">Section</th>
+                                                                <th class="ship-col">Ship Loose?</th>
+                                                                <th class="actions-col"></th>
+                                                            </tr>
+                                                            </thead>
+                                                            <tbody>
+                                                                <% if (mbomItemData) { %>
+                                                                <% for (let i =0; i < mbomItemData.length; i++) { %>
+                                                                    <% 
+                                                                        let secLabel = 'Unassigned';
+                                                                        if (mbomItemData[i] && mbomItemData[i].secID != null) {
+                                                                            for (let s = 0; s < (mbomSecData || []).length; s++) {
+                                                                                if (mbomSecData[s].secID == mbomItemData[i].secID) {
+                                                                                    const sn = parseInt(mbomSecData[s].sectionNum, 10);
+                                                                                    if (!isNaN(sn) && sn < 10) {
+                                                                                        secLabel = 'Section 10' + sn;
+                                                                                    } else {
+                                                                                        secLabel = 'Section 1' + (isNaN(sn) ? mbomSecData[s].sectionNum : sn);
+                                                                                    }
+                                                                                    break;
+                                                                                }
+                                                                            }
+                                                                        }
+                                                                    %>
+                                                                        <% if (mbomItemData[i].userItemID == null) { %>
+                                                                        <%for(var j = 0; j < comItemData.length; j++){ %>
+                                                                        <%if(mbomItemData[i].comItemID == comItemData[j].comItemID){ %>
+                                                                            <tr>
+                                                                                <td style="text-align:center;">
+                                                                                    <input type="checkbox" name="selectedItemIDs[]" value="<%= mbomItemData[i].itemSumID %>" class="item-row-select" data-id="<%= mbomItemData[i].itemSumID %>" aria-label="Select item row" />
+                                                                                </td>
+                                                                                <td style="display: none;"><%= mbomItemData[i].itemSumID %></td>
+                                                                                <td style="display: none;"><%= mbomItemData[i].comItemID %></td>
+                                                                                <td style="display: none;"><%= mbomItemData[i].userItemID %></td>
+                                                                                <td><%= mbomItemData[i].itemQty %></td>
+                                                                                <td><%= comItemData[j].itemType %></td>
+                                                                                <td><%= comItemData[j].itemMfg %></td>
+                                                                                <td><span class="ellipsis" title="<%= comItemData[j].itemDesc %>"><%= comItemData[j].itemDesc %></span></td>
+                                                                                <td><%= comItemData[j].itemPN %></td>
+                                                                                <td><%= secLabel %></td>
+                                                                                <td><%= String(mbomItemData[i].shipLoose).toUpperCase() === 'Y' ? 'Yes' : 'No' %></td>
+                                                                                <td>
+                                                                                    <button id="copyButton" type="submit" class="btn btn-md btn-outline-secondary waves-effect waves-light copy-item-btn" formaction="../copyItem/?itemSumID=<%= mbomItemData[i].itemSumID%><%= typeof projectId !== 'undefined' && projectId ? '&projectId=' + projectId : '' %>" data-toggle="tooltip" title="Clone" aria-label="Clone">
+                                                                                            <i class="fas fa-clone" aria-hidden="true"></i>
+                                                                                    </button>
+                                                                                    <button id="editButton" type="submit" class="btn btn-md btn-outline-warning waves-effect waves-light edit-item-btn" formaction="../editComItemMBOM/?itemSumID=<%= mbomItemData[i].itemSumID%>&comItemID=<%=mbomItemData[i].comItemID%><%= typeof projectId !== 'undefined' && projectId ? '&projectId=' + projectId : '' %>" data-toggle="tooltip" title="Edit" aria-label="Edit">
+                                                                                        <i class="fas fa-pencil-alt" aria-hidden="true"></i>
+                                                                                    </button>
+                                                                                    <button id="deleteButton" type="submit" class="btn btn-md btn-outline-danger waves-effect waves-light delete-item-btn" formaction="../deleteItem/?itemSumID=<%= mbomItemData[i].itemSumID %><%= typeof projectId !== 'undefined' && projectId ? '&projectId=' + projectId : '' %>" data-toggle="tooltip" title="Delete" aria-label="Delete">
+                                                                                            <i class="fas fa-trash" aria-hidden="true"></i>
+                                                                                    </button>
+                                                                                </td>
+                                                                            </tr>
+                                                                        <% } %>
+                                                                        <% } %>
+                                                                        <% } else { %>
+                                                                        <%for(let j = 0; j < userItemData.length; j++){ %>
+                                                                        <%if(mbomItemData[i].userItemID == userItemData[j].userItemID){ %>
+                                                                            <tr>
+                                                                                <td style="text-align:center;">
+                                                                                    <input type="checkbox" name="selectedItemIDs[]" value="<%= mbomItemData[i].itemSumID %>" class="item-row-select" data-id="<%= mbomItemData[i].itemSumID %>" aria-label="Select item row" />
+                                                                                </td>
+                                                                                <td style="display: none;"><%= mbomItemData[i].itemSumID %></td>
+                                                                                <td style="display: none;"><%= mbomItemData[i].comItemID %></td>
+                                                                                <td style="display: none;"><%= mbomItemData[i].userItemID %></td>
+                                                                                <td><%= mbomItemData[i].itemQty %></td>
+                                                                                <td><%= userItemData[j].itemType %></td>
+                                                                                <td><%= userItemData[j].itemMfg %></td>
+                                                                                <td><span class="ellipsis" title="<%= userItemData[j].itemDesc %>"><%= userItemData[j].itemDesc %></span></td>
+                                                                                <td><%= userItemData[j].itemPN %></td>
+                                                                                <td><%= secLabel %></td>
+                                                                                <td><%= String(mbomItemData[i].shipLoose).toUpperCase() === 'Y' ? 'Yes' : 'No' %></td>
+                                                                                <td>
+                                                                                    <button id="copyButton" type="submit" class="btn btn-md btn-outline-secondary waves-effect waves-light copy-item-btn" formaction="../copyItem/?itemSumID=<%= mbomItemData[i].itemSumID%><%= typeof projectId !== 'undefined' && projectId ? '&projectId=' + projectId : '' %>" data-toggle="tooltip" title="Clone" aria-label="Clone">
+                                                                                            <i class="fas fa-clone" aria-hidden="true"></i>
+                                                                                    </button>
+                                                                                    <% if(mbomItemData[i].userItemID != null){%>
+                                                                                        <button id="editButton" type="submit" class="btn btn-md btn-outline-warning waves-effect waves-light edit-item-btn" formaction="../editUserItem/?itemSumID=<%= mbomItemData[i].itemSumID%>&userItemID=<%=mbomItemData[i].userItemID%><%= typeof projectId !== 'undefined' && projectId ? '&projectId=' + projectId : '' %>" data-toggle="tooltip" title="Edit" aria-label="Edit">
+                                                                                            <i class="fas fa-pencil-alt" aria-hidden="true"></i>
+                                                                                        </button>
+                                                                                    <% }else{ %>
+                                                                                        <button id="editButton" type="submit" class="btn btn-md btn-outline-warning waves-effect waves-light edit-item-btn" formaction="../editComItemMBOM/?itemSumID=<%= mbomItemData[i].itemSumID%>&comItemID=<%=mbomItemData[i].comItemID%><%= typeof projectId !== 'undefined' && projectId ? '&projectId=' + projectId : '' %>" data-toggle="tooltip" title="Edit" aria-label="Edit">
+                                                                                            <i class="fas fa-pencil-alt" aria-hidden="true"></i>
+                                                                                        </button>
+                                                                                    <% } %>
+                                                                                    <button id="deleteButton" type="submit" class="btn btn-md btn-outline-danger waves-effect waves-light delete-item-btn" formaction="../deleteItem/?itemSumID=<%= mbomItemData[i].itemSumID %><%= typeof projectId !== 'undefined' && projectId ? '&projectId=' + projectId : '' %>" data-toggle="tooltip" title="Delete" aria-label="Delete">
+                                                                                            <i class="fas fa-trash" aria-hidden="true"></i>
+                                                                                    </button>
+                                                                                </td>
+                                                                            </tr>
+                                                                        <% } %>
+                                                                        <% } %>
+                                                                        <% } %>
+                                                                    <% } %>
+                                                                <% } %>
+                                                                </tbody>
+                                                            </table>
+                                                            </form>
+                                                        <% } %>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div> <!-- page-title-box -->
+                            </div> <!-- main-page col -->
+                        </div> <!-- main-page row -->
+                    </div> <!-- container-fluid -->
+                </div> <!-- content -->
+            </div> <!-- content-page -->
+            <%- include('../../partials/footer') %>
+        </div> <!-- wrapper -->
+
+
+        <!-- MBOM table grouping & sorting (client-side) -->
+        <script src="/public/assets/js/mbomTableGroupSort.js"></script>
+        <script>
+        document.addEventListener('DOMContentLoaded', function(){
+            const configs = [
+                {
+                    tableId: 'breakersTable',
+                    filterId: 'brkFilter',
+                    clearFilterId: 'brkClearFilter',
+                    groupSelectId: 'brkGroupSelect',
+                    defaultGroup: 'none',
+                    groupMap: { device: 3, brkPN: 5, cradlePN: 6, section: 7 }
+                },
+                {
+                    tableId: 'itemsTable',
+                    filterId: 'itemFilter',
+                    clearFilterId: 'itemClearFilter',
+                    groupSelectId: 'itemGroupSelect',
+                    defaultGroup: 'none',
+                    groupMap: { itemType: 5, itemMfg: 6, itemPN: 8, section: 9, shipLoose: 10 }
+                }
+            ];
+            if(window.mbomInit) mbomInit(configs);
+        });
+        </script>
+
+        <!-- Responsive-table-->
+        <script src="/public/plugins/RWD-Table-Patterns/dist/js/rwd-table.min.js"></script>
+        <script>
+        $(function() {
+            $('.table-responsive').responsiveTable({
+                addDisplayAllBtn: 'btn btn-secondary'
+            });
+        });
+        </script>
+
+
+        <%- include('../../partials/scripts') %>
+
+        <script>
+        // Bind edit accessory modal save buttons (generated per-accessory) to call editBrkAcc(index)
+        document.addEventListener('DOMContentLoaded', function () {
+            document.querySelectorAll('.edit-brk-acc-btn').forEach(function(btn){
+                btn.addEventListener('click', function(ev){
+                    // prevent default form submission if editBrkAcc handles the action
+                    // allow it to proceed otherwise
+                    var idx = btn.getAttribute('data-index');
+                    if(typeof editBrkAcc === 'function'){
+                        ev.preventDefault();
+                        editBrkAcc(parseInt(idx, 10));
+                    }
+                });
+            });
+        });
+        </script>
+        <script>
+        // Bulk action button handler: collect selected IDs and submit the specified form to data-action
+        document.addEventListener('DOMContentLoaded', function () {
+            function handleBulkActionClick(ev){
+                const btn = ev.currentTarget;
+                const action = btn.getAttribute('data-action');
+                const targetFormId = btn.getAttribute('data-target-form');
+                if(!targetFormId){ console.warn('bulk-action-btn missing data-target-form'); return; }
+                const form = document.getElementById(targetFormId);
+                if(!form){ alert('Form not found: ' + targetFormId); return; }
+
+                // determine which row checkboxes to collect based on form id
+                let selector = 'input.item-row-select:checked';
+                if(targetFormId === 'brkForm') selector = 'input.breaker-row-select:checked';
+                // collect checked inputs inside the form first, fallback to document
+                let checked = Array.from(form.querySelectorAll(selector));
+                if(checked.length === 0) checked = Array.from(document.querySelectorAll(selector));
+
+                if(checked.length === 0){ alert('Please select one or more rows first.'); return; }
+
+                // remove any previously-inserted hidden selection inputs to avoid duplicates
+                const nameMap = {
+                    'itemForm': 'selectedItemIDs[]',
+                    'brkForm': 'selectedBreakerIDs[]'
+                };
+                const hiddenName = nameMap[targetFormId] || 'selectedIDs[]';
+                Array.from(form.querySelectorAll('input[type="hidden"][name="' + hiddenName + '"]')).forEach(h=>h.remove());
+
+                // append hidden inputs for each selected id
+                checked.forEach(cb => {
+                    const val = cb.value || cb.getAttribute('data-id');
+                    if(!val) return;
+                    const h = document.createElement('input');
+                    h.type = 'hidden';
+                    h.name = hiddenName;
+                    h.value = val;
+                    form.appendChild(h);
+                });
+
+                // set form action and submit
+                if(action) form.action = action;
+                form.method = 'post';
+                form.submit();
+            }
+
+            document.querySelectorAll('.bulk-action-btn').forEach(function(b){ b.addEventListener('click', handleBulkActionClick); });
+        });
+        </script>
+        <script src="/assets/js/rowToggle.js"></script>
+        <script>
+        // Lightweight initializer: use the shared `setupFilterToggle` from filterToggle.js
+        document.addEventListener('DOMContentLoaded', function () {
+            if (window.setupFilterToggle) {
+                try { setupFilterToggle('filterItemBtn', 'filterItemRow', { initialHidden: true }); } catch (e) { /* ignore */ }
+                try { setupFilterToggle('filterBreakerBtn', 'filterBreakerRow', { initialHidden: true }); } catch (e) { /* ignore */ }
+            }
+        });
+        </script>
+        <script>
+        // Header -> row checkbox wiring for breakers and items
+        document.addEventListener('DOMContentLoaded', function () {
+            function wireSelectAll(headerSelector, rowSelector) {
+                const header = document.querySelector(headerSelector);
+                if (!header) return;
+                const rows = () => Array.from(document.querySelectorAll(rowSelector));
+
+                header.addEventListener('change', function () {
+                    const checked = !!this.checked;
+                    rows().forEach(function (cb) { cb.checked = checked; });
+                });
+
+                // keep header checkbox state in sync with row checkboxes
+                function updateHeader() {
+                    const r = rows();
+                    if (r.length === 0) { header.checked = false; header.indeterminate = false; return; }
+                    const allChecked = r.every(c => c.checked);
+                    const anyChecked = r.some(c => c.checked);
+                    header.checked = allChecked;
+                    header.indeterminate = !allChecked && anyChecked;
+                }
+
+                // attach listeners to current rows
+                rows().forEach(function (cb) {
+                    cb.addEventListener('change', updateHeader);
+                });
+
+                // if rows may be added/removed dynamically, observe table body for changes
+                const table = header.closest('table');
+                if (table) {
+                    const tbody = table.querySelector('tbody');
+                    if (tbody && window.MutationObserver) {
+                        const mo = new MutationObserver(function () {
+                            // reattach listeners and update header
+                            rows().forEach(function (cb) {
+                                if (!cb._selectWired) {
+                                    cb.addEventListener('change', updateHeader);
+                                    cb._selectWired = true;
+                                }
+                            });
+                            updateHeader();
+                        });
+                        mo.observe(tbody, { childList: true, subtree: true });
+                    }
+                }
+
+                // initial state
+                updateHeader();
+            }
+
+            wireSelectAll('#breakers-select-all', '#breakersTable tbody input.breaker-row-select[type="checkbox"]');
+            wireSelectAll('#items-select-all', '#itemsTable tbody input.item-row-select[type="checkbox"]');
+        });
+        </script>
+        <script src="/public/assets/js/characterLimit.js"></script>
+        <script src="/public/assets/js/mbomCheckbox.js"></script>
+        <script src="/public/assets/js/mbomBreakerAccessories.js"></script>
+        <script src="/public/assets/js/mbomAccTooltips.js"></script>
+        <script src="/public/assets/js/mbomFilterDropdown.js"></script>
+        <script src="/public/assets/js/mbomDragDrop.js"></script>
+    </body>
+</html>

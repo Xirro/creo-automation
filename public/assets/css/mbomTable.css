@@ -50,10 +50,10 @@
 .breakers-table .actions-col { width: 155px; min-width: 155px; max-width: 155px; white-space: nowrap; }
 
 .breakers-table .device-col   { width: 18%; }
-.breakers-table .cat-col      { width: 12%; }
-.breakers-table .brkpn-col    { width: 25%; }
-.breakers-table .cradle-col   { width: 25%; }
-.breakers-table .brksection-col { width: 20%; }
+.breakers-table .mfg-col      { width: 12%; }
+.breakers-table .brkpn-col    { width: 22%; }
+.breakers-table .cradle-col   { width: 24%; }
+.breakers-table .brksection-col { width: 24%; }
 
 /* Small viewport: horizontal scroll to avoid layout breakage */
 @media (max-width: 575.98px) {

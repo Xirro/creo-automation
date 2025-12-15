@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=0, minimal-ui">
+    <title><%= title || 'Project Dashboard' %></title>
+    <link href="/public/assets/css/bootstrap.min.css" rel="stylesheet" type="text/css">
+    <link href="/public/assets/css/style.css" rel="stylesheet" type="text/css">
+    <style>
+        .project-hero { margin: 1.25rem 0; padding-top: 10px; }
+        .project-meta dt { width: 140px; float: left; font-weight: 600; }
+        .project-meta dd { margin-left: 150px; }
+        .truncate { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        /* MBOM table fixed column widths */
+        #mbomsTable { table-layout: fixed; width: 100%; }
+        #mbomsTable th, #mbomsTable td { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        /* Allow action buttons to wrap on small screens */
+        #mbomsTable td.mbom-actions { white-space: normal; }
+        #mbomsTable td.mbom-actions .btn { margin: 2px 4px; }
+        @media (max-width: 576px) {
+            #mbomsTable col:last-child { width: 24% !important; }
+            #mbomsTable td.mbom-actions { text-align: right; }
+        }
+    </style>
+</head>
+<body>
+<div id="wrapper">
+    <%- include('../partials/header') %>
+    <%- include('../partials/sidebar') %>
+
+    <div class="content-page">
+        <div class="content">
+            <div class="container-fluid">
+                <div class="row project-hero align-items-center">
+                    <div class="col-sm-8">
+                        <h3 class="page-title">Project: <span class="text-primary"><%= project ? project.jobNum : '—' %></span></h3>
+                        <p class="text-muted truncate" style="max-width:800px;"><%= project ? project.jobTitle : '' %></p>
+                    </div>
+                    <div class="col-sm-4 text-right">
+                        <a href="/projects" class="btn btn-outline-secondary">Back to Projects</a>
+                        <a href="/projects/<%= project ? project.id : '' %>/edit" class="btn btn-primary ml-2">Edit</a>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-lg-9">
+                        <div class="card">
+                            <div class="card-body">
+                                <h5 class="mb-3">Overview</h5>
+                                <% if (!project) { %>
+                                    <div class="alert alert-warning">Project not found.</div>
+                                <% } else { %>
+                                    <dl class="project-meta">
+                                        <dt>Job #</dt><dd><%= project.jobNum %></dd>
+                                        <dt>Customer</dt><dd><%= project.custName %></dd>
+                                        <dt>Project Manager</dt><dd><%= project.projectManager || '&mdash;' %></dd>
+                                        <dt>Bill Code</dt><dd><%= project.billCode || '&mdash;' %></dd>
+                                    </dl>
+                                    <div style="clear:both"></div>
+                                <% } %>
+                            </div>
+                        </div>
+
+                        <div class="card">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-center">
+                                        <div class="d-flex align-items-center">
+                                        <h5 class="mb-3 mr-3">MBOMs</h5>
+                                        <button type="button" class="btn btn-md btn-success btn-add-mbom"
+                                            data-jobnum="<%= project ? project.jobNum : '' %>"
+                                            data-jobname="<%= project ? (project.jobTitle || '').replace(/\"/g, '&quot;') : '' %>"
+                                            data-cust="<%= project ? (project.custName || project.custNum || '') : '' %>">Add MBOM</button>
+                                        <button id="btnDeleteSelected" type="button" class="btn btn-md btn-danger mr-2" title="Delete selected MBOMs">Delete Selected</button>
+                                    </div>
+                                    <div class="text-muted">Page <%= typeof mbomPage !== 'undefined' ? mbomPage : 1 %> of <%= typeof mbomTotalPages !== 'undefined' ? mbomTotalPages : 1 %></div>
+                                </div>
+                                <p class="text-muted">MBOMs associated with this project.</p>
+                                <div class="table-responsive">
+                                    <table id="mbomsTable" class="table table-sm table-hover">
+                                        <colgroup>
+                                            <col style="width:4%" />    <!-- Select -->
+                                            <col style="width:8%" />    <!-- MBOM # -->
+                                            <col style="width:8%" />    <!-- Release -->
+                                            <col style="width:35%" />  <!-- Description -->
+                                            <col style="width:12%" />  <!-- Sections -->
+                                            <col style="width:13%" />  <!-- Qty -->
+                                            <col style="width:20%" />   <!-- Actions -->
+                                        </colgroup>
+                                        <thead>
+                                            <tr>
+                                                <th class="text-center"><input type="checkbox" id="mbomSelectAll" /></th>
+                                                <% 
+                                                    // helper to build sort links preserving page & limit
+                                                    function sortLink(colKey, label) {
+                                                        var curSort = (typeof mbomSort !== 'undefined') ? mbomSort : (typeof sort !== 'undefined' ? sort : 'mbomID');
+                                                        var curDir = (typeof mbomDir !== 'undefined') ? mbomDir : (typeof dir !== 'undefined' ? dir : 'DESC');
+                                                        var nextDir = 'ASC';
+                                                        if (String(curSort).toLowerCase() === String(colKey).toLowerCase() && String(curDir).toUpperCase() === 'ASC') nextDir = 'DESC';
+                                                        var qs = '?page=1&limit=' + encodeURIComponent((typeof mbomLimit !== 'undefined') ? mbomLimit : 10) + '&sort=' + encodeURIComponent(colKey) + '&dir=' + encodeURIComponent(nextDir);
+                                                        var arrow = '';
+                                                        if (String(curSort).toLowerCase() === String(colKey).toLowerCase()) {
+                                                            arrow = (String(curDir).toUpperCase() === 'ASC') ? ' ▲' : ' ▼';
+                                                        }
+                                                        return '<a href="' + qs + '">' + label + arrow + '</a>';
+                                                    }
+                                                %>
+                                                <th><%- sortLink('mbomID','MBOM #') %></th>
+                                                <th><%- sortLink('releaseNum','Release') %></th>
+                                                <th><%- sortLink('boardDesignation','Description') %></th>
+                                                <th><%- sortLink('numSections','Section Qty.') %></th>
+                                                <th><%- sortLink('qtyBoard','Release Qty.') %></th>
+                                                <th></th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <% if (Array.isArray(mboms) && mboms.length) { %>
+                                                <% mboms.forEach(function(m){ %>
+                                                    <tr>
+                                                        <td class="text-center align-middle"><input type="checkbox" class="mbom-checkbox" name="mbomSelect" value="<%= m.id %>"></td>
+                                                        <td><%= m.id %></td>
+                                                        <td><%= m.releaseNum || '' %></td>
+                                                        <td class="truncate" style="max-width:160px;"><%= m.boardDesignation || '' %></td>
+                                                        <td><%= typeof m.numSections !== 'undefined' && m.numSections !== null ? m.numSections : '' %></td>
+                                                        <td><%= typeof m.qtyBoard !== 'undefined' && m.qtyBoard !== null ? m.qtyBoard : '' %></td>
+                                                        <td class="text-right mbom-actions">
+                                                            <div class="d-flex flex-wrap justify-content-end align-items-center">
+                                                                <a href="/projects/<%= project ? project.id : '' %>/searchMBOM/?bomID=<%= (project && project.jobNum) ? project.jobNum : '' %><%= m.releaseNum || '' %>_<%= m.id %>" class="btn btn-sm btn-outline-primary mb-1 mr-1">Open</a>
+                                                                <button type="button" class="btn btn-sm btn-outline-secondary mb-1 mr-1 btn-edit-mbom"
+                                                                    data-id="<%= m.id %>"
+                                                                    data-release="<%= m.releaseNum || '' %>"
+                                                                    data-desc="<%= (m.boardDesignation || '').replace(/\"/g, '&quot;') %>"
+                                                                    data-qty="<%= typeof m.qtyBoard !== 'undefined' && m.qtyBoard !== null ? m.qtyBoard : '' %>"
+                                                                    data-project-id="<%= project ? project.id : '' %>">Edit</button>
+                                                                <button type="button" class="btn btn-sm btn-outline-danger mb-1 btn-delete-mbom" data-id="<%= m.id %>" data-project-id="<%= project ? project.id : '' %>">Delete</button>
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                <% }); %>
+                                            <% } else { %>
+                                                <tr><td colspan="6" class="text-center text-muted">No MBOMs found for this project.</td></tr>
+                                            <% } %>
+                                        </tbody>
+                                    </table>
+                                </div>
+
+                                <div class="d-flex justify-content-between align-items-center mt-2">
+                                    <div>
+                                        <label class="mr-2">Limit</label>
+                                        <form id="mbomPagerForm" method="get" action="">
+                                            <input type="hidden" name="page" id="mbomPageInput" value="<%= typeof mbomPage !== 'undefined' ? mbomPage : 1 %>" />
+                                            <select id="mbomLimitSelect" name="limit" class="form-control form-control-sm d-inline-block" style="width:auto;">
+                                                <option value="5" <%= Number(mbomLimit)===5 ? 'selected' : '' %>>5</option>
+                                                <option value="10" <%= Number(mbomLimit)===10 ? 'selected' : '' %>>10</option>
+                                                <option value="25" <%= Number(mbomLimit)===25 ? 'selected' : '' %>>25</option>
+                                            </select>
+                                        </form>
+                                    </div>
+                                    <div>
+                                        <% var cur = typeof mbomPage !== 'undefined' ? mbomPage : 1; var total = typeof mbomTotalPages !== 'undefined' ? mbomTotalPages : 1; %>
+                                        <% if (cur > 1) { %>
+                                            <a href="?page=<%= cur-1 %>&limit=<%= mbomLimit %>" class="btn btn-sm btn-outline-secondary mr-1">Prev</a>
+                                        <% } else { %>
+                                            <a class="btn btn-sm btn-outline-secondary mr-1 disabled" tabindex="-1" aria-disabled="true">Prev</a>
+                                        <% } %>
+                                        <% if (cur < total) { %>
+                                            <a href="?page=<%= cur+1 %>&limit=<%= mbomLimit %>" class="btn btn-sm btn-outline-secondary">Next</a>
+                                        <% } else { %>
+                                            <a class="btn btn-sm btn-outline-secondary disabled" tabindex="-1" aria-disabled="true">Next</a>
+                                        <% } %>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-lg-3">
+                        <div class="card mb-3">
+                            <div class="card-body">
+                                <h5 class="mb-3">Actions</h5>
+                                <a href="/projects/<%= project ? project.id : '' %>/new-mbom" class="btn btn-sm btn-success btn-block">Create MBOM</a>
+                                <a href="#" class="btn btn-sm btn-outline-secondary btn-block mt-2">Upload Files</a>
+                                <a href="#" class="btn btn-sm btn-outline-secondary btn-block mt-2">Export</a>
+                            </div>
+                        </div>
+
+                        <div class="card">
+                            <div class="card-body">
+                                <h5 class="mb-3">Recent Activity</h5>
+                                <ul class="list-unstyled" style="max-height:200px; overflow:auto;">
+                                    <li class="text-muted">(no activity yet)</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+        <!-- Edit MBOM Modal -->
+        <div class="modal fade" id="editMbomModal" tabindex="-1" role="dialog" aria-labelledby="editMbomModalLabel" aria-hidden="true">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <form id="editMbomForm" method="post" action="">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="editMbomModalLabel">Edit MBOM</h5>
+                            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                        </div>
+                        <div class="modal-body">
+                            <input type="hidden" name="projectId" id="editMbomProjectId" value="" />
+                            <div class="form-group">
+                                <label for="editMbomRelease">Release</label>
+                                <input type="text" class="form-control" id="editMbomRelease" name="releaseNum" />
+                            </div>
+                            <div class="form-group">
+                                <label for="editMbomDesc">Description</label>
+                                <input type="text" class="form-control" id="editMbomDesc" name="boardDesignation" />
+                            </div>
+                            <div class="form-group">
+                                <label for="editMbomQty">Release Qty</label>
+                                <input type="number" step="1" class="form-control" id="editMbomQty" name="qtyBoard" />
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                            <button type="submit" class="btn btn-primary">Save changes</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <%- include('../partials/footer') %>
+</div>
+<%- include('../partials/scripts') %>
+
+        <!-- Add MBOM Modal -->
+        <div class="modal fade" id="addMbomModal" tabindex="-1" role="dialog" aria-labelledby="addMbomModalLabel" aria-hidden="true">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <form id="addMbomForm" method="post" action="/createMBOM">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="addMbomModalLabel">Add MBOM</h5>
+                            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                        </div>
+                        <div class="modal-body">
+                            <input type="hidden" name="jobNum" id="addMbomJobNum" value="" />
+                            <input type="hidden" name="jobName" id="addMbomJobName" value="" />
+                            <input type="hidden" name="customer" id="addMbomCustomer" value="" />
+                            <% if (typeof project !== 'undefined' && project && project.id) { %>
+                                <input type="hidden" name="projectId" id="addMbomProjectId" value="<%= project.id %>" />
+                            <% } %>
+                            <div class="form-group">
+                                <label for="addMbomRelease">Release</label>
+                                <input type="text" class="form-control" id="addMbomRelease" name="releaseNum" required />
+                            </div>
+                            <div class="form-group">
+                                <label for="addMbomDesc">Description</label>
+                                <input type="text" class="form-control" id="addMbomDesc" name="boardDesignation" />
+                            </div>
+                            <div class="form-group">
+                                <label for="addMbomQty">Release Qty</label>
+                                <input type="number" step="1" class="form-control" id="addMbomQty" name="qtyBoard" />
+                            </div>
+                            <div class="form-group form-check">
+                                <input type="checkbox" class="form-check-input" id="addMbomNoSection" name="noSectionMBOM" />
+                                <label class="form-check-label" for="addMbomNoSection">No sections (single board)</label>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                            <button type="submit" class="btn btn-success">Create MBOM</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+<script>
+    (function(){
+        // open edit modal and populate fields
+        document.addEventListener('click', function(e){
+            var t = e.target;
+            if(t && t.classList && t.classList.contains('btn-edit-mbom')){
+                var id = t.getAttribute('data-id');
+                var release = t.getAttribute('data-release') || '';
+                var desc = t.getAttribute('data-desc') || '';
+                var qty = t.getAttribute('data-qty') || '';
+                var projectId = t.getAttribute('data-project-id') || '';
+                var form = document.getElementById('editMbomForm');
+                form.action = '/projects/mbom/' + encodeURIComponent(id) + '/update';
+                document.getElementById('editMbomRelease').value = release;
+                document.getElementById('editMbomDesc').value = desc;
+                document.getElementById('editMbomQty').value = qty;
+                document.getElementById('editMbomProjectId').value = projectId;
+                $('#editMbomModal').modal('show');
+            }
+            if(t && t.classList && t.classList.contains('btn-add-mbom')){
+                var jobNum = t.getAttribute('data-jobnum') || '';
+                var jobName = t.getAttribute('data-jobname') || '';
+                var cust = t.getAttribute('data-cust') || '';
+                document.getElementById('addMbomJobNum').value = jobNum;
+                document.getElementById('addMbomJobName').value = jobName;
+                document.getElementById('addMbomCustomer').value = cust;
+                document.getElementById('addMbomRelease').value = '';
+                document.getElementById('addMbomDesc').value = '';
+                document.getElementById('addMbomQty').value = '';
+                document.getElementById('addMbomNoSection').checked = false;
+                $('#addMbomModal').modal('show');
+            }
+
+            if(t && t.classList && t.classList.contains('btn-delete-mbom')){
+                var idd = t.getAttribute('data-id');
+                var proj = t.getAttribute('data-project-id') || '';
+                if(!idd) return;
+                if(confirm('Delete MBOM #' + idd + '? This cannot be undone.')){
+                    // create and submit a form to POST delete
+                    var f = document.createElement('form');
+                    f.method = 'post';
+                    f.action = '/projects/mbom/' + encodeURIComponent(idd) + '/delete';
+                    var ip = document.createElement('input'); ip.type='hidden'; ip.name='projectId'; ip.value = proj; f.appendChild(ip);
+                    document.body.appendChild(f);
+                    f.submit();
+                }
+            }
+        });
+
+        // when limit select changes, preserve mbomSort/mbomDir by appending hidden inputs
+        var limitSelect = document.getElementById('mbomLimitSelect');
+        if(limitSelect){
+            limitSelect.addEventListener('change', function(){
+                var form = document.getElementById('mbomPagerForm');
+                // ensure sort/dir inputs present
+                var s = '<%= typeof mbomSort !== "undefined" ? mbomSort : "mbomID" %>';
+                var d = '<%= typeof mbomDir !== "undefined" ? mbomDir : "DESC" %>';
+                var si = form.querySelector('input[name="sort"]');
+                var di = form.querySelector('input[name="dir"]');
+                if(!si){ si = document.createElement('input'); si.type='hidden'; si.name='sort'; form.appendChild(si); }
+                if(!di){ di = document.createElement('input'); di.type='hidden'; di.name='dir'; form.appendChild(di); }
+                si.value = s; di.value = d;
+                // reset to first page
+                var pageInput = document.getElementById('mbomPageInput'); if(pageInput) pageInput.value = '1';
+                form.submit();
+            });
+        }
+        // Select-all and batch delete handling for MBOMs
+        var selectAll = document.getElementById('mbomSelectAll');
+        if(selectAll){
+            selectAll.addEventListener('change', function(){
+                var checks = document.querySelectorAll('.mbom-checkbox');
+                checks.forEach(function(ch){ ch.checked = selectAll.checked; });
+            });
+        }
+
+        var btnDeleteSelected = document.getElementById('btnDeleteSelected');
+        if(btnDeleteSelected){
+            btnDeleteSelected.addEventListener('click', function(){
+                var checks = document.querySelectorAll('.mbom-checkbox:checked');
+                if(!checks || checks.length === 0){ alert('No MBOMs selected.'); return; }
+                if(!confirm('Delete ' + checks.length + ' selected MBOM(s)? This cannot be undone.')) return;
+                // collect ids
+                var ids = Array.prototype.map.call(checks, function(c){ return c.value; });
+                // create form and submit POST to batch-delete route
+                var f = document.createElement('form'); f.method = 'post'; f.action = '/projects/mbom/batch-delete';
+                var input = document.createElement('input'); input.type='hidden'; input.name='ids'; input.value = JSON.stringify(ids); f.appendChild(input);
+                // include current project id so server can redirect back
+                var proj = "<%= project ? project.id : '' %>";
+                var pinput = document.createElement('input'); pinput.type='hidden'; pinput.name='projectId'; pinput.value = proj; f.appendChild(pinput);
+                document.body.appendChild(f);
+                f.submit();
+            });
+        }
+    })();
+</script>
+</body>
+</html>

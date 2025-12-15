@@ -30,11 +30,11 @@
 <body>
 <div id="wrapper">
     <!-- Top Bar Start -->
-    <%- include('../partials/header') %>
+    <%- include('../../partials/header') %>
     <!-- Top Bar End -->
 
     <!-- ========== Left Sidebar Start ========== -->
-    <%- include('../partials/sidebar') %>
+    <%- include('../../partials/sidebar') %>
     <!-- Left Sidebar End -->
 
     <div class="content-page">
@@ -50,7 +50,9 @@
                                                 Fill out the following for each layout, and click "Save" afterwards
                                             </p>
                                             <p class="text-muted m-b-30"></p>
-                                            <form id="editComItemTableForm" class="editComItemTableForm" action="/editComItemTablePOST/?comItemID=<%=editComItemData.comItemID%>" method="POST">
+                                            <form id="editComItemTableForm" class="editComItemTableForm" action="/editComItemTablePOST/?comItemID=<%=editComItemData.comItemID%>&projectId=<%= typeof projectId !== 'undefined' ? projectId : '' %>" method="POST">
+                                                <!-- Include explicit projectId for project-scoped POSTs when available -->
+                                                <input type="hidden" id="projectId" name="projectId" value="<%= typeof projectId !== 'undefined' ? projectId : '' %>" />
                                                 <div class="form-group">
                                                     <div class="row">
                                                         <div class="col-sm-3">
@@ -217,7 +219,7 @@
             </div> <!-- container-fluid -->
         </div> <!-- content -->
     </div> <!-- content-page -->
-    <%- include('../partials/footer') %>
+    <%- include('../../partials/footer') %>
 </div> <!-- wrapper -->
 
 
@@ -231,7 +233,7 @@
     });
 </script>
 
-<%- include('../partials/scripts') %>
+<%- include('../../partials/scripts') %>
 
 <script>
     $(function() {

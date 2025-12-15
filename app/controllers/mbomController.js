@@ -9,6 +9,9 @@ const queryString = require('query-string');
 //Database information (table names)
 const dbConfig = require('../config/database.js');
 const database = dbConfig.database;
+// Column name used to store the project id on the MBOM summary table.
+const mbomProjectIdCol = (dbConfig && dbConfig.MBOM_projectId) ? dbConfig.MBOM_projectId : 'projectId';
+
 
 //Database interaction function (querySql)
 //querySql takes 2 arguments, query (the sql string to be passed)
@@ -44,6 +47,53 @@ const Promise = require('bluebird');
 const DEBUG_MODE = (process.env.DEBUG_MODE || 'false');
 const DEBUG_SERVER = (DEBUG_MODE === 'true' || DEBUG_MODE === 'server' || DEBUG_MODE === 'both');
 const DEBUG_CLIENT = (DEBUG_MODE === 'true' || DEBUG_MODE === 'client' || DEBUG_MODE === 'both');
+
+// Helper to build a project-scoped searchMBOM prefix when possible
+function projectSearchPrefix(req, res) {
+    let pid = null;
+    if (req && req.params && req.params.id) pid = req.params.id;
+    else if (req && req.body && (typeof req.body.projectId !== 'undefined')) pid = req.body.projectId;
+    else if (req && req.query && (typeof req.query.projectId !== 'undefined')) pid = req.query.projectId;
+    // If multiple projectId values are submitted in the same form, treat this
+    // as an error rather than silently normalizing - this avoids ambiguous
+    // cross-project behavior. Accept a single-element array but reject >1.
+    if (Array.isArray(pid)) {
+        if (pid.length > 1) {
+            // Only POSTs should be rejected here (forms). Respond 400 and
+            // return null so callers respect the early response.
+            if (req && String(req.method).toUpperCase() === 'POST') {
+                if (res && typeof res.status === 'function') {
+                    try {
+                        res.status(400).send('Multiple projectId values submitted; only one allowed');
+                    } catch (e) {
+                        // ignore send errors
+                    }
+                }
+                return null;
+            }
+            // For non-POST requests, fall back to first element (non-ambiguous in GETs)
+            pid = pid.length > 0 ? pid[0] : null;
+        } else {
+            pid = pid.length === 1 ? pid[0] : null;
+        }
+    }
+    if (typeof pid === 'string') pid = pid.trim();
+    // NOTE: we no longer infer projectId from the Referer header. POST requests
+    // MUST include an explicit projectId to avoid accidental cross-project redirects.
+    if (pid) return '/projects/' + encodeURIComponent(pid) + '/searchMBOM/?bomID=';
+    // If this was a POST and projectId is missing, fail early and respond 400.
+    if (req && String(req.method).toUpperCase() === 'POST') {
+        if (res && typeof res.status === 'function') {
+            try {
+                res.status(400).send('Missing required projectId in POST request');
+            } catch (e) {
+                // ignore send errors
+            }
+        }
+        return null;
+    }
+    return '/searchMBOM/?bomID=';
+}
 
 //Excel Connection
 const Excel = require('exceljs');
@@ -84,7 +134,7 @@ exports.MBOM = function(req, res) {
         .then(() => {
             //render the MBOM page with mbomData, comItemData, and message
             res.locals.title = 'Mechanical BOMs';
-            res.render('MBOM/MBOM', {
+            res.render('Projects/MBOM/MBOM', {
                 mbomData: mbomData,
                 comItemData: comItemData,
                 message: message
@@ -111,6 +161,21 @@ exports.createMBOM = function(req, res) {
     } else {
         noSectionMBOM = 'N';
     }
+    // parse qtyBoard if provided
+    let qtyBoard = null;
+    if (typeof req.body.qtyBoard !== 'undefined' && req.body.qtyBoard !== null && req.body.qtyBoard !== '') {
+        const qv = Number(req.body.qtyBoard);
+        if (!Number.isNaN(qv)) qtyBoard = qv;
+    }
+
+    // Resolve projectId from the POST body (preferred). If not present,
+    // leave null — the backfill script will populate existing records.
+    let projectId = null;
+    if (typeof req.body.projectId !== 'undefined' && req.body.projectId !== null && req.body.projectId !== '') {
+        const pid = Number(req.body.projectId);
+        if (!Number.isNaN(pid)) projectId = pid;
+    }
+
     let data = {
         jobNum: req.body.jobNum,
         releaseNum: req.body.releaseNum,
@@ -118,8 +183,10 @@ exports.createMBOM = function(req, res) {
         customer: req.body.customer,
         boardDesignation: req.body.boardDesignation,
         numSections: 0,
-        noSectionMBOM: noSectionMBOM
+        noSectionMBOM: noSectionMBOM,
+        qtyBoard: qtyBoard,
     };
+    if (projectId !== null) data[mbomProjectIdCol] = projectId;
 
     //initial db query - select everything from mbomSum
     querySql("SELECT * FROM mbomSum")
@@ -133,7 +200,7 @@ exports.createMBOM = function(req, res) {
                         message = 'Job and Release Number already exist';
                         //render the MBOM page with mbomData and message
                         res.locals.title = 'Create MBOM';
-                        res.render('MBOM/MBOM', {
+                        res.render('Projects/MBOM/MBOM', {
                             mbomData: rows,
                             message: message
                         });
@@ -157,7 +224,9 @@ exports.createMBOM = function(req, res) {
             //write mbomID to a variable and redirect to the searchMBOM page with the required unique identifier mbomID
             mbomID = rows[0].mbomID;
             res.locals.title = 'Create MBOM';
-            res.redirect('searchMBOM/?bomID=' + data.jobNum + data.releaseNum + "_" + mbomID);
+            const _prefix1 = projectSearchPrefix(req, res);
+            if (!_prefix1) return;
+            res.redirect(_prefix1 + data.jobNum + data.releaseNum + "_" + mbomID);
             return null;
         })
         .catch(err => {
@@ -195,6 +264,16 @@ exports.copyMBOM = function(req, res) {
     } else {
         noSectionMBOM = 'N';
     }
+    // Persist project association for the copied MBOM when available.
+    let newProjectId = null;
+    if (typeof req.body.projectId !== 'undefined' && req.body.projectId !== null && req.body.projectId !== '') {
+        const pid = Number(req.body.projectId);
+        if (!Number.isNaN(pid)) newProjectId = pid;
+    } else if (req && req.params && req.params.id) {
+        const pid = Number(req.params.id);
+        if (!Number.isNaN(pid)) newProjectId = pid;
+    }
+
     let newMbomData = {
         jobNum: req.body.jobNum,
         releaseNum: req.body.releaseNum,
@@ -202,8 +281,9 @@ exports.copyMBOM = function(req, res) {
         customer: req.body.customer,
         boardDesignation: req.body.boardDesignation,
         numSections: null,
-        noSectionMBOM: noSectionMBOM
+        noSectionMBOM: noSectionMBOM,
     };
+    if (newProjectId !== null) newMbomData[mbomProjectIdCol] = newProjectId;
 
     //Initial db query - select the row from the mbomSum table that has the specific jobNum and releaseNum
     querySql("SELECT * FROM " + database + "." + dbConfig.MBOM_summary_table + " WHERE jobNum = ? AND releaseNum = ?",
@@ -448,7 +528,9 @@ exports.copyMBOM = function(req, res) {
         .then(() => {
             //redirect to the searchMBOM page
             res.locals.title = 'Search MBOM';
-            res.redirect('./searchMBOM/?bomID=' + newMbomData.jobNum + newMbomData.releaseNum + "_" + newMbomID);
+            const _prefix2 = projectSearchPrefix(req, res);
+            if (!_prefix2) return;
+            res.redirect(_prefix2 + newMbomData.jobNum + newMbomData.releaseNum + "_" + newMbomID);
             return null;
         })
         .catch(err => {
@@ -478,22 +560,44 @@ exports.editMBOM = function(req, res) {
         noSectionMBOM = 'N';
     }
 
-    let data = {
-        jobNum: req.body.jobNum,
-        releaseNum: req.body.releaseNum,
-        jobName: req.body.jobName,
-        customer: req.body.customer,
-        boardDesignation: req.body.boardDesignation,
-        noSectionMBOM: noSectionMBOM
-    };
+    // Only accept/modify MBOM fields that are allowed to change here.
+    // Job-level fields (jobNum, jobName, customer) are authoritative in jobMaster and must not be changed via this endpoint.
+    const releaseNum = (req.body.releaseNum || '').toString().trim();
+    const boardDesignation = (req.body.boardDesignation || '').toString().trim();
 
-    //Initial sql query - update the mbomSum table with the user input at the specific mbomID
-    querySql("UPDATE " + database + "." + dbConfig.MBOM_summary_table + " SET jobNum = ?, releaseNum = ?, jobName = ?, customer = ?, " +
-        "boardDesignation = ?, noSectionMBOM = ? WHERE mbomID = ?", [data.jobNum, data.releaseNum, data.jobName, data.customer, data.boardDesignation, data.noSectionMBOM, qs.mbomID])
+    //Initial sql query - update only allowed mbomSum columns
+    querySql("UPDATE " + database + "." + dbConfig.MBOM_summary_table + " SET releaseNum = ?, boardDesignation = ?, noSectionMBOM = ? WHERE mbomID = ?", [releaseNum, boardDesignation, noSectionMBOM, qs.mbomID])
         .then(() => {
+            // After updating, obtain authoritative jobNum (prefer jobMaster lookup via projectId, else fall back to mbomSum.jobNum)
+            const mbomTable = (dbConfig && dbConfig.MBOM_summary_table) ? dbConfig.MBOM_summary_table : 'mbomSum';
+            const mbTable = (database) ? `${database}.${mbomTable}` : mbomTable;
+            return querySql("SELECT jobNum, releaseNum, " + mbomProjectIdCol + " FROM " + mbTable + " WHERE mbomID = ?", [qs.mbomID]);
+        })
+        .then(async (rows) => {
+            let jobNumForRedirect = '';
+            let releaseForRedirect = '';
+            if (Array.isArray(rows) && rows.length) {
+                const sum = rows[0];
+                releaseForRedirect = sum.releaseNum || releaseNum || '';
+                // If the summary row has a project id, try to read the canonical jobNum from jobMaster
+                try {
+                    if (typeof sum[mbomProjectIdCol] !== 'undefined' && sum[mbomProjectIdCol] !== null && String(sum[mbomProjectIdCol]).trim() !== '') {
+                        const jobMasterTable = (dbConfig && dbConfig.JOBMASTER_table) ? dbConfig.JOBMASTER_table : 'jobMaster';
+                        const jmTable = (database) ? `${database}.${jobMasterTable}` : jobMasterTable;
+                        const jmRows = await querySql("SELECT jobNum FROM " + jmTable + " WHERE id = ? LIMIT 1", [sum[mbomProjectIdCol]]);
+                        if (Array.isArray(jmRows) && jmRows.length) jobNumForRedirect = jmRows[0].jobNum || '';
+                    }
+                } catch (e) {
+                    if (DEBUG_SERVER) console.error('editMBOM: jobMaster lookup failed', e);
+                }
+                if (!jobNumForRedirect) jobNumForRedirect = sum.jobNum || '';
+            }
+
             //redirect to the searchMBOM page
             res.locals.title = 'Search MBOM';
-            res.redirect('../searchMBOM/?bomID=' + data.jobNum + data.releaseNum + "_" + qs.mbomID);
+            const _prefix3 = projectSearchPrefix(req, res);
+            if (!_prefix3) return;
+            res.redirect(_prefix3 + jobNumForRedirect + releaseForRedirect + "_" + qs.mbomID);
         })
         .catch(err => {
             //if error occurs at any time at any point in the above, log the error to the console
@@ -578,7 +682,11 @@ exports.addBreakerAcc = function(req, res) {
         }
     }
     //redirect to searchMBOM page
-    res.redirect('searchMBOM/?bomID=' + mbomData.jobNum + mbomData.releaseNum + "_" + mbomID);
+    {
+        const _prefix4 = projectSearchPrefix(req, res);
+        if (!_prefix4) return;
+        res.redirect(_prefix4 + mbomData.jobNum + mbomData.releaseNum + "_" + mbomID);
+    }
 };
 
 
@@ -623,7 +731,11 @@ exports.editBreakerAcc = function(req, res){
     //execute arrayEdit with brkAccArr and updateAcc, and write the result to brkAccArr (defined outside of function)
     brkAccArr = arrayEdit(brkAccArr, updateAcc, brkAccID);
     //redirect to the searchMBOM page
-    res.redirect('../searchMBOM/?bomID=' + jobNum + releaseNum + '_' + mbomID);
+    {
+        const _prefix5 = projectSearchPrefix(req, res);
+        if (!_prefix5) return;
+        res.redirect(_prefix5 + jobNum + releaseNum + '_' + mbomID);
+    }
 };
 
 
@@ -680,7 +792,11 @@ exports.deleteBreakerAcc = function(req, res){
     }
 
     // redirect back to searchMBOM
-    res.redirect('searchMBOM/?bomID=' + mbomData.jobNum + mbomData.releaseNum + "_" + mbomID);
+    {
+        const _prefix6 = projectSearchPrefix(req, res);
+        if (!_prefix6) return;
+        res.redirect(_prefix6 + mbomData.jobNum + mbomData.releaseNum + "_" + mbomID);
+    }
 };
 
 
@@ -757,11 +873,12 @@ exports.addBrkAccFromEdit = function(req, res) {
         .then(() => {
             //render the editBreaker page with mbomBrkData, brkAccData, mbomData, and brkData
             res.locals.title = 'Add Breaker Accessory';
-            res.render('MBOM/editBreaker', {
+            res.render('Projects/MBOM/editBreaker', {
                 mbomBrkData: breakerData,
                 brkAccData: accData,
                 mbomData: mbomData,
                 brkData: editBrkDataObj,
+                projectId: (req && req.params && req.params.id) ? req.params.id : (req.query && req.query.projectId) ? req.query.projectId : (req.body && req.body.projectId) ? req.body.projectId : null
             });
         })
         .catch(err => {
@@ -837,11 +954,13 @@ exports.editBrkAccFromEdit = function(req, res) {
         .then(() => {
             //render the editBreaker page with mbomBrkData, brkAccData, mbomData, and brkData
             res.locals.title = 'Edit Breaker Accessory';
-            res.render('MBOM/editBreaker', {
+            res.render('Projects/MBOM/editBreaker', {
                 mbomBrkData: breakerData,
                 brkAccData: accData,
                 mbomData: mbomData,
                 brkData: editBrkDataObj
+            ,
+                projectId: (req && req.params && req.params.id) ? req.params.id : (req.query && req.query.projectId) ? req.query.projectId : (req.body && req.body.projectId) ? req.body.projectId : null
             });
         })
         .catch(err => {
@@ -923,11 +1042,12 @@ exports.deleteBrkAccFromEdit = function(req, res) {
                     };
 
                     res.locals.title = 'Delete Breaker Accessory';
-                    res.render('MBOM/editBreaker', {
+                    res.render('Projects/MBOM/editBreaker', {
                         mbomBrkData: breakerData,
                         brkAccData: accData,
                         mbomData: mbomData,
-                        brkData: editBrkDataObj
+                        brkData: editBrkDataObj,
+                        projectId: (req && req.params && req.params.id) ? req.params.id : (req.query && req.query.projectId) ? req.query.projectId : (req.body && req.body.projectId) ? req.body.projectId : null
                     });
                 });
         })
@@ -1024,30 +1144,62 @@ exports.searchMBOMGet = function(req, res) {
                 mbomBrkAcc.push(row);
             return null;
         })
-        .then(() => {
-            //render the searchMBOM page with mbomID, mbomData, mbomBrkData, mbomSecData, mbomItemData,
-            //comItemData, userItemData, catCodeData, classCodeData, bekAccData, brkData, and mbomBrkAcc
-            res.locals.title = 'Search MBOM';
-            res.render('MBOM/searchMBOM', {
-                mbomID: mbomID,
-                mbomData: mbomData,
-                mbomBrkData: mbomBrkData,
-                mbomSecData: mbomSecData,
-                mbomItemData: mbomItemData,
-                comItemData: comItemData,
-                userItemData: userItemData,
-                catCodeData: catCodeData,
-                classCodeData: classCodeData,
-                brkAccData: brkAccData,
-                brkData: brkData,
-                mbomBrkAcc: mbomBrkAcc,
-                message: (qs && qs.error) ? qs.error : null,
-                errorField: (qs && qs.errorField) ? qs.errorField : null,
-                debug: DEBUG_CLIENT
-            });
+        .then(
+            async () => {
+                //render the searchMBOM page with mbomID, mbomData, mbomBrkData, mbomSecData, mbomItemData,
+                //comItemData, userItemData, catCodeData, classCodeData, bekAccData, brkData, and mbomBrkAcc
+                res.locals.title = 'Search MBOM';
+                // expose projectId to the view when present on the request (params or query)
+                const projectIdToPass = (req && req.params && req.params.id) ? req.params.id : ((req && req.query && req.query.projectId) ? req.query.projectId : null);
 
-            return null;
-        })
+                // Resolve jobMaster row to source authoritative job fields (jobNum, jobTitle, customer)
+                let jobMaster = null;
+                try {
+                    const jobMasterTable = (dbConfig && dbConfig.JOBMASTER_table) ? dbConfig.JOBMASTER_table : 'jobMaster';
+                    const customersTable = (dbConfig && dbConfig.CUSTOMERS_table) ? dbConfig.CUSTOMERS_table : 'customers';
+                    const jmTable = (database) ? `${database}.${jobMasterTable}` : jobMasterTable;
+                    const cTable = (database) ? `${database}.${customersTable}` : customersTable;
+
+                    // Prefer to look up by the configured MBOM summary project-id column if present
+                    if (mbomData && typeof mbomData[mbomProjectIdCol] !== 'undefined' && mbomData[mbomProjectIdCol] !== null && mbomData[mbomProjectIdCol] !== '') {
+                        const pid = mbomData[mbomProjectIdCol];
+                        const rows = await querySql(`SELECT jm.id, jm.jobNum, jm.jobTitle, COALESCE(c.customerName, jm.custNum) AS customer FROM ${jmTable} jm LEFT JOIN ${cTable} c ON jm.custNum = c.customerID WHERE jm.id = ? LIMIT 1`, [pid]);
+                        if (Array.isArray(rows) && rows.length) jobMaster = rows[0];
+                    }
+
+                    // Fallback: look up by jobNum stored on the MBOM (for older records)
+                    if (!jobMaster && mbomData && mbomData.jobNum) {
+                        const rows = await querySql(`SELECT jm.id, jm.jobNum, jm.jobTitle, COALESCE(c.customerName, jm.custNum) AS customer FROM ${jmTable} jm LEFT JOIN ${cTable} c ON jm.custNum = c.customerID WHERE jm.jobNum = ? LIMIT 1`, [mbomData.jobNum]);
+                        if (Array.isArray(rows) && rows.length) jobMaster = rows[0];
+                    }
+                } catch (e) {
+                    if (DEBUG_SERVER) console.error('searchMBOMGet: jobMaster lookup failed', e);
+                    jobMaster = null;
+                }
+
+                res.render('Projects/MBOM/searchMBOM', {
+                    mbomID: mbomID,
+                    mbomData: mbomData,
+                    mbomBrkData: mbomBrkData,
+                    mbomSecData: mbomSecData,
+                    mbomItemData: mbomItemData,
+                    comItemData: comItemData,
+                    userItemData: userItemData,
+                    catCodeData: catCodeData,
+                    classCodeData: classCodeData,
+                    brkAccData: brkAccData,
+                    brkData: brkData,
+                    mbomBrkAcc: mbomBrkAcc,
+                    message: (qs && qs.error) ? qs.error : null,
+                    errorField: (qs && qs.errorField) ? qs.errorField : null,
+                    debug: DEBUG_CLIENT,
+                    projectId: projectIdToPass,
+                    jobMaster: jobMaster
+                });
+
+                return null;
+            }
+        )
         .catch(err => {
             //if error occurs at anytime at any point in the code above, log it to the console
             return Promise.reject(err);
@@ -1104,7 +1256,7 @@ exports.createComItemTableGET = function(req, res) {
         .then(() => {
             //render createComItemTable page with comItemData, catCodeData, and classCodeData
             res.locals.title = 'Create Com Item';
-            res.render('MBOM/createComItemTable', {
+            res.render('Projects/MBOM/createComItemTable', {
                 comItemData: comItemData,
                 catCodeData: catCodeData,
                 classCodeData: classCodeData
@@ -1212,7 +1364,7 @@ exports.createComItemTablePOST = function(req, res) {
                     errorField = 'itemPN';
                 }
                 res.locals.title = 'Create Com Item';
-                res.render('MBOM/createComItemTable', {
+                res.render('Projects/MBOM/createComItemTable', {
                     comItemData: comItemData,
                     catCodeData: catCodeData,
                     classCodeData: classCodeData,
@@ -1300,7 +1452,7 @@ exports.editComItemTableGET = function(req, res) {
         .then(() => {
             //render editComItem page with editComItemData, comItemData, catCodeData, and classCodeData
             res.locals.title = 'Edit Item';
-            res.render('MBOM/editComItemMBOM', {
+            res.render('Projects/MBOM/editComItemMBOM', {
                 editComItemData: editComItemData,
                 comItemData: comItemData,
                 catCodeData: catCodeData,
@@ -1461,7 +1613,7 @@ exports.addComItemMBOM = function(req, res) {
                     // Nothing checked — fallback to single insert with no secID
                     return insertForSec(null).then(() => {
                         res.locals.title = 'Add Com Item';
-                        const redirectUrl = 'searchMBOM/?bomID=' + (req.body.jobNum || '') + (req.body.releaseNum || '') + '_' + req.body.mbomID;
+                        const redirectUrl = projectSearchPrefix(req) + (req.body.jobNum || '') + (req.body.releaseNum || '') + '_' + req.body.mbomID;
                         res.redirect(redirectUrl);
                         return null;
                     });
@@ -1472,7 +1624,7 @@ exports.addComItemMBOM = function(req, res) {
                     return p.then(() => insertForSec(sec));
                 }, Promise.resolve()).then(() => {
                     res.locals.title = 'Add Com Item';
-                    const redirectUrl = 'searchMBOM/?bomID=' + (req.body.jobNum || '') + (req.body.releaseNum || '') + '_' + req.body.mbomID;
+                    const redirectUrl = projectSearchPrefix(req) + (req.body.jobNum || '') + (req.body.releaseNum || '') + '_' + req.body.mbomID;
                     res.redirect(redirectUrl);
                     return null;
                 });
@@ -1482,7 +1634,7 @@ exports.addComItemMBOM = function(req, res) {
             const specificSec = (req.body.secID && String(req.body.secID).trim() !== '') ? req.body.secID : null;
             return insertForSec(specificSec).then(() => {
                 res.locals.title = 'Add Com Item';
-                const redirectUrl = 'searchMBOM/?bomID=' + (req.body.jobNum || '') + (req.body.releaseNum || '') + '_' + req.body.mbomID;
+                const redirectUrl = projectSearchPrefix(req) + (req.body.jobNum || '') + (req.body.releaseNum || '') + '_' + req.body.mbomID;
                 res.redirect(redirectUrl);
                 return null;
             });
@@ -1519,7 +1671,7 @@ exports.addComItemMBOM = function(req, res) {
                 if(brkAccArr.length != 0 && brkAccArr[0] && String(brkAccArr[0].mbomID) === String(mbomID)) brkAccData.push(...brkAccArr);
 
                 res.locals.title = 'Search MBOM';
-                res.render('MBOM/searchMBOM', {
+                res.render('Projects/MBOM/searchMBOM', {
                     mbomID: mbomID,
                     mbomData: mbomData,
                     mbomBrkData: mbomBrkData,
@@ -1540,7 +1692,7 @@ exports.addComItemMBOM = function(req, res) {
             }).catch(renderErr => {
                 console.log('Error while attempting to render searchMBOM with DB error message:', renderErr);
                 // fallback to redirect with encoded error
-                const redirectUrl = 'searchMBOM/?bomID=' + (req.body.jobNum || '') + (req.body.releaseNum || '') + '_' + mbomID + '&error=' + encodeURIComponent(msg) + '&errorField=' + encodeURIComponent((err && (err.code === 'ER_DUP_ENTRY' || err.errno === 1062)) ? 'itemPN' : '');
+                const redirectUrl = projectSearchPrefix(req) + (req.body.jobNum || '') + (req.body.releaseNum || '') + '_' + mbomID + '&error=' + encodeURIComponent(msg) + '&errorField=' + encodeURIComponent((err && (err.code === 'ER_DUP_ENTRY' || err.errno === 1062)) ? 'itemPN' : '');
                 res.redirect(redirectUrl);
             });
         });
@@ -1623,6 +1775,8 @@ exports.editComItemMBOM = function(req, res) {
         })
         //render MBOMeditComItem page with mbomItemData, mbomData, comItemData, editData and mbomSecData
         .then(() => {
+            // expose projectId to the view when present on the request (params or query)
+            const projectIdToPass = (req && req.params && req.params.id) ? req.params.id : ((req && req.query && req.query.projectId) ? req.query.projectId : null);
             // ensure we have the mbomID from the itemSum data to lookup sections
             if (data && data.length && data[0].mbomID) {
                 let mbomID = data[0].mbomID;
@@ -1636,28 +1790,30 @@ exports.editComItemMBOM = function(req, res) {
                             mbomSecData.sort((a, b) => parseInt(a.sectionNum) - parseInt(b.sectionNum));
                         }
                         res.locals.title = 'Edit Item';
-                        res.render('MBOM/MBOMeditComItem', {
+                        res.render('Projects/MBOM/MBOMeditComItem', {
                             mbomItemData: data,
                             mbomData: mbomData,
                             comItemData: comItemData,
                             editData: editData,
                             mbomSecData: mbomSecData,
                             catCodeData: catCodeData,
-                            classCodeData: classCodeData
+                            classCodeData: classCodeData,
+                            projectId: projectIdToPass
                         });
                         return null;
                     });
             }
             // fallback: render with empty sections array
             res.locals.title = 'Edit Item';
-            res.render('MBOM/MBOMeditComItem', {
+            res.render('Projects/MBOM/MBOMeditComItem', {
                 mbomItemData: data,
                 mbomData: mbomData,
                 comItemData: comItemData,
                 editData: editData,
                 mbomSecData: [],
                 catCodeData: catCodeData,
-                classCodeData: classCodeData
+                classCodeData: classCodeData,
+                projectId: projectIdToPass
             });
         })
         .catch(err => {
@@ -1715,9 +1871,8 @@ exports.editComItemSave = function(req, res) {
         releaseNum: req.body.releaseNum
     };
 
-    //Initial db query - lookup mbomComItem row where itemType, itemMfg, itemDesc, and itemPN match
-    querySql("SELECT comItemID FROM " + database + "." + dbConfig.MBOM_common_items + " WHERE itemType= ? AND " +
-        "itemMfg = ? AND itemDesc = ? AND itemPN = ?", [updateData.itemType, updateData.itemMfg, updateData.itemDesc, updateData.itemPN])
+    //Initial db query - lookup mbomComItem row where itemMfg and itemPN match (ignore itemType/itemDesc)
+    querySql("SELECT comItemID FROM " + database + "." + dbConfig.MBOM_common_items + " WHERE itemMfg = ? AND itemPN = ?", [updateData.itemMfg, updateData.itemPN])
         .then(rows => {
             if (rows && rows.length > 0) {
                 // existing common item found
@@ -1751,7 +1906,11 @@ exports.editComItemSave = function(req, res) {
         .then(() => {
             //redirect to searchMBOM page
             res.locals.title = 'Edit Common Item';
-            res.redirect('../searchMBOM/?bomID=' + mbomData.jobNum + mbomData.releaseNum + "_" + mbomData.mbomID);
+            {
+                const _prefix7 = projectSearchPrefix(req, res);
+                if (!_prefix7) return;
+                res.redirect(_prefix7 + mbomData.jobNum + mbomData.releaseNum + "_" + mbomData.mbomID);
+            }
         })
         .catch(err => {
             //if error occurs at anytime at any point in the code above, log it to the console
@@ -1871,7 +2030,11 @@ exports.createUserItem = function(req, res) {
         .then(() => {
             //redirect to searchMBOM page
             res.locals.title = 'Create User Item';
-            res.redirect('searchMBOM/?bomID=' + mbomData.jobNum + mbomData.releaseNum + "_" + mbomData.mbomID);
+            {
+                const _prefix8 = projectSearchPrefix(req, res);
+                if (!_prefix8) return;
+                res.redirect(_prefix8 + mbomData.jobNum + mbomData.releaseNum + "_" + mbomData.mbomID);
+            }
         })
         .catch(err => {
             //if error occurs at anytime at any point in the code above, log it to the console
@@ -1963,7 +2126,7 @@ exports.editUserItem = function(req, res) {
             //render the editUserItem page with mbomItemData, mbomData, comItemData, userItemData, catCodeData, and classCodeData
             res.locals.title = 'Edit User Item';
             // console.log('editUserItem userItemData:', userItemData);
-            res.render('MBOM/editUserItem', {
+            res.render('Projects/MBOM/editUserItem', {
                 mbomItemData: data,
                 mbomData: mbomData,
                 comItemData: comItemData,
@@ -2164,7 +2327,11 @@ exports.editUserItemSave = function(req, res) {
         .then(() => {
             //redirect to searchMBOM page
             res.locals.title = 'Edit User Item';
-            res.redirect('../searchMBOM/?bomID=' + mbomData.jobNum + mbomData.releaseNum + "_" + mbomData.mbomID);
+            {
+                const _prefix9 = projectSearchPrefix(req, res);
+                if (!_prefix9) return;
+                res.redirect(_prefix9 + mbomData.jobNum + mbomData.releaseNum + "_" + mbomData.mbomID);
+            }
         })
         .catch(err => {
             //if error occurs at anytime at any point in the code above, log it to the console
@@ -2214,7 +2381,11 @@ exports.copyItem = function(req, res) {
         .then(() => {
             //redirect to searchMBOM page
             res.locals.title = 'Copy Item';
-            res.redirect('../searchMBOM/?bomID=' + mbomData.jobNum + mbomData.releaseNum + "_" + mbomData.mbomID);
+            {
+                const _prefix10 = projectSearchPrefix(req, res);
+                if (!_prefix10) return;
+                res.redirect(_prefix10 + mbomData.jobNum + mbomData.releaseNum + "_" + mbomData.mbomID);
+            }
         })
         .catch(err => {
             //if error occurs at anytime at any point in the code above, log it to the console
@@ -2273,7 +2444,11 @@ exports.deleteItem = function(req, res) {
         .then(() => {
             //redirect to the searchMBOM page
             res.locals.title = 'Delete Item';
-            res.redirect('../searchMBOM/?bomID=' + mbomData.jobNum + mbomData.releaseNum + "_" + mbomData.mbomID);
+            {
+                const _prefix11 = projectSearchPrefix(req, res);
+                if (!_prefix11) return;
+                res.redirect(_prefix11 + mbomData.jobNum + mbomData.releaseNum + "_" + mbomData.mbomID);
+            }
         })
         .catch(err => {
             //if error occurs at anytime at any point in the code above, log it to the console
@@ -2301,18 +2476,49 @@ exports.addBrk = function(req, res) {
         mbomID: req.body.mbomID
     };
     let data = [];
+    // Prefer client-submitted JSON array `brkAccessories` when present (new client-side flow).
+    // Fall back to legacy in-memory `brkAccArr` for backward compatibility.
     let brkAccData = [];
-    for(let el of brkAccArr){
-        brkAccData.push({
-            brkAccID: null,
-            mbomID: data1.mbomID,
-            idDev: null,
-            brkAccQty: el.qty,
-            brkAccType: el.type,
-            brkAccMfg: el.mfg,
-            brkAccDesc: el.desc,
-            brkAccPN: el.pn
-        });
+    if (req && req.body && typeof req.body.brkAccessories !== 'undefined' && req.body.brkAccessories !== null && req.body.brkAccessories !== '') {
+        try {
+            const parsed = (typeof req.body.brkAccessories === 'string') ? JSON.parse(req.body.brkAccessories) : req.body.brkAccessories;
+            if (DEBUG_SERVER) {
+                try { console.log('addBrk - parsed brkAccessories:', JSON.stringify(parsed)); } catch(e){ console.log('addBrk - parsed brkAccessories (unable to stringify)'); }
+            }
+            if (Array.isArray(parsed)) {
+                for (let el of parsed) {
+                    brkAccData.push({
+                        brkAccID: null,
+                        mbomID: data1.mbomID,
+                        idDev: null,
+                        brkAccQty: (el.qty || el.accQty || el.brkAccQty) || 0,
+                        brkAccType: (el.type || el.accType || el.brkAccType) ? (el.type || el.accType || el.brkAccType).toString().toUpperCase() : '',
+                        brkAccMfg: (el.mfg || el.accMfg || el.brkAccMfg) ? (el.mfg || el.accMfg || el.brkAccMfg).toString().toUpperCase() : '',
+                        brkAccDesc: (el.desc || el.accDesc || el.brkAccDesc) || '',
+                        brkAccPN: (el.pn || el.accPN || el.brkAccPN) ? (el.pn || el.accPN || el.brkAccPN).toString().toUpperCase() : ''
+                    });
+                }
+            }
+        } catch (e) {
+            // If parsing fails, fall back to legacy brkAccArr below
+            if (DEBUG_SERVER) console.error('Failed to parse brkAccessories JSON:', e);
+        }
+    }
+
+    // Legacy behavior: if no JSON provided or parsing failed, use the temporary server-side array
+    if (brkAccData.length === 0 && Array.isArray(brkAccArr) && brkAccArr.length > 0) {
+        for(let el of brkAccArr){
+            brkAccData.push({
+                brkAccID: null,
+                mbomID: data1.mbomID,
+                idDev: null,
+                brkAccQty: el.qty,
+                brkAccType: el.type ? String(el.type).toUpperCase() : '',
+                brkAccMfg: el.mfg ? String(el.mfg).toUpperCase() : '',
+                brkAccDesc: el.desc,
+                brkAccPN: el.pn ? String(el.pn).toUpperCase() : ''
+            });
+        }
     }
     //Splitting up the device designation
     let designations = req.body.devDesignation;
@@ -2341,9 +2547,9 @@ exports.addBrk = function(req, res) {
                 unitOfIssue: req.body.unitOfIssue,
                 catCode: req.body.catCode,
                 class: req.body.classCode,
-                brkPN: req.body.brkPN,
-                cradlePN: req.body.cradlePN,
-                devMfg: (req.body.devMfg).toUpperCase()
+                brkPN: (req.body.brkPN || '').toString().toUpperCase(),
+                cradlePN: (req.body.cradlePN || '').toString().toUpperCase(),
+                devMfg: (req.body.devMfg || '').toString().toUpperCase()
             });
         }
         return data;
@@ -2386,7 +2592,11 @@ exports.addBrk = function(req, res) {
         .then(() => {
             //redirect to searchMBOM
             res.locals.title = 'Add Breaker';
-            res.redirect('searchMBOM/?bomID=' + data1.jobNum + data1.releaseNum + "_" + data1.mbomID);
+            {
+                const _prefix12 = projectSearchPrefix(req, res);
+                if (!_prefix12) return;
+                res.redirect(_prefix12 + data1.jobNum + data1.releaseNum + "_" + data1.mbomID);
+            }
             return null;
         })
         .catch(err => {
@@ -2479,7 +2689,11 @@ exports.copyBreaker = function(req, res) {
         .then(() => {
             //redirect to searchMBOM page
             res.locals.title = 'Copy Breaker';
-            res.redirect('../searchMBOM/?bomID=' + mbomData.jobNum + mbomData.releaseNum + "_" + mbomData.mbomID);
+            {
+                const _prefix13 = projectSearchPrefix(req, res);
+                if (!_prefix13) return;
+                res.redirect(_prefix13 + mbomData.jobNum + mbomData.releaseNum + "_" + mbomData.mbomID);
+            }
         })
         .catch(err => {
             //if error occurs at anytime at any point in the code above, log it to the console
@@ -2536,11 +2750,12 @@ exports.editBreaker = function(req, res) {
         .then(() => {
             //render editBreaker with mbomBrkData, brkAccData, mbomData, and brkData
             res.locals.title = 'Edit Breaker';
-            res.render('MBOM/editBreaker', {
+            res.render('Projects/MBOM/editBreaker', {
                 mbomBrkData: breakerData,
                 brkAccData: accData,
                 mbomData: mbomData,
-                brkData: brkDataObj
+                brkData: brkDataObj,
+                projectId: (req && req.params && req.params.id) ? req.params.id : (req.query && req.query.projectId) ? req.query.projectId : (req.body && req.body.projectId) ? req.body.projectId : null
             });
         })
         .catch(err => {
@@ -2577,15 +2792,72 @@ exports.editBreakerSave = function(req, res) {
         devMfg: req.body.devMfg
     };
 
+    // Normalize key fields to uppercase for consistency before DB writes
+    try {
+        if (updateData.devMfg) updateData.devMfg = String(updateData.devMfg).toUpperCase();
+        if (updateData.brkPN) updateData.brkPN = String(updateData.brkPN).toUpperCase();
+        if (updateData.cradlePN) updateData.cradlePN = String(updateData.cradlePN).toUpperCase();
+        if (updateData.devDesignation) updateData.devDesignation = String(updateData.devDesignation).toUpperCase();
+    } catch(e) { /* ignore */ }
+
     //Initial db query - update mbomBrkSum in the row referenced by idDev using updateData
     querySql("UPDATE " + database + "." + dbConfig.MBOM_breaker_table + " SET mbomID = ?, " +
         " devLayout = ?, devDesignation = ?, unitOfIssue = ?, catCode = ?, class = ?, brkPN = ?, cradlePN = ?, devMfg = ? WHERE idDev = ?", [updateData.mbomID,
         updateData.devLayout, updateData.devDesignation, updateData.unitOfIssue, updateData.catCode, updateData.class, updateData.brkPN, updateData.cradlePN,
         updateData.devMfg, updateData.idDev])
-        .then(() => {
+        .then(async () => {
+            // If the client submitted a JSON array of accessories, apply changes in bulk.
+            try {
+                if (req && req.body && typeof req.body.brkAccessories !== 'undefined' && req.body.brkAccessories !== null && req.body.brkAccessories !== '') {
+                    let parsed = (typeof req.body.brkAccessories === 'string') ? JSON.parse(req.body.brkAccessories) : req.body.brkAccessories;
+                    if (DEBUG_SERVER) {
+                        try { console.log('editBreakerSave - parsed brkAccessories for idDev=' + updateData.idDev + ':', JSON.stringify(parsed)); } catch (e) { console.log('editBreakerSave - parsed brkAccessories (unable to stringify)'); }
+                    }
+                    if (!Array.isArray(parsed)) parsed = [];
+
+                    const idDev = updateData.idDev;
+
+                    // Fetch existing accessory IDs for this device
+                    const existingRows = await querySql("SELECT brkAccID FROM " + database + "." + dbConfig.MBOM_brkAcc_table + " WHERE idDev = ?", [idDev]);
+                    const existingIds = (existingRows || []).map(r => r.brkAccID).filter(v => typeof v !== 'undefined' && v !== null);
+
+                    const parsedIds = [];
+                    // Upsert parsed accessories
+                    for (let item of parsed) {
+                        const qty = Number(item.qty || item.brkAccQty || item.accQty || 0) || 0;
+                        const type = (item.type || item.brkAccType || item.accType || '') ? (item.type || item.brkAccType || item.accType).toString().toUpperCase() : '';
+                        const mfg = (item.mfg || item.brkAccMfg || item.accMfg || updateData.devMfg || '').toString().toUpperCase();
+                        const desc = (item.desc || item.brkAccDesc || item.accDesc || '').toString();
+                        const pn = (item.pn || item.brkAccPN || item.accPN || '').toString().toUpperCase();
+
+                        if (item.brkAccID || item.brkAccId) {
+                            const bid = Number(item.brkAccID || item.brkAccId);
+                            parsedIds.push(bid);
+                            // update existing accessory
+                            await querySql("UPDATE " + database + "." + dbConfig.MBOM_brkAcc_table + " SET brkAccQty = ?, brkAccType = ?, brkAccMfg = ?, brkAccDesc = ?, brkAccPN = ? WHERE brkAccID = ?", [qty, type, mfg, desc, pn, bid]);
+                        } else {
+                            // insert new accessory for this device
+                            await querySql("INSERT INTO " + database + "." + dbConfig.MBOM_brkAcc_table + " (mbomID, idDev, brkAccQty, brkAccType, brkAccMfg, brkAccDesc, brkAccPN) VALUES (?, ?, ?, ?, ?, ?, ?)", [updateData.mbomID, idDev, qty, type, mfg, desc, pn]);
+                        }
+                    }
+
+                    // Delete any existing accessories that were removed on the client
+                    const toDelete = existingIds.filter(id => parsedIds.indexOf(id) === -1);
+                    for (let d of toDelete) {
+                        await querySql("DELETE FROM " + database + "." + dbConfig.MBOM_brkAcc_table + " WHERE brkAccID = ?", [d]);
+                    }
+                }
+            } catch (e) {
+                if (DEBUG_SERVER) console.error('editBreakerSave - brkAccessories processing failed', e);
+            }
+
             //redirect to searchMBOM page
             res.locals.title = 'Copy Breaker';
-            res.redirect('../searchMBOM/?bomID=' + mbomData.jobNum + mbomData.releaseNum + "_" + updateData.mbomID);
+            {
+                const _prefix14 = projectSearchPrefix(req, res);
+                if (!_prefix14) return;
+                res.redirect(_prefix14 + mbomData.jobNum + mbomData.releaseNum + "_" + updateData.mbomID);
+            }
         })
         .catch(err => {
             //if error occurs at anytime at any point in the code above, log it to the console
@@ -2629,7 +2901,11 @@ exports.deleteBreaker = function(req, res) {
         .then(() => {
             //redirect to searchMBOM page
             res.locals.title = 'Delete Breaker';
-            res.redirect('../searchMBOM/?bomID=' + mbomData.jobNum + mbomData.releaseNum + "_" + mbomData.mbomID);
+            {
+                const _prefix15 = projectSearchPrefix(req, res);
+                if (!_prefix15) return;
+                res.redirect(_prefix15 + mbomData.jobNum + mbomData.releaseNum + "_" + mbomData.mbomID);
+            }
         })
         .catch(err => {
             //if error occurs at anytime at any point in the code above, log it to the console
@@ -2675,7 +2951,11 @@ exports.mbomAddSection = async function(req, res) {
             if (!rows || rows.length === 0) {
                 await conn.rollback();
                 conn.release();
-                return res.redirect('searchMBOM/?bomID=' + jobNum + releaseNum + "_");
+                {
+                    const _prefix16 = projectSearchPrefix(req, res);
+                    if (!_prefix16) return;
+                    return res.redirect(_prefix16 + jobNum + releaseNum + "_");
+                }
             }
 
             const currentNumSections = parseInt(rows[0].numSections || 0, 10);
@@ -2706,7 +2986,11 @@ exports.mbomAddSection = async function(req, res) {
 
             // redirect to searchMBOM page
             res.locals.title = 'Add Section';
-            return res.redirect('searchMBOM/?bomID=' + jobNum + releaseNum + "_" + mbomID);
+            {
+                const _prefix17 = projectSearchPrefix(req, res);
+                if (!_prefix17) return;
+                return res.redirect(_prefix17 + jobNum + releaseNum + "_" + mbomID);
+            }
         } catch (e) {
             try { await conn.rollback(); } catch (er) { /* ignore */ }
             try { conn.release(); } catch (er) { /* ignore */ }
@@ -2754,7 +3038,11 @@ exports.mbomResetSection = async function(req, res) {
                 conn.release();
                 console.log('mbomResetSection - summary row not found for', jobNum, releaseNum);
                 res.locals.title = 'Reset Section - Not Found';
-                return res.redirect('searchMBOM/?bomID=' + jobNum + releaseNum + "_");
+                {
+                    const _prefix18 = projectSearchPrefix(req, res);
+                    if (!_prefix18) return;
+                    return res.redirect(_prefix18 + jobNum + releaseNum + "_");
+                }
             }
 
             const mbomID = rows[0].mbomID;
@@ -2779,7 +3067,11 @@ exports.mbomResetSection = async function(req, res) {
 
             // redirect to searchMBOM after commit so UI sees consistent DB state
             res.locals.title = 'Reset Section';
-            return res.redirect('searchMBOM/?bomID=' + jobNum + releaseNum + "_" + mbomID);
+            {
+                const _prefix19 = projectSearchPrefix(req, res);
+                if (!_prefix19) return;
+                return res.redirect(_prefix19 + jobNum + releaseNum + "_" + mbomID);
+            }
         } catch (e) {
             try { await conn.rollback(); } catch (er) { /* ignore */ }
             try { conn.release(); } catch (er) { /* ignore */ }
@@ -2848,7 +3140,11 @@ exports.mbomDeleteSection = async function(req, res) {
                 conn.release();
                 console.log('mbomDeleteSection - section not found, redirecting back. params:', {mbomID, selectedSec, numSections, jobNum, releaseNum});
                 res.locals.title = 'Delete Section - Not Found';
-                return res.redirect('../searchMBOM/?bomID=' + jobNum + releaseNum + "_" + mbomID);
+                {
+                    const _prefix20 = projectSearchPrefix(req, res);
+                    if (!_prefix20) return;
+                    return res.redirect(_prefix20 + jobNum + releaseNum + "_" + mbomID);
+                }
             }
 
             const secID = rows[0].secID;
@@ -2889,7 +3185,11 @@ exports.mbomDeleteSection = async function(req, res) {
 
             // redirect to searchMBOM
             res.locals.title = 'Delete Section';
-            return res.redirect('../searchMBOM/?bomID=' + jobNum + releaseNum + "_" + mbomID);
+            {
+                const _prefix21 = projectSearchPrefix(req, res);
+                if (!_prefix21) return;
+                return res.redirect(_prefix21 + jobNum + releaseNum + "_" + mbomID);
+            }
         } catch (e) {
             try { await conn.rollback(); } catch (er) { /* ignore */ }
             try { conn.release(); } catch (er) { /* ignore */ }
@@ -3029,7 +3329,11 @@ exports.sectionConfigure = function(req, res) {
         .then(() => {
             //redirect to searchMBOM
             res.locals.title = 'Section Configure';
-            res.redirect('searchMBOM/?bomID=' + jobNum + releaseNum + "_" + data[0].mbomID)
+            {
+                const _prefix22 = projectSearchPrefix(req, res);
+                if (!_prefix22) return;
+                res.redirect(_prefix22 + jobNum + releaseNum + "_" + data[0].mbomID)
+            }
         })
         .catch(err => {
             //if error occurs at anytime at any point in the code above, log it to the console

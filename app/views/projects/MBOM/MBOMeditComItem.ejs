@@ -36,12 +36,16 @@
 <body>
 <div id="wrapper">
     <!-- Top Bar Start -->
-    <%- include('../partials/header') %>
+    <%- include('../../partials/header') %>
     <!-- Top Bar End -->
 
     <!-- ========== Left Sidebar Start ========== -->
-    <%- include('../partials/sidebar') %>
+    <%- include('../../partials/sidebar') %>
     <!-- Left Sidebar End -->
+    <% // jm* shorthand: prefer jobMaster when present, otherwise fall back to mbomData safely %>
+    <% const jmJobNum = (typeof jobMaster !== 'undefined' && jobMaster && jobMaster.jobNum) ? jobMaster.jobNum : ((typeof mbomData !== 'undefined' && mbomData && mbomData.jobNum) ? mbomData.jobNum : ''); %>
+    <% const jmJobName = (typeof jobMaster !== 'undefined' && jobMaster && jobMaster.jobTitle) ? jobMaster.jobTitle : ((typeof mbomData !== 'undefined' && mbomData && mbomData.jobName) ? mbomData.jobName : ''); %>
+    <% const jmCustomer = (typeof jobMaster !== 'undefined' && jobMaster && jobMaster.customer) ? jobMaster.customer : ((typeof mbomData !== 'undefined' && mbomData && mbomData.customer) ? mbomData.customer : ''); %>
 
     <div class="content-page">
         <!-- Content Start -->
@@ -62,7 +66,7 @@
                                                         <% if(mbomData) { %>
                                                             <div class="col-sm-2">
                                                                 <label for="example-text-input" class="col-form-label">Job Number</label>
-                                                                <input type="text" name="jobNum" class="form-control" value="<%= mbomData.jobNum %>" placeholder="Type Number Here" id="example-text-input" readonly="readonly">
+                                                                <input type="text" name="jobNum" class="form-control" value="<%= (typeof jobMaster !== 'undefined' && jobMaster && jobMaster.jobNum) ? jobMaster.jobNum : (mbomData.jobNum || '') %>" placeholder="Type Number Here" id="example-text-input" readonly="readonly">
                                                             </div>
                                                             <div class="col-sm-2">
                                                                 <label for="example-text-input" class="col-form-label">Release</label>
@@ -70,11 +74,11 @@
                                                             </div>
                                                             <div class="col-sm-3">
                                                                 <label for="example-text-input" class="col-form-label">Job Name</label>
-                                                                <input type="text" name="jobName" class="form-control" value="<%= mbomData.jobName %>" placeholder="Type Name Here" id="example-text-input" readonly="readonly">
+                                                                <input type="text" name="jobName" class="form-control" value="<%= (typeof jobMaster !== 'undefined' && jobMaster && jobMaster.jobTitle) ? jobMaster.jobTitle : (mbomData.jobName || '') %>" placeholder="Type Name Here" id="example-text-input" readonly="readonly">
                                                             </div>
                                                             <div class="col-sm-2">
                                                                 <label for="example-text-input" class="col-form-label">Customer</label>
-                                                                <input type="text" name="customer" class="form-control" value="<%= mbomData.customer %>" placeholder="Type Customer Here" id="example-text-input" readonly="readonly">
+                                                                <input type="text" name="customer" class="form-control" value="<%= (typeof jobMaster !== 'undefined' && jobMaster && jobMaster.customer) ? jobMaster.customer : (mbomData.customer || '') %>" placeholder="Type Customer Here" id="example-text-input" readonly="readonly">
                                                             </div>
                                                             <div class="col-sm-3">
                                                                 <label for="example-text-input" class="col-form-label">Board Designation</label>
@@ -84,6 +88,16 @@
                                                     </div>
                                                 </div>
                                             </form>
+                                            <script>
+                                                (function(){
+                                                    try {
+                                                        var hidden = document.getElementById('projectIdHidden');
+                                                        if(!hidden) return;
+                                                        var m = window.location.pathname.match(/\/projects\/([^\/?#]+)/i);
+                                                        if(m && m[1]) hidden.value = decodeURIComponent(m[1]);
+                                                    } catch(e) { /* ignore */ }
+                                                })();
+                                            </script>
                                         </div>
                                     </div>
                                 </div>
@@ -97,18 +111,19 @@
                                                 Fill out the following for each layout, and click "Save" afterwards
                                             </p>
                                             <p class="text-muted m-b-30"></p>
-                                            <form id="itemForm" class="itemForm" action="/editComItemSave/?itemSumID=<%= mbomItemData[0].itemSumID %>" method="POST">
+                                            <form id="itemForm" class="itemForm" action="/editComItemSave/?itemSumID=<%= mbomItemData[0].itemSumID %>&projectId=<%= typeof projectId !== 'undefined' ? projectId : '' %>" method="POST">
                                                 <div class="form-group">
                                                     <% if(mbomData) { %>
                                                         <div class="col-sm-12">
-                                                            <input type="text" name="jobNum" class="form-control" value="<%= mbomData.jobNum %>" id="jobNum" hidden="hidden">
-                                                            <input type="text" name="releaseNum" class="form-control" value="<%= mbomData.releaseNum %>" id="releaseNum" hidden="hidden">
-                                                            <input type="text" name="mbomID" class="form-control" value="<%= mbomData.mbomID %>" id="mbomID" hidden="hidden">
-                                                            <input type="text" name="jobName" class="form-control" value="<%= mbomData.jobName %>" id="jobName" hidden="hidden">
-                                                            <input type="text" name="customer" class="form-control" value="<%= mbomData.customer %>" id="customer" hidden="hidden">
-                                                            <input type="text" name="boardDesignation" class="form-control" value="<%= mbomData.boardDesignation %>" id="boardDesignation" hidden="hidden">
-                                                            <input type="text" name="numSections" class="form-control" value="<%= mbomData.numSections %>" id="numSections" hidden="hidden">
-                                                        </div>
+                                                                <input type="text" name="jobNum" class="form-control" value="<%= (typeof jobMaster !== 'undefined' && jobMaster && jobMaster.jobNum) ? jobMaster.jobNum : (mbomData.jobNum || '') %>" id="jobNum" hidden="hidden">
+                                                                <input type="text" name="releaseNum" class="form-control" value="<%= mbomData.releaseNum %>" id="releaseNum" hidden="hidden">
+                                                                <input type="text" name="mbomID" class="form-control" value="<%= mbomData.mbomID %>" id="mbomID" hidden="hidden">
+                                                                <input type="text" name="jobName" class="form-control" value="<%= (typeof jobMaster !== 'undefined' && jobMaster && jobMaster.jobTitle) ? jobMaster.jobTitle : (mbomData.jobName || '') %>" id="jobName" hidden="hidden">
+                                                                <input type="text" name="customer" class="form-control" value="<%= (typeof jobMaster !== 'undefined' && jobMaster && jobMaster.customer) ? jobMaster.customer : (mbomData.customer || '') %>" id="customer" hidden="hidden">
+                                                                <input type="text" name="boardDesignation" class="form-control" value="<%= mbomData.boardDesignation %>" id="boardDesignation" hidden="hidden">
+                                                                <input type="text" name="numSections" class="form-control" value="<%= mbomData.numSections %>" id="numSections" hidden="hidden">
+                                                                <input type="hidden" name="projectId" id="projectIdHidden" value="<%= typeof projectId !== 'undefined' ? projectId : '' %>">
+                                                            </div>
                                                     <% } %>
                                                     <!-- Hidden wiring for current item status (read-only) -->
                                                     <input type="hidden" id="itemStatus" value="<%= (typeof editData !== 'undefined' && editData && editData.status) ? editData.status : '' %>" />
@@ -330,9 +345,9 @@
             </div> <!-- container-fluid -->
         </div> <!-- content -->
     </div> <!-- content-page -->
-    <%- include('../partials/footer') %>
+    <%- include('../../partials/footer') %>
 </div> <!-- wrapper -->
-        <%- include('../partials/scripts') %>
+        <%- include('../../partials/scripts') %>
 
         <script>
             $(function() {

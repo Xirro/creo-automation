@@ -217,49 +217,40 @@ let guestDbConnected = null; // null=unknown, true/false after check
 async function checkGuestDbConnectivity() {
     const mysql2 = require('mysql2/promise');
     // Try the minimally-privileged guest account only (no elevated fallbacks).
-    try {
-        const conn = await mysql2.createConnection({
-            host: guestDbOptions.host,
-            port: guestDbOptions.port,
-            user: guestDbOptions.user,
-            password: guestDbOptions.password,
-            database: guestDbOptions.database,
-            connectTimeout: 5000,
-            ssl: guestDbOptions.ssl ? { rejectUnauthorized: false } : undefined
-        });
-        try { await conn.query('SELECT 1'); } finally { try { await conn.end(); } catch (e) { /* ignore */ } }
-        if (guestDbConnected !== true) console.log('DB connectivity check: OK');
-        guestDbConnected = true;
-        return;
-    } catch (guestErr) {
-        const guestMsg = guestErr && guestErr.stack ? guestErr.stack : String(guestErr);
-        console.warn('DB connectivity check failed. Error stack:');
-        console.warn(guestMsg);
-
-        // Additional diagnostic: if ssl flag was explicitly false try with SSL, and vice-versa,
-        // to help identify SSL-related misconfiguration.
+    // Attempt up to two times before marking as unreachable (small backoff between attempts).
+    const maxAttempts = 2;
+    let lastErr = null;
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
         try {
-            const altSsl = guestDbOptions.ssl ? undefined : { rejectUnauthorized: false };
-            const altConn = await mysql2.createConnection({
-                host: guestDbOptions.host || process.env.DB_HOST,
-                port: guestDbOptions.port || (process.env.DB_PORT ? parseInt(process.env.DB_PORT, 10) : undefined),
-                user: guestDbOptions.user || (process.env.DB_GUEST_USER || 'app_guest'),
-                password: guestDbOptions.password || process.env.DB_GUEST_PASSWORD,
-                database: guestDbOptions.database || process.env.DB_NAME,
+            const conn = await mysql2.createConnection({
+                host: guestDbOptions.host,
+                port: guestDbOptions.port,
+                user: guestDbOptions.user,
+                password: guestDbOptions.password,
+                database: guestDbOptions.database,
                 connectTimeout: 5000,
-                ssl: altSsl
+                ssl: guestDbOptions.ssl ? { rejectUnauthorized: false } : undefined
             });
-            try { await altConn.query('SELECT 1'); } finally { try { await altConn.end(); } catch (e) { /* ignore */ } }
-            console.log('DB connectivity check: OK with alternative SSL setting');
+            try { await conn.query('SELECT 1'); } finally { try { await conn.end(); } catch (e) { /* ignore */ } }
+            if (guestDbConnected !== true) console.log('DB connectivity check: OK');
             guestDbConnected = true;
             return;
-        } catch (altErr) {
-            const altMsg = altErr && altErr.stack ? altErr.stack : String(altErr);
-            console.warn('DB connectivity check alternative SSL attempt failed. Error stack:');
-            console.warn(altMsg);
+        } catch (err) {
+            lastErr = err;
+            // If there are further attempts, wait briefly then retry
+            if (attempt < maxAttempts) {
+                try { console.warn(`DB connectivity attempt ${attempt} failed, retrying...`); } catch (e) {}
+                // small backoff before retrying
+                await new Promise(r => setTimeout(r, 800));
+                continue;
+            }
+            // final failure after retries
+            const guestMsg = lastErr && lastErr.stack ? lastErr.stack : String(lastErr);
+            console.warn('DB connectivity check failed after ' + maxAttempts + ' attempts. Error stack:');
+            console.warn(guestMsg);
+            guestDbConnected = false;
+            return;
         }
-
-        guestDbConnected = false;
     }
 }
 
@@ -1017,6 +1008,7 @@ app.use(async function(req, res, next) {
 //routes used for different components of the app - split up to make it easier to work with
 //look at the app/routes folder for where to be directed to next
 require('./app/routes/main.js')(app); //Main Router
+require('./app/routes/projects.js')(app); // Projects Router
 require('./app/routes/admin.js')(app); // Admin Router (RBAC)
 require('./app/routes/pdfDxfBinBom.js')(app); //PDF DXF BIN BOM Router
 require('./app/routes/submittal.js')(app); //Submittal Router

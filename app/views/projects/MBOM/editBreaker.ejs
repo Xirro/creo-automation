@@ -30,16 +30,21 @@
 <body>
 <div id="wrapper">
     <!-- Top Bar Start -->
-    <%- include('../partials/header') %>
+    <%- include('../../partials/header') %>
     <!-- Top Bar End -->
 
     <!-- ========== Left Sidebar Start ========== -->
-    <%- include('../partials/sidebar') %>
+    <%- include('../../partials/sidebar') %>
     <!-- Left Sidebar End -->
 
     <% // defensive: ensure mbomBrkData[0] exists to avoid runtime errors when controller returned no rows %>
     <% if (typeof mbomBrkData === 'undefined' || !mbomBrkData) { mbomBrkData = []; } %>
     <% if (!mbomBrkData[0]) { mbomBrkData[0] = {}; } %>
+
+    <% // jm* shorthand: prefer jobMaster when present, otherwise fall back to mbomData safely %>
+    <% const jmJobNum = (typeof jobMaster !== 'undefined' && jobMaster && jobMaster.jobNum) ? jobMaster.jobNum : ((typeof mbomData !== 'undefined' && mbomData && mbomData.jobNum) ? mbomData.jobNum : ''); %>
+    <% const jmJobName = (typeof jobMaster !== 'undefined' && jobMaster && jobMaster.jobTitle) ? jobMaster.jobTitle : ((typeof mbomData !== 'undefined' && mbomData && mbomData.jobName) ? mbomData.jobName : ''); %>
+    <% const jmCustomer = (typeof jobMaster !== 'undefined' && jobMaster && jobMaster.customer) ? jobMaster.customer : ((typeof mbomData !== 'undefined' && mbomData && mbomData.customer) ? mbomData.customer : ''); %>
 
     <div class="content-page">
         <!-- Content Start -->
@@ -60,7 +65,7 @@
                                                         <div class="row">
                                                             <div class="col-sm-2">
                                                                 <label for="example-text-input" class="col-form-label">Job Number</label>
-                                                                <input type="text" name="jobNum" class="form-control" value="<%= mbomData.jobNum %>" placeholder="Type Number Here" id="" readonly="readonly">
+                                                                <input type="text" name="jobNum" class="form-control" value="<%= (typeof jobMaster !== 'undefined' && jobMaster && jobMaster.jobNum) ? jobMaster.jobNum : (mbomData.jobNum || '') %>" placeholder="Type Number Here" id="" readonly="readonly">
                                                             </div>
                                                             <div class="col-sm-2">
                                                                 <label for="example-text-input" class="col-form-label">Release</label>
@@ -68,11 +73,11 @@
                                                             </div>
                                                             <div class="col-sm-3">
                                                                 <label for="example-text-input" class="col-form-label">Job Name</label>
-                                                                <input type="text" name="jobName" class="form-control" value="<%= mbomData.jobName %>" placeholder="Type Name Here" id="" readonly="readonly">
+                                                                <input type="text" name="jobName" class="form-control" value="<%= (typeof jobMaster !== 'undefined' && jobMaster && jobMaster.jobTitle) ? jobMaster.jobTitle : (mbomData.jobName || '') %>" placeholder="Type Name Here" id="" readonly="readonly">
                                                             </div>
                                                             <div class="col-sm-2">
                                                                 <label for="example-text-input" class="col-form-label">Customer</label>
-                                                                <input type="text" name="customer" class="form-control" value="<%= mbomData.customer %>" placeholder="Type Customer Here" id="" readonly="readonly">
+                                                                <input type="text" name="customer" class="form-control" value="<%= (typeof jobMaster !== 'undefined' && jobMaster && jobMaster.customer) ? jobMaster.customer : (mbomData.customer || '') %>" placeholder="Type Customer Here" id="" readonly="readonly">
                                                             </div>
                                                             <div class="col-sm-3">
                                                                 <label for="example-text-input" class="col-form-label">Board Designation</label>
@@ -107,63 +112,50 @@
                                             </p>
                                             <p class="text-muted m-b-30"></p>
 
-                                            <form id="breakerForm" class="breakerForm" action="/editBreakerSave" method="POST">
+                                            <form id="breakerForm" class="breakerForm" action="<%= (typeof projectId !== 'undefined' && projectId) ? ('/projects/' + projectId + '/editBreakerSave') : '/editBreakerSave' %>" method="POST">
                                                 <div class="row">
                                                     <% if(mbomData) { %>
                                                         <div class="col-sm-2">
-                                                                <input type="text" name="jobNum" class="form-control" value="<%= mbomData.jobNum %>" placeholder="Type Number Here" id="jobNum" readonly="readonly" hidden="hidden">
+                                                            <input type="text" name="jobNum" class="form-control" value="<%= (typeof jobMaster !== 'undefined' && jobMaster && jobMaster.jobNum) ? jobMaster.jobNum : (mbomData.jobNum || '') %>" placeholder="Type Number Here" id="jobNum" readonly="readonly" hidden="hidden">
                                                             <input type="text" name="mbomID" class="form-control" value="<%= mbomData.mbomID %>" placeholder="Type Number Here" id="mbomID" readonly="readonly" hidden="hidden">
-
                                                         </div>
                                                         <div class="col-sm-2">
                                                             <input type="text" name="releaseNum" class="form-control" value="<%= mbomData.releaseNum %>" placeholder="Type Release Here" id="releaseNum" readonly="readonly" hidden="hidden">
                                                         </div>
                                                         <div class="col-sm-3">
-                                                            <input type="text" name="jobName" class="form-control" value="<%= mbomData.jobName %>" placeholder="Type Name Here" id="jobName" readonly="readonly" hidden="hidden">
+                                                            <input type="text" name="jobName" class="form-control" value="<%= (typeof jobMaster !== 'undefined' && jobMaster && jobMaster.jobTitle) ? jobMaster.jobTitle : (mbomData.jobName || '') %>" placeholder="Type Name Here" id="jobName" readonly="readonly" hidden="hidden">
                                                         </div>
                                                         <div class="col-sm-2">
-                                                            <input type="text" name="customer" class="form-control" value="<%= mbomData.customer %>" placeholder="Type Customer Here" id="customer" readonly="readonly" hidden="hidden">
+                                                            <input type="text" name="customer" class="form-control" value="<%= (typeof jobMaster !== 'undefined' && jobMaster && jobMaster.customer) ? jobMaster.customer : (mbomData.customer || '') %>" placeholder="Type Customer Here" id="customer" readonly="readonly" hidden="hidden">
                                                         </div>
                                                         <div class="col-sm-3">
                                                             <input type="text" name="boardDesignation" class="form-control" value="<%= mbomData.boardDesignation %>" placeholder="Type Designation Here" id="boardDesignation" readonly="readonly" hidden="hidden" >
                                                         </div>
+                                                        <% if (typeof projectId !== 'undefined' && projectId) { %>
+                                                            <input type="hidden" id="projectId" name="projectId" value="<%= projectId %>">
+                                                        <% } %>
                                                         <div class="col-sm-3">
                                                             <input type="text" name="noSectionMBOM" class="form-control" value="<%= mbomData.noSectionMBOM%>" id="noSectionMBOM" readonly="readonly" hidden="hidden">
                                                         </div>
                                                     <% } %>
-                                                        <div class="form-group">
-                                                            <% if(mbomBrkData) { %>
-                                                                <input type="text" name="idDev" class="form-control" value="<%= mbomBrkData[0].idDev || '' %>" hidden="hidden" >
-                                                            <% } %>
-                                                        </div>
-
-                                                        <div class="col-sm-2">
-                                                            <div class="form-group">
-                                                                <label for="example-text-input" class="col-form-label">MBOM Number</label>
-
-                                                                <input type="text" class="form-control" value="<%=mbomData.jobNum%><%=mbomData.releaseNum%>" id="example-text-input" readonly="readonly"/>
-                                                            </div>
-                                                        </div>
-                                                        <div class="col-sm-4">
-                                                            <div class="form-group">
-                                                                <label for="example-text-input" class="col-form-label">Layout Name</label>
-                                                                <input type="text" name="devLayout" class="form-control" value="<%=mbomData.boardDesignation%>" placeholder="Layout name here" id="devLayout" readonly="readonly">
-                                                            </div>
-                                                        </div>
-                                                        <div class="col-sm-6">
-                                                            <div class="form-group">
-                                                                <label for="example-text-input" class="col-form-label">Device Designation</label>
-                                                                <% if (!brkData) { %>
-                                                                    <input type="text" id="editDevDesLimit" name="devDesignation" maxlength="160" class="form-control" value="<%= mbomBrkData[0].devDesignation || '' %>" autocomplete="off"/>
-                                                            <% } else { %>
-                                                                    <input type="text" id="editDevDesLimit" name="devDesignation" maxlength="160" class="form-control" value="<%= brkData.devDesignation %>" autocomplete="off"/>
-
-                                                                <% } %>
-                                                            </div>
-                                                        </div>
+                                                    <div class="form-group">
+                                                        <% if(mbomBrkData) { %>
+                                                            <input type="text" name="idDev" class="form-control" value="<%= mbomBrkData[0].idDev || '' %>" hidden="hidden" >
+                                                        <% } %>
+                                                    </div>
                                                 </div>
                                                 <div class="row">
-                                                    <div class="col-sm-3">
+                                                    <div class="col-sm-4">
+                                                        <div class="form-group">
+                                                            <label for="example-text-input" class="col-form-label">Device Designation</label>
+                                                            <% if (!brkData) { %>
+                                                                <input type="text" id="editDevDesLimit" name="devDesignation" maxlength="160" class="form-control" value="<%= mbomBrkData[0].devDesignation || '' %>" autocomplete="off"/>
+                                                            <% } else { %>
+                                                                <input type="text" id="editDevDesLimit" name="devDesignation" maxlength="160" class="form-control" value="<%= brkData.devDesignation %>" autocomplete="off"/>
+                                                            <% } %>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-sm-4">
                                                         <div class="form-group">
                                                             <label for="example-text-input" class="col-form-label">Breaker P/N</label>
                                                             <% if (!brkData) { %>
@@ -173,7 +165,7 @@
                                                             <% } %>
                                                         </div>
                                                     </div>
-                                                    <div class="col-sm-3">
+                                                    <div class="col-sm-4">
                                                         <div class="form-group">
                                                             <label for="example-text-input" class="col-form-label">Cradle P/N</label>
                                                             <% if (!brkData) { %>
@@ -233,142 +225,88 @@
                                                         </div>
                                                     </div>
                                                     <div class="col-sm-2">
-                                                        <% if(brkAccData.length != 0){ %>
-                                                            <div class="form-group" style="margin-top: 2.5rem; padding-left: 2.5rem;">
-                                                                <input class="form-check-input" type="checkbox" name="addBreakerAccessories" id="addAccessories" checked="checked" data-fn="openBreakerAccessories">
-                                                                <label class="form-check-label" for="addAccessories">Add Loose Accessories</label>
-                                                            </div>
-                                                        <% } else { %>
-                                                            <div class="form-group" style="margin-top: 2.5rem; padding-left: 2.5rem;">
-                                                                <input class="form-check-input" type="checkbox" name="addBreakerAccessories" id="addAccessories" data-fn="openBreakerAccessories">
-                                                                <label class="form-check-label" for="addAccessories">Add Loose Accessories</label>
-                                                            </div>
-                                                        <% } %>
-                                                    </div>
-                                                    <div class="col-sm-2">
                                                         <div class="form-group">
                                                             <label for="" class="col-form-label"></label>
                                                             <input type="text" id="" name="unitOfIssue" class="form-control" value="EA" hidden="hidden"/>
                                                         </div>
                                                     </div>
                                                 </div>
+                                                <!-- end breaker form -->
+                                                <!-- Inject hidden accessories JSON field and expose initial accessory data for client-side editing -->
+                                                <input type="hidden" id="brkAccessoriesJson" name="brkAccessories" value="" />
+                                                <% var __safeBrkAccData = JSON.stringify(Array.isArray(brkAccData) ? brkAccData : []).replace(/</g, '\\u003c'); var __safeBrkAccDataHtml = __safeBrkAccData.replace(/"/g, '&quot;'); %>
+                                                <input type="hidden" id="brkInitialJson" value="<%- __safeBrkAccDataHtml %>" />
+                                                <script>
+                                                    (function(){
+                                                        try {
+                                                            var inp = document.getElementById('brkInitialJson');
+                                                            var raw = (inp && inp.value) ? inp.value : '[]';
+                                                            window.__initialBrkAccData = JSON.parse(raw);
+                                                        } catch (e) { window.__initialBrkAccData = []; }
+                                                    })();
+                                                </script>
                                             </form>
 
-                                            <% if(brkAccData.length != 0){ %>
                                             <div class="row" id="breakerAccessoriesDiv" style="display: flex;">
-                                                <% } else { %>
-                                                <div class="row" id="breakerAccessoriesDiv" style="display: none;">
-                                                    <% } %>
-                                                    <div class="col-sm-12" style="margin-top: -1rem;">
-                                                        <hr>
-                                                    </div>
-                                                    <div class="col-sm-9">
-                                                        <h6>Breaker Loose Accessories</h6>
-                                                    </div>
-                                                    <div class="col-sm-3">
-                                                        <h6>Current Loose Accessories</h6>
-                                                    </div>
-                                                    <div class="col-sm-9">
-                                                        <div class="row" >
-                                                            <div class="col-sm-1">
-                                                                <label for="accessoryQty" class="col-form-label">Qty</label>
-                                                                <input type="number" min="1" id="accessoryQty" name="accessoryQty" class="form-control" value="" placeholder="#" autocomplete="off" required/>
-                                                            </div>
-                                                            <div class="col-sm-2">
-                                                                <label for="accessoryType" class="col-form-label">Accessory Type</label>
-                                                                <input type="text" id="accessoryType" name="accessoryType" class="form-control" value="" placeholder="Type Accessory Type" autocomplete="off" required/>
-                                                            </div>
-                                                            <div class="col-sm-4">
-                                                                <label for="accessoryDescLimit" class="col-form-label">Description</label>
-                                                                <input type="text" id="accessoryDescLimit" maxlength="160" name="accessoryDesc" class="form-control" value="" placeholder="Type Accessory Description" autocomplete="off" required/>
-                                                            </div>
-                                                            <div class="col-sm-3">
-                                                                <label for="accessoryPN" class="col-form-label">P/N</label>
-                                                                <input type="text" id="accessoryPN" name="accessoryPN" class="form-control" value="" placeholder="Type P/N Here" autocomplete="off" required/>
-                                                            </div>
-                                                            <div class="col-sm-2" style="margin-top: 2.2rem;">
-                                                                <button id="addAccessoryBtn" type="submit" class="btn btn-md btn-outline-info waves-effect waves-light add-accessory-btn" data-dev="<%= mbomBrkData[0].idDev || '' %>">Add Accessory</button>
+                                                <div class="col-sm-9" style="padding-top: 10px;">
+                                                    <h6>Breaker Loose Accessories</h6>
+                                                </div>
+                                                <div class="col-sm-12">
+                                                    <div class="row">
+                                                        <div class="col-sm-1">
+                                                            <label for="accessoryQty" class="col-form-label">Qty</label>
+                                                            <input type="number" min="1" id="accessoryQty" name="accessoryQty" class="form-control" value="" placeholder="#" autocomplete="off" />
+                                                        </div>
+                                                        <div class="col-sm-2">
+                                                            <label for="accessoryType" class="col-form-label">Accessory Type</label>
+                                                            <input type="text" id="accessoryType" name="accessoryType" class="form-control" value="" placeholder="Type Accessory Type" autocomplete="off" />
+                                                        </div>
+                                                        <div class="col-sm-4">
+                                                            <label for="accessoryDescLimit" class="col-form-label">Description</label>
+                                                            <input type="text" id="accessoryDescLimit" maxlength="160" name="accessoryDesc" class="form-control" value="" placeholder="Type Accessory Description" autocomplete="off" />
+                                                        </div>
+                                                        <div class="col-sm-3">
+                                                            <label for="accessoryPN" class="col-form-label">P/N</label>
+                                                            <input type="text" id="accessoryPN" name="accessoryPN" class="form-control" value="" placeholder="Type P/N Here" autocomplete="off" />
+                                                        </div>
+                                                        <div class="col-sm-2 d-flex align-items-center">
+                                                            <div class="form-group mb-0 w-100">
+                                                                <label class="col-form-label invisible">&#8203;</label>
+                                                                <button id="addAccessoryBtn" type="button" class="btn btn-md btn-outline-info btn-block waves-effect waves-light">Add Accessory</button>
                                                             </div>
                                                         </div>
                                                     </div>
-                                                    <div class="col-sm-3">
-                                                        <ul class="list-group">
-                                                            <% for (let i = 0; i < brkAccData.length; i++){ %>
-                                                            <li class="list-group-item d-flex justify-content-between align-items-center" style="padding: 4% 4% 0 4%;">
-                                                                <p style="width: 50%;">
-                                                                    <span class="badge badge-info"><%=brkAccData[i].brkAccQty%></span>  <%=brkAccData[i].brkAccDesc%>
-                                                                </p>
-                                                                <p>
-                                                                    <input id="editButton" type="submit" value="Edit" class="btn btn-md btn-outline-warning waves-effect waves-light edit-acc-btn" data-toggle="modal" data-target="#editAccModal_<%=brkAccData[i].brkAccID%>" data-acc-id="<%=brkAccData[i].brkAccID%>"/>
-                                                                    <button id="delAcc_<%=brkAccData[i].brkAccID%>" type="button" class="btn btn-md btn-outline-danger waves-effect waves-light delete-acc-btn" data-acc-id="<%=brkAccData[i].brkAccID%>" data-acc-pn="<%=brkAccData[i].brkAccPN%>" data-dev="<%=brkAccData[i].idDev%>">Delete</button>
-                                                                </p>
-                                                            </li>
-                                                            <!-- EDIT BRK ACC MODAL -->
-                                                            <div class="modal fade" id="editAccModal_<%=brkAccData[i].brkAccID%>" tabindex="-1" role="dialog" aria-labelledby="editAccModalTitle" aria-hidden="true">
-                                                                <div class="modal-dialog modal-dialog-centered" role="document">
-                                                                    <div class="modal-content">
-                                                                        <div class="modal-header">
-                                                                            <h5 class="modal-title" id="exampleModalLongTitle" style="font-size: large">Edit Breaker Accessory</h5>
-                                                                            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                                                                                <span aria-hidden="true">&times;</span>
-                                                                            </button>
-                                                                        </div>
-                                                                        <p class="mb-2"></p>
-                                                                        <div class="col-sm-12 justify-content-center">
-                                                                            <p class="mb-0">
-                                                                                Edit any of the following for the layout shown above, and click "Save Changes" afterwards
-                                                                            </p>
-                                                                        </div>
-                                                                        <div class="modal-body">
-                                                                                <div class="form-group">
-                                                                                    <div class="row">
-                                                                                        <div class="col-sm-3">
-                                                                                            <label for="editAccQty" class="col-form-label">Qty</label>
-                                                                                            <input type="number" id="idDev" value="<%= brkAccData[i].idDev%>" hidden="hidden">
-                                                                                            <input type="number" min="1" id="editAccQty_<%=brkAccData[i].brkAccID%>" name="editAccQty" class="form-control" value="<%=brkAccData[i].brkAccQty%>" placeholder="#" autocomplete="off" required/>
-                                                                                        </div>
-                                                                                        <div class="col-sm-9">
-                                                                                            <label for="editAccType" class="col-form-label">Accessory Type</label>
-                                                                                            <input type="text" id="editAccType_<%=brkAccData[i].brkAccID%>" name="editAccType" class="form-control" value="<%=brkAccData[i].brkAccType%>" placeholder="Type Accessory Type" autocomplete="off" required/>
-                                                                                        </div>
-                                                                                    </div>
-                                                                                    <div class="row">
-                                                                                        <div class="col-sm-12">
-                                                                                            <label for="editAccDescLimit" class="col-form-label">Description</label>
-                                                                                            <input type="text" id="editAccDescLimit_<%=brkAccData[i].brkAccID%>" maxlength="160" name="editAccDescLimit" class="form-control" value="<%=brkAccData[i].brkAccDesc%>" placeholder="Type Accessory Description" autocomplete="off" required/>
-                                                                                        </div>
-                                                                                    </div>
-                                                                                    <div class="row">
-                                                                                        <div class="col-sm-12">
-                                                                                            <label for="editAccPN" class="col-form-label">P/N</label>
-                                                                                            <input type="text" id="editAccPN_<%=brkAccData[i].brkAccID%>" name="editAccPN" class="form-control" value="<%=brkAccData[i].brkAccPN%>" placeholder="Type P/N Here" autocomplete="off" required/>
-                                                                                        </div>
-                                                                                    </div>
-                                                                                    <div class="modal-footer justify-content-center" style="border-top: none;">
-                                                                                        <button id="saveAcc_<%= brkAccData[i].brkAccID %>" type="button" class="btn-block btn-lg btn-success col-sm-5 save-acc-btn" style="border: 0" data-acc-id="<%= brkAccData[i].brkAccID %>">Save Changes</button>
-                                                                                    </div>
-                                                                                </div>
 
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                            <!-- END EDIT BRK ACC MODAL -->
+                                                    <div class="col-sm-9" style="padding-top: 15px;">
+                                                        <h6>Current Loose Accessories</h6>
+                                                    </div>
 
-                                                            <% } %>
-                                                        </ul>
+                                                    <div class="row mt-2 justify-content-center">
+                                                        <div class="col-sm-11">
+                                                            <table id="breakerAccessoriesTable" class="table table-sm table-striped">
+                                                                <thead>
+                                                                    <tr>
+                                                                        <th style="width:5%">Qty</th>
+                                                                        <th style="width:17%">Type</th>
+                                                                        <th style="width:17%">Mfg.</th>
+                                                                        <th style="width:25%">Description</th>
+                                                                        <th style="width:16%">P/N</th>
+                                                                        <th style="width:20%">Actions</th>
+                                                                    </tr>
+                                                                </thead>
+                                                                <tbody></tbody>
+                                                            </table>
+                                                        </div>
                                                     </div>
                                                 </div>
-
-                                            <hr>
+                                            </div>
 
                                             <div class="row justify-content-center">
-                                                <div class="col-2" style="padding-top:5%;">
-                                                    <button id="uploadBtn" type="button" class="btn-block btn-lg btn-outline-success waves-effect waves-light">Save</button>
+                                                <div class="col-2" style="padding-top: 15px;">
+                                                    <input id="uploadBtn" type="submit" value="Save" class="btn-block btn-lg btn-outline-success waves-effect waves-light" form="breakerForm" />
                                                 </div>
                                             </div>
                                             </div>
-
                                         </div>
                                     </div>
                                 </div>
@@ -379,7 +317,7 @@
             </div> <!-- container-fluid -->
         </div> <!-- content -->
     </div> <!-- content-page -->
-    <%- include('../partials/footer') %>
+    <%- include('../../partials/footer') %>
 </div> <!-- wrapper -->
 
 
@@ -393,7 +331,7 @@
     });
 </script>
 
-<%- include('../partials/scripts') %>
+<%- include('../../partials/scripts') %>
 <script>
     document.addEventListener('DOMContentLoaded', function(){
         var uploadBtn = document.getElementById('uploadBtn');
@@ -423,8 +361,6 @@
         });
     });
 </script>
-
-<%- include('../partials/scripts') %>
 
 <script>
     document.addEventListener('DOMContentLoaded', function(){
