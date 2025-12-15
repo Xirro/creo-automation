@@ -376,10 +376,31 @@ if ((process.env.NODE_ENV || 'development') !== 'production' || isPackaging) {
 // visitors can INSERT into the requests table using a minimally-privileged DB user.
 app.use('/request-account', myConnection(mysql, guestDbOptions, 'pool'));
 
-// directing the app where to look for the views, and instructing it that the content is EJS
+//directing the app where to look for the views, and instructing it that the content is EJS
 // Use absolute paths based on __dirname so this works when running inside ASAR (packaged)
-const viewsPath = path.join(__dirname, 'app', 'views');
-app.set('views', viewsPath);
+// Provide robust fallbacks: prefer __dirname but allow process.cwd() or execPath neighbor directory
+const fs = require('fs');
+const candidateViewDirs = [
+    path.join(__dirname, 'app', 'views'),
+    path.join(process.cwd(), 'app', 'views')
+];
+try {
+    // when running as an installed exe, views may be placed next to the execPath
+    if (process && process.execPath) candidateViewDirs.push(path.join(path.dirname(process.execPath), 'app', 'views'));
+} catch (e) { /* ignore */ }
+
+let resolvedViewsPath = null;
+for (const p of candidateViewDirs) {
+    try {
+        // check for a known file inside Projects to validate the views folder
+        if (fs.existsSync(path.join(p, 'Projects', 'projectMain.ejs'))) { resolvedViewsPath = p; break; }
+        // otherwise accept the directory if it exists at all
+        if (fs.existsSync(p)) { resolvedViewsPath = p; break; }
+    } catch (e) { /* ignore and try next */ }
+}
+if (!resolvedViewsPath) resolvedViewsPath = path.join(__dirname, 'app', 'views');
+console.log('Using views path:', resolvedViewsPath);
+app.set('views', resolvedViewsPath);
 app.set('view engine', 'ejs');
 
 // give app access to the public folder from root; use absolute paths for packaged runs
