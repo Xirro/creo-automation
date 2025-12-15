@@ -1146,7 +1146,6 @@ app.get('/__debug_session', function(req, res) {
 // In-memory one-time token store for cross-browser login. Keys are tokens, values hold session info.
 // Launcher secret (optional). If set, launcher must send X-Launcher-Secret header matching this value.
 // Support embedding the secret into package.json at build time (electron-builder extraMetadata)
-const fs = require('fs');
 let LAUNCHER_SECRET = process.env.LAUNCHER_SECRET || null;
 if (!LAUNCHER_SECRET) {
     try {
